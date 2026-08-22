@@ -14,7 +14,7 @@
   const irnd = (a, b) => (a + Math.floor(Math.random() * (b - a + 1)));
   const deep = (o) => JSON.parse(JSON.stringify(o));
 
-  const SOLID = new Set([0, 3, 4, 7, 9, 11, 12, 15, 17, 19, 20, 21, 22]);
+  const SOLID = new Set([0, 3, 4, 7, 9, 11, 12, 15, 17, 19, 20, 21, 22, 28, 29, 31, 32, 33, 34, 36, 37]);
 
   const S = {
     state: "boot",
@@ -818,18 +818,23 @@
       case 1: { // grass
         ctx.fillStyle = night ? "#1a3320" : "#3d7a3a";
         ctx.fillRect(0, 0, T, T);
-        ctx.fillStyle = night ? "#244a28" : "#4e9250";
+        ctx.fillStyle = night ? "#244a28" : ((s & 3) === 0 ? "#4a8a42" : "#4e9250");
         ctx.fillRect(2, 2, T - 4, T - 4);
         ctx.fillStyle = night ? "#2e5a30" : "#68a84a";
-        for (let i = 0; i < 6; i++) ctx.fillRect((s >> i) & 28, (s >> (i + 3)) & 28, 2, 3);
+        for (let i = 0; i < 8; i++) ctx.fillRect((s >> i) & 28, (s >> (i + 3)) & 28, 2, 3);
+        if ((s & 15) === 1) { ctx.fillStyle = "#d4a0c0"; ctx.fillRect(10, 12, 3, 3); }
+        if ((s & 15) === 2) { ctx.fillStyle = "#e8e070"; ctx.fillRect(18, 8, 2, 2); }
         break;
       }
       case 2: { // cobble
-        ctx.fillStyle = "#6a6e78"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#5e626c"; ctx.fillRect(0, 0, T, T);
         ctx.fillStyle = "#7c818c";
         ctx.fillRect(1, 1, 14, 14); ctx.fillRect(17, 1, 14, 14);
         ctx.fillRect(1, 17, 14, 14); ctx.fillRect(17, 17, 14, 14);
+        ctx.fillStyle = "#8a909a";
+        ctx.fillRect(2, 2, 6, 5); ctx.fillRect(18, 19, 8, 6);
         ctx.strokeStyle = "#4a4e56"; ctx.strokeRect(0.5, 0.5, 31, 31);
+        if ((s & 7) === 0) { ctx.fillStyle = "#4a6a40"; ctx.globalAlpha = 0.35; ctx.fillRect(12, 14, 8, 5); ctx.globalAlpha = 1; }
         break;
       }
       case 3: case 19: { // water
@@ -853,6 +858,10 @@
         ctx.fillStyle = "#5c616c";
         ctx.fillRect(1, 1, T - 2, 14); ctx.fillRect(1, 17, T - 2, 14);
         ctx.strokeStyle = "#2e323a"; ctx.strokeRect(0.5, 0.5, 31, 31);
+        if ((x + y) % 3 === 0) {
+          ctx.fillStyle = "#1a2838"; ctx.fillRect(8, 6, 16, 12);
+          ctx.fillStyle = "#7ec0e8"; ctx.globalAlpha = 0.35; ctx.fillRect(10, 8, 12, 8); ctx.globalAlpha = 1;
+        }
         break;
       }
       case 5: ctx.fillStyle = "#c9c0a8"; ctx.fillRect(0, 0, T, T);
@@ -882,11 +891,12 @@
         for (let i = 4; i < 32; i += 8) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 32); ctx.stroke(); }
         break;
       case 9: { // roof
-        ctx.fillStyle = "#3a6a38"; ctx.fillRect(0, 0, T, T);
-        ctx.fillStyle = "#2a4a28";
-        ctx.fillRect(0, 0, T, 6);
+        ctx.fillStyle = "#2e5a32"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#3a6a38"; ctx.fillRect(0, 4, T, T - 4);
+        ctx.fillStyle = "#1e3a22"; ctx.fillRect(0, 0, T, 5);
         ctx.strokeStyle = "#4a8a44";
-        for (let i = 6; i < 32; i += 5) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(32, i); ctx.stroke(); }
+        for (let i = 6; i < 32; i += 4) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(32, i); ctx.stroke(); }
+        ctx.fillStyle = "#c4a060"; ctx.fillRect(14, 0, 4, 6);
         break;
       }
       case 10: { // altar
@@ -946,6 +956,93 @@
         ctx.fillStyle = "#8a7a58"; ctx.fillRect(j(2) * 16, j(4) * 16, 10, 8); break;
       case 26: ctx.fillStyle = "#d8d0c8"; ctx.fillRect(0, 0, T, T);
         ctx.strokeStyle = "#b0a8a0"; ctx.strokeRect(0.5, 0.5, 31, 31); break;
+      case 27: { // flowers
+        ctx.fillStyle = night ? "#1a3320" : "#3d7a3a"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#4e9250"; ctx.fillRect(2, 2, T - 4, T - 4);
+        const cols = ["#e070a0", "#e8e070", "#f4ead4", "#80c0e8", "#e09050"];
+        for (let i = 0; i < 5; i++) {
+          ctx.fillStyle = cols[(s >> (i * 3)) & 7] || cols[0];
+          ctx.beginPath(); ctx.arc(6 + ((s >> i) & 18), 8 + ((s >> (i + 2)) & 16), 2.2, 0, 6.3); ctx.fill();
+        }
+        break;
+      }
+      case 28: { // statue
+        ctx.fillStyle = night ? "#1a3320" : "#3d7a3a"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#c0c4c8"; ctx.fillRect(8, 22, 16, 8);
+        ctx.fillStyle = "#d8dce0"; ctx.fillRect(12, 6, 8, 18);
+        ctx.beginPath(); ctx.arc(16, 6, 6, 0, 6.3); ctx.fill();
+        ctx.fillStyle = "#d4b46a"; ctx.fillRect(14, 20, 4, 3);
+        break;
+      }
+      case 29: { // crate
+        ctx.fillStyle = night ? "#3a3e48" : "#6a6e78"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#8a5a30"; ctx.fillRect(6, 10, 20, 18);
+        ctx.strokeStyle = "#5a3a18"; ctx.strokeRect(6.5, 10.5, 19, 17);
+        ctx.fillStyle = "#c49a60"; ctx.fillRect(6, 16, 20, 2);
+        break;
+      }
+      case 30: { // stairs
+        ctx.fillStyle = "#6a6e78"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#8a8490";
+        for (let i = 0; i < 4; i++) ctx.fillRect(2, 4 + i * 7, 28, 5);
+        ctx.strokeStyle = "#4a4e56";
+        for (let i = 0; i < 4; i++) ctx.strokeRect(2.5, 4.5 + i * 7, 27, 5);
+        break;
+      }
+      case 31: { // window wall
+        ctx.fillStyle = "#4a4e58"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#5c616c"; ctx.fillRect(1, 1, T - 2, T - 2);
+        ctx.fillStyle = "#122030"; ctx.fillRect(6, 6, 20, 18);
+        ctx.fillStyle = "#6ab0d8"; ctx.globalAlpha = 0.45; ctx.fillRect(8, 8, 16, 14); ctx.globalAlpha = 1;
+        ctx.strokeStyle = "#d4b46a"; ctx.strokeRect(6.5, 6.5, 19, 17);
+        ctx.beginPath(); ctx.moveTo(16, 6); ctx.lineTo(16, 24); ctx.moveTo(6, 15); ctx.lineTo(26, 15); ctx.stroke();
+        break;
+      }
+      case 32: { // deep water
+        const w = 0.5 + Math.sin(S.tileFx / 500 + x * 0.3) * 0.5;
+        ctx.fillStyle = night ? "#0c1828" : "#143a58"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#1c5070"; ctx.globalAlpha = 0.4 + w * 0.2;
+        ctx.fillRect(0, (12 + w * 8) % T, T, 3); ctx.globalAlpha = 1;
+        break;
+      }
+      case 33: { // bench
+        ctx.fillStyle = night ? "#3a3e48" : "#6a6e78"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#6a4a28"; ctx.fillRect(4, 14, 24, 6);
+        ctx.fillStyle = "#4a3020"; ctx.fillRect(4, 20, 4, 8); ctx.fillRect(24, 20, 4, 8);
+        break;
+      }
+      case 34: { // fountain
+        ctx.fillStyle = night ? "#3a3e48" : "#6a6e78"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#8a9098"; ctx.beginPath(); ctx.arc(16, 18, 12, 0, 6.3); ctx.fill();
+        ctx.fillStyle = night ? "#1c4a68" : "#3a88b8"; ctx.beginPath(); ctx.arc(16, 16, 8, 0, 6.3); ctx.fill();
+        ctx.fillStyle = "#d4b46a"; ctx.fillRect(14, 6, 4, 10);
+        ctx.fillStyle = "rgba(180,220,255,0.5)"; ctx.beginPath(); ctx.arc(16, 8, 3, 0, 6.3); ctx.fill();
+        break;
+      }
+      case 35: { // gold inlay
+        ctx.fillStyle = "#c9c0a8"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#d4b46a"; ctx.globalAlpha = 0.55;
+        ctx.beginPath(); ctx.moveTo(16, 4); ctx.lineTo(28, 16); ctx.lineTo(16, 28); ctx.lineTo(4, 16); ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = 1;
+        break;
+      }
+      case 36: { // stall
+        ctx.fillStyle = night ? "#1a3320" : "#3d7a3a"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#c23b4a"; ctx.fillRect(2, 4, 28, 10);
+        ctx.fillStyle = "#f4ead4"; ctx.fillRect(2, 8, 28, 3);
+        ctx.fillStyle = "#8a5a30"; ctx.fillRect(4, 14, 24, 12);
+        ctx.fillStyle = "#e8c070"; ctx.fillRect(8, 16, 6, 6);
+        break;
+      }
+      case 37: { // dead / corrupt tree
+        ctx.fillStyle = night ? "#1a2018" : "#3a4a30"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#3a2820"; ctx.fillRect(13, 18, 6, 14);
+        ctx.fillStyle = "#4a3060";
+        ctx.beginPath(); ctx.arc(16, 12, 12, 0, 6.3); ctx.fill();
+        ctx.fillStyle = "#6a3a78"; ctx.globalAlpha = 0.5;
+        ctx.beginPath(); ctx.arc(10, 14, 7, 0, 6.3); ctx.fill(); ctx.globalAlpha = 1;
+        break;
+      }
       default: ctx.fillStyle = "#222"; ctx.fillRect(0, 0, T, T);
     }
     ctx.restore();
@@ -1254,7 +1351,9 @@
     const names = { suyin: "Abbess Suyin", shen: "Master Shen", lyra: "Lyra", thorn: "Thorn",
       bard: "Bard", korin: "Korin", sera: "Sera", keeper: "Lantern Keeper", jori: "Jori",
       mira: "Mira", hana: "Hana", wen: "Old Wen", ren: "Acolyte Ren", echo: "Court Echo",
-      fisherman: "Canal Fisher", captain: "Watch-Captain", granny: "Market Granny", narration: "" };
+      fisherman: "Canal Fisher", captain: "Watch-Captain", granny: "Market Granny",
+      monk: "Night Monk", pilgrim: "Pilgrim", baker: "Baker", florist: "Florist",
+      boatman: "Boatman", kid2: "Lantern Kid", guard: "Guard", narration: "" };
     return names[sp] || sp;
   }
   function renderVnText() {

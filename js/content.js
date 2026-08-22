@@ -329,6 +329,27 @@ window.DATA = (() => {
     echo: [
       { s: "echo", t: "Prince. Put your name back on." },
       { s: "kael", e: "serious", t: "I left it. Warmth is how you get betrayed." }
+    ],
+    monk: [
+      { s: "monk", t: "The pond keeps the names we are too proud to say. Do not skip stones." }
+    ],
+    pilgrim: [
+      { s: "pilgrim", t: "I walked from Meridia. The trees tried my name. I did not answer. I still hear it." }
+    ],
+    baker: [
+      { s: "baker", t: "Bread's cheap. Rumors aren't. The west gate smells like weather that wants a war." }
+    ],
+    florist: [
+      { s: "florist", t: "Lotus for the temple. Thorns for the prince. He can pay in scowls." }
+    ],
+    boatman: [
+      { s: "boatman", t: "I don't take the canals after second blink. That's when the water has teeth." }
+    ],
+    kid2: [
+      { s: "kid2", t: "If I light every lamp, the fox can't come. That's the rule. I made the rule." }
+    ],
+    guard: [
+      { s: "guard", t: "Scout's word opens the west. Until then, the mountain can keep its opinions." }
     ]
   };
 
