@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Seal of the High Priestess</title>
+  <meta name="description" content="A 2D JRPG / visual-novel hybrid. A journey of purification and poisoned words." />
+  <link rel="stylesheet" href="css/game.css" />
+</head>
+<body>
+  <!--
+    Seal of the High Priestess
+    Design inspiration: LinaHua (@Linahuaa) — AI-assisted solo JRPG
+    focused on writing, world-building, and slow strategic combat.
+
+    Host on GitHub Pages: push this folder as the repo root, Settings → Pages →
+    Deploy from branch `main` / root. Then open https://<user>.github.io/<repo>/
+  -->
+  <div id="frame">
+    <div id="app">
+      <canvas id="game" width="1280" height="720"></canvas>
+
+      <!-- TITLE -->
+      <section id="screen-title" class="screen">
+        <div class="title-veil"></div>
+        <div class="title-card">
+          <p class="title-kicker">A Journey of Purification and Poisoned Words</p>
+          <h1>Seal of the High Priestess</h1>
+          <p class="title-sub">A 2D epic JRPG / visual-novel hybrid</p>
+          <nav class="title-menu" id="title-menu">
+            <button data-act="new">New Game</button>
+            <button data-act="continue" id="btn-continue" disabled>Continue</button>
+            <button data-act="options">Options</button>
+            <button data-act="credits">Credits</button>
+          </nav>
+          <p class="title-hint">Z / Enter confirm · X cancel · WASD / Arrows move · Esc menu</p>
+        </div>
+      </section>
+
+      <!-- OPTIONS -->
+      <section id="screen-options" class="screen hidden">
+        <div class="panel">
+          <h2>Options</h2>
+          <label>Master Volume <input id="opt-vol" type="range" min="0" max="100" value="70" /></label>
+          <label>Text Speed
+            <select id="opt-text">
+              <option value="1">Slow</option>
+              <option value="2" selected>Normal</option>
+              <option value="3">Fast</option>
+              <option value="9">Instant</option>
+            </select>
+          </label>
+          <label>Battle Speed
+            <select id="opt-battle">
+              <option value="0.75">Deliberate</option>
+              <option value="1" selected>Normal</option>
+              <option value="1.5">Brisk</option>
+            </select>
+          </label>
+          <label class="check"><input id="opt-auto" type="checkbox" /> Auto-advance dialogue</label>
+          <button data-act="opt-back">Back</button>
+        </div>
+      </section>
+
+      <!-- CREDITS -->
+      <section id="screen-credits" class="screen hidden">
+        <div class="panel credits">
+          <h2>Credits</h2>
+          <p>Design inspiration: <strong>LinaHua (@Linahuaa)</strong></p>
+          <p>Her concept: a solo creator, empowered by modern tools, making a Final Fantasy VI × Fate/Stay Night hybrid — AAA anime stills, kickass dialogue, goated characters, and battle mechanics that punish spam in favor of multi-step setups.</p>
+          <p>It may take ten years, and nobody may play it. It will still be a personal favourite.</p>
+          <p class="muted">World, systems, and vertical slice implemented as a browser-native tribute to that vision. No engine but Canvas, localStorage, and the Web Audio API.</p>
+          <button data-act="credits-back">Back</button>
+        </div>
+      </section>
+
+      <!-- VN / MAP TALK -->
+      <section id="screen-vn" class="screen hidden">
+        <div id="vn-cg"></div>
+        <img id="vn-left" class="vn-portrait" alt="" />
+        <img id="vn-right" class="vn-portrait" alt="" />
+        <div id="vn-box">
+          <div id="vn-name"></div>
+          <div id="vn-text"></div>
+          <div id="vn-choices"></div>
+          <div id="vn-next">▾</div>
+        </div>
+      </section>
+
+      <!-- MAP HUD -->
+      <div id="map-hud" class="hidden">
+        <div id="map-location"></div>
+        <div id="map-hint">Z interact · Esc menu · C camp at lotus altars</div>
+      </div>
+
+      <!-- BATTLE HUD -->
+      <div id="battle-hud" class="hidden">
+        <div id="battle-log"></div>
+        <div id="battle-party"></div>
+        <div id="battle-menu">
+          <div id="battle-who"></div>
+          <ul id="battle-cmds"></ul>
+        </div>
+        <div id="battle-tutorial" class="hidden"></div>
+      </div>
+
+      <!-- PAUSE / CAMP MENU -->
+      <section id="screen-menu" class="screen hidden">
+        <div class="panel wide">
+          <div class="menu-tabs" id="menu-tabs">
+            <button data-tab="party" class="on">Party</button>
+            <button data-tab="items">Items</button>
+            <button data-tab="quests">Quests</button>
+            <button data-tab="lore">Lore</button>
+            <button data-tab="save">Save</button>
+            <button data-tab="system">System</button>
+          </div>
+          <div id="menu-body"></div>
+          <div class="menu-foot">
+            <button data-act="menu-close">Close (Esc)</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- GAME OVER -->
+      <section id="screen-over" class="screen hidden">
+        <div class="panel">
+          <h2>The Seal Trembles</h2>
+          <p>The party has fallen. Elara’s rite is unfinished; Kael’s binding screams against the dark.</p>
+          <button data-act="retry">Retry Battle</button>
+          <button data-act="load">Load Save</button>
+          <button data-act="title">Title</button>
+        </div>
+      </section>
+
+      <!-- SAVE SLOTS -->
+      <section id="screen-saves" class="screen hidden">
+        <div class="panel">
+          <h2 id="save-title">Save</h2>
+          <div id="save-slots"></div>
+          <button data-act="saves-back">Back</button>
+        </div>
+      </section>
+
+      <!-- TOUCH CONTROLS -->
+      <div id="touch" class="hidden">
+        <div id="dpad">
+          <button data-dir="up">▲</button>
+          <button data-dir="left">◀</button>
+          <button data-dir="down">▼</button>
+          <button data-dir="right">▶</button>
+        </div>
+        <div id="touch-btns">
+          <button data-k="KeyZ">Z</button>
+          <button data-k="KeyX">X</button>
+          <button data-k="Escape">☰</button>
+        </div>
+      </div>
+
+      <div id="loader">
+        <div class="lotus"></div>
+        <p>Binding the seal…</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/content.js"></script>
+  <script src="js/maps.js"></script>
+  <script src="js/dialogue.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>
