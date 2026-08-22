@@ -260,6 +260,22 @@ button, select, input { font-family: inherit; }
   color: var(--gold);
   animation: blink 1s steps(2) infinite;
 }
+#vn-skip {
+  position: absolute;
+  right: 18px;
+  top: -14px;
+  background: #1a1424;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 2px 10px;
+  cursor: pointer;
+  pointer-events: auto;
+}
+#vn-skip:hover, #vn-skip:focus { color: var(--cream); outline: none; }
+#vn-skip.hidden, #screen-vn.choosing #vn-skip { display: none; }
 @keyframes blink { 50% { opacity: 0; } }
 #screen-vn.talk #vn-left, #screen-vn.talk #vn-right { height: 220px; bottom: 168px; }
 #screen-vn.talk #vn-left { left: 88px; }

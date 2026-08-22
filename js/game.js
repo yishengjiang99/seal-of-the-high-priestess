@@ -18,7 +18,7 @@
 
   const S = {
     state: "boot",
-    settings: { vol: 0.7, textSpeed: 2, battleSpeed: 1, auto: false, voice: true, voiceVol: 0.85 },
+    settings: { vol: 0.7, textSpeed: 2, battleSpeed: 1, auto: false, voice: true, voiceVol: 0.85, skipDialog: false },
     flags: {},
     inventory: [],
     quests: {},
@@ -57,14 +57,15 @@
     KeyW: "up", KeyS: "down", KeyA: "left", KeyD: "right",
     KeyZ: "ok", Enter: "ok", Space: "ok",
     KeyX: "cancel", ShiftLeft: "cancel", ShiftRight: "cancel",
-    Escape: "menu", KeyC: "camp", KeyQ: "menu"
+    Escape: "menu", KeyC: "camp", KeyQ: "menu",
+    ControlLeft: "skip", ControlRight: "skip", KeyF: "skip"
   };
   window.addEventListener("keydown", (e) => {
     const k = KEYMAP[e.code] || KEYMAP[e.key];
     if (!k) return;
     if (!S.keys[k]) S.just[k] = true;
     S.keys[k] = true;
-    if (["ok", "cancel", "menu", "up", "down", "left", "right"].includes(k)) e.preventDefault();
+    if (["ok", "cancel", "menu", "up", "down", "left", "right", "skip"].includes(k)) e.preventDefault();
   });
   window.addEventListener("keyup", (e) => {
     const k = KEYMAP[e.code] || KEYMAP[e.key];
@@ -586,6 +587,7 @@
     $("opt-text").value = String(S.settings.textSpeed);
     $("opt-battle").value = String(S.settings.battleSpeed);
     $("opt-auto").checked = S.settings.auto;
+    $("opt-skip").checked = !!S.settings.skipDialog;
     $("opt-voice").checked = !!S.settings.voice;
     $("opt-voice-vol").value = ((S.settings.voiceVol ?? 0.85) * 100) | 0;
     $("opt-voice").disabled = !speechOk();
@@ -597,6 +599,7 @@
   $("opt-text").addEventListener("change", () => { S.settings.textSpeed = +$("opt-text").value; persistSettings(); });
   $("opt-battle").addEventListener("change", () => { S.settings.battleSpeed = +$("opt-battle").value; persistSettings(); });
   $("opt-auto").addEventListener("change", () => { S.settings.auto = $("opt-auto").checked; persistSettings(); });
+  $("opt-skip").addEventListener("change", () => { S.settings.skipDialog = $("opt-skip").checked; persistSettings(); });
   $("opt-voice").addEventListener("change", () => {
     S.settings.voice = $("opt-voice").checked;
     if (!S.settings.voice) stopSpeech();
@@ -607,6 +610,11 @@
     persistSettings();
   });
   $("opt-voice-test").addEventListener("click", () => { previewVoices(); });
+  $("vn-skip").addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (S.state === "vn") vnSkip();
+  });
   function persistSettings() {
     try { localStorage.setItem("soth_settings", JSON.stringify(S.settings)); } catch (e) {}
   }
@@ -1104,7 +1112,8 @@
       $("map-hud").classList.remove("hidden");
       $("vn-cg").style.backgroundImage = "none";
     }
-    vnAdvance(true);
+    if (S.settings.skipDialog) vnSkip();
+    else vnAdvance(true);
   }
   function vnGradient(bg) {
     const g = {
@@ -1164,6 +1173,34 @@
     }
     endScene();
   }
+  function vnSkip() {
+    const vn = S.vn;
+    if (!vn) return;
+    if (vn.choices) return;
+    stopSpeech();
+    let guard = 0;
+    while (vn.i < vn.def.script.length && guard++ < 500) {
+      const line = vn.def.script[vn.i];
+      vn.i++;
+      if (!line) continue;
+      if (line.goto) { vn.i = vnFindLabel(line.goto); continue; }
+      if (line.cond && !condOk(line)) continue;
+      if (line.label && !line.t && !line.choices && !line.set) continue;
+      if (line.set) vnApplySet(line.set);
+      if (line.choices) {
+        vn.choices = line.choices;
+        vn.choiceIdx = 0;
+        vn.waiting = true;
+        vn.full = "";
+        vn.shown = 0;
+        vn.line = line;
+        renderVn(line);
+        sfx("ui");
+        return;
+      }
+    }
+    endScene();
+  }
   function renderVn(line) {
     const vn = S.vn;
     const left = $("vn-left"), right = $("vn-right");
@@ -1202,7 +1239,13 @@
         box.appendChild(b);
       });
       $("vn-next").style.display = "none";
-    } else $("vn-next").style.display = "";
+      $("vn-skip").classList.add("hidden");
+      $("screen-vn").classList.add("choosing");
+    } else {
+      $("vn-next").style.display = "";
+      $("vn-skip").classList.remove("hidden");
+      $("screen-vn").classList.remove("choosing");
+    }
   }
   function speakerName(sp) {
     if (!sp) return "";
@@ -1225,7 +1268,8 @@
     vn.choices = null;
     if (c.goto) vn.i = vnFindLabel(c.goto);
     sfx("ok");
-    vnAdvance(true);
+    if (S.settings.skipDialog) vnSkip();
+    else vnAdvance(true);
   }
   function updateVn(dt) {
     const vn = S.vn;
@@ -1235,6 +1279,7 @@
       if (pressed("down")) vn.choiceIdx = (vn.choiceIdx + 1) % vn.choices.length;
       if (pressed("ok")) pickChoice();
       [...$("vn-choices").children].forEach((b, i) => b.classList.toggle("on", i === vn.choiceIdx));
+      pressed("skip");
       return;
     }
     const spd = S.settings.textSpeed === 9 ? 999 : S.settings.textSpeed * 0.055;
@@ -1245,6 +1290,7 @@
       vn.autoT += dt;
       if (!voiceHold && vn.autoT > 900) { vn.autoT = 0; vnAdvance(); }
     }
+    if (pressed("skip")) { vnSkip(); return; }
     if (pressed("ok") || pressed("cancel")) { vnAdvance(); sfx("ui"); }
   }
   function endScene() {

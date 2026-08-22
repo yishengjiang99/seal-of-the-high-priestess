@@ -33,7 +33,7 @@
             <button data-act="options">Options</button>
             <button data-act="credits">Credits</button>
           </nav>
-          <p class="title-hint">Z / Enter confirm · X cancel · WASD / Arrows move · Esc menu</p>
+          <p class="title-hint">Z / Enter confirm · X cancel · Ctrl skip dialogue · WASD / Arrows move · Esc menu</p>
         </div>
       </section>
 
@@ -58,6 +58,7 @@
             </select>
           </label>
           <label class="check"><input id="opt-auto" type="checkbox" /> Auto-advance dialogue</label>
+          <label class="check"><input id="opt-skip" type="checkbox" /> Skip dialogue (stops at choices)</label>
           <label class="check"><input id="opt-voice" type="checkbox" checked /> Spoken dialogue (Web Speech)</label>
           <label>Voice Volume <input id="opt-voice-vol" type="range" min="0" max="100" value="85" /></label>
           <p class="muted" id="opt-voice-status"></p>
@@ -88,13 +89,14 @@
           <div id="vn-text"></div>
           <div id="vn-choices"></div>
           <div id="vn-next">▾</div>
+          <button type="button" id="vn-skip">Skip ▸▸</button>
         </div>
       </section>
 
       <!-- MAP HUD -->
       <div id="map-hud" class="hidden">
         <div id="map-location"></div>
-        <div id="map-hint">Z interact · Esc menu · C camp at lotus altars</div>
+        <div id="map-hint">Z interact · Esc menu · C camp at lotus altars · Ctrl skip talk</div>
       </div>
 
       <!-- BATTLE HUD -->

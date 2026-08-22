@@ -22,6 +22,7 @@ Then visit http://localhost:8080
 | WASD / Arrows | Move |
 | Z / Enter / Space | Confirm, interact |
 | X / Shift | Cancel, run |
+| Ctrl / F | Skip the current scene (stops at choices) |
 | Esc | Menu |
 | C | Rest at a lotus altar |
 
