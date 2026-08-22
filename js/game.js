@@ -615,6 +615,10 @@
     e.stopPropagation();
     if (S.state === "vn") vnSkip();
   });
+  $("vn-box").addEventListener("click", (e) => {
+    if (e.target.closest("#vn-skip") || e.target.closest("#vn-choices")) return;
+    if (S.state === "vn") S.just.ok = true;
+  });
   function persistSettings() {
     try { localStorage.setItem("soth_settings", JSON.stringify(S.settings)); } catch (e) {}
   }
@@ -2248,6 +2252,11 @@
   function frame(t) {
     const dt = Math.min(40, t - last || 16);
     last = t;
+    const touch = $("touch");
+    if (touch) {
+      touch.classList.toggle("on-map", S.state === "map");
+      touch.classList.toggle("on-dialog", S.state === "vn");
+    }
     tickMusic(dt);
     updateFx(dt);
     ctx.save();
