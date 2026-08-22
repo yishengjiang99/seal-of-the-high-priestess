@@ -276,59 +276,59 @@ window.DATA = (() => {
 
   C.NPC_TALK = {
     suyin: [
-      { s: "suyin", t: "The west does not want you, child. That is why you must go. The Throne of Ash is a conversation that has gone on too long." },
-      { s: "elara", e: "neutral", t: "I have the rite. I have the unwilling escort. I do not have your blessing to be afraid." },
-      { s: "suyin", t: "Then take my fear instead. Come home. Or do not. Either way, do not become a seal yourself." }
+      { s: "suyin", t: "The west does not want you. That is why you go." },
+      { s: "elara", e: "neutral", t: "I have the rite. I do not have your blessing to be afraid." },
+      { s: "suyin", t: "Take my fear instead. Do not become a seal yourself." }
     ],
     ren: [
-      { s: "ren", t: "Mira went to the village yesterday for lamp-oil and gossip. She is extremely good at gossip. She is extremely bad at being on time." },
-      { s: "elara", e: "neutral", t: "I will look. If you have been covering for her, I will pretend I am still seventeen enough to find it charming." }
+      { s: "ren", t: "Mira went for lamp-oil. She is good at gossip. Bad at clocks." },
+      { s: "elara", e: "neutral", t: "I will look." }
     ],
     wen: [
-      { s: "wen", t: "Don't let the demon walk on the lotus beds. I don't care if he's a prince. Princes are terrible for soil." },
-      { s: "kael", e: "smirk", t: "I have razed courts, old man. I can be trusted with a flower." },
+      { s: "wen", t: "Keep the demon off the lotus beds. Princes are terrible for soil." },
+      { s: "kael", e: "smirk", t: "I can be trusted with a flower." },
       { s: "wen", t: "That's what the last prince said." }
     ],
     hana: [
-      { s: "hana", t: "Inn's full of rumors and empty of heroes. You look like both. Rooms are free for the High Priestess. The demon pays extra for the scorch marks he hasn't made yet." },
-      { s: "kael", e: "smirk", t: "Put it on the Church's tab. They already billed me for the rest of my life." }
+      { s: "hana", t: "Room's free for the priestess. The demon pays extra for scorch marks." },
+      { s: "kael", e: "smirk", t: "Church's tab. They already billed me for a lifetime." }
     ],
     jori: [
-      { s: "jori", t: "The canal ate my sister's shoe! It had teeth made of water. Lyra says I'm a liar. I'm a very good liar, but not about this." }
+      { s: "jori", t: "The canal ate my sister's shoe. Teeth made of water. Not a lie." }
     ],
     fisherman: [
-      { s: "fisherman", t: "Don't fish after the lanterns blink twice. That's when the water remembers it used to be a mouth." }
+      { s: "fisherman", t: "Don't fish after the lanterns blink twice." }
     ],
     mira: [
-      { s: "mira", t: "I wasn't lost. I was conducting an extremely important survey of canal-fox tracks. Also I fell in. Please do not tell Mother Suyin about the falling in." },
-      { s: "elara", e: "blush", t: "I am High Priestess of the Silver Lotus, keeper of the westward rite, and I am going to tell her you fell in." }
+      { s: "mira", t: "I wasn't lost. I fell in. Please don't tell Mother Suyin." },
+      { s: "elara", e: "blush", t: "I am going to tell her you fell in." }
     ],
     korin: [
-      { s: "korin", t: "I don't sell better. I make true. Bring me a named thing and a reason, and I'll put a better reason in the metal. My daughter Sera went chasing a bard's story. Bring her home and I'll remember your sleeves." }
+      { s: "korin", t: "I don't sell better. I make true. Bring Sera home and I'll remember your sleeves." }
     ],
     sera: [
-      { s: "sera", t: "The bard's story was stupid. I followed it anyway. That's a family trait. Tell father I'm tired of being a reason in someone else's metal." }
+      { s: "sera", t: "Tell father I'm tired of being a reason in his metal." }
     ],
     bard: [
-      { s: "bard", t: "Letter for sale. Wax like a wound. Mark of a prince who doesn't exist. Fifty rumors or one honest stare from the man in the torn coat." }
+      { s: "bard", t: "Letter. Dead prince's wax. Fifty rumors, or one stare from the torn coat." }
     ],
     keeper: [
-      { s: "keeper", t: "Lights on the canal don't go out. Except when a person tells a lie big enough to be a geography. Stand here at dusk. Watch me not explain." }
+      { s: "keeper", t: "These lights die when someone lies. Stand here. Watch." }
     ],
     captain: [
-      { s: "captain", t: "Meridia loves the Church and fears the west. You are both. Try not to bleed on the mosaic; it's original." }
+      { s: "captain", t: "You are Church and west. Don't bleed on the mosaic." }
     ],
     granny: [
-      { s: "granny", t: "In my day High Priestesses were eighty and made of vinegar. Look at you. Soft. Sharp. Go on, then. Make the road ashamed of itself." }
+      { s: "granny", t: "Priestesses used to be eighty and vinegar. Go on. Make the road ashamed." }
     ],
     lyra_meet: [
-      { s: "lyra", t: "You're late, little saint. I watched you bless a cat. The forest is eating people and you are blessing a cat." },
-      { s: "elara", e: "blush", t: "It was a temple cat. There are protocols." },
-      { s: "lyra", t: "I'm Lyra. I used to guard your doors. Now I guard the parts of the map your doors pretend aren't there. I'm coming. Someone has to count the arrows." }
+      { s: "lyra", t: "Late. You blessed a cat." },
+      { s: "elara", e: "blush", t: "Temple cat. Protocols." },
+      { s: "lyra", t: "I'm coming. Someone has to count arrows." }
     ],
     echo: [
-      { s: "echo", t: "Prince. You left your name on the floor. We kept it warm. Put it back on." },
-      { s: "kael", e: "serious", t: "I left it on purpose. Warmth is how you get betrayed." }
+      { s: "echo", t: "Prince. Put your name back on." },
+      { s: "kael", e: "serious", t: "I left it. Warmth is how you get betrayed." }
     ]
   };
 
