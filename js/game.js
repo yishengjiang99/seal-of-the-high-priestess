@@ -28,7 +28,7 @@
     px: 0, py: 0, dir: "down", moving: false,
     camX: 0, camY: 0,
     trail: [],
-    time: 18,           // hour 0-24, start evening
+    time: 14,           // hour 0-24; afternoon matches the canal-town still
     vn: null,
     battle: null,
     menuTab: "party",
@@ -815,53 +815,48 @@
     const j = (n) => ((s >> n) & 7) / 7;
     switch (type) {
       case 0: ctx.fillStyle = "#07060a"; ctx.fillRect(0, 0, T, T); break;
-      case 1: { // grass
-        ctx.fillStyle = night ? "#1a3320" : "#3d7a3a";
+      case 1: { // grass — RPG Maker lime
+        ctx.fillStyle = night ? "#1c3c18" : "#3d9c34";
         ctx.fillRect(0, 0, T, T);
-        ctx.fillStyle = night ? "#244a28" : ((s & 3) === 0 ? "#4a8a42" : "#4e9250");
-        ctx.fillRect(2, 2, T - 4, T - 4);
-        ctx.fillStyle = night ? "#2e5a30" : "#68a84a";
-        for (let i = 0; i < 8; i++) ctx.fillRect((s >> i) & 28, (s >> (i + 3)) & 28, 2, 3);
-        if ((s & 15) === 1) { ctx.fillStyle = "#d4a0c0"; ctx.fillRect(10, 12, 3, 3); }
-        if ((s & 15) === 2) { ctx.fillStyle = "#e8e070"; ctx.fillRect(18, 8, 2, 2); }
+        ctx.fillStyle = night ? "#2a5424" : "#52b844";
+        for (let i = 0; i < 12; i++) ctx.fillRect((s >> i) & 28, (s >> (i + 2)) & 28, 3, 2);
+        if ((s & 15) === 1) { ctx.fillStyle = "#e878b0"; ctx.fillRect(12, 10, 3, 3); }
         break;
       }
-      case 2: { // cobble
-        ctx.fillStyle = "#5e626c"; ctx.fillRect(0, 0, T, T);
-        ctx.fillStyle = "#7c818c";
-        ctx.fillRect(1, 1, 14, 14); ctx.fillRect(17, 1, 14, 14);
-        ctx.fillRect(1, 17, 14, 14); ctx.fillRect(17, 17, 14, 14);
-        ctx.fillStyle = "#8a909a";
-        ctx.fillRect(2, 2, 6, 5); ctx.fillRect(18, 19, 8, 6);
-        ctx.strokeStyle = "#4a4e56"; ctx.strokeRect(0.5, 0.5, 31, 31);
-        if ((s & 7) === 0) { ctx.fillStyle = "#4a6a40"; ctx.globalAlpha = 0.35; ctx.fillRect(12, 14, 8, 5); ctx.globalAlpha = 1; }
+      case 2: case 24: { // warm cobble like the canal street
+        ctx.fillStyle = "#8a7a64"; ctx.fillRect(0, 0, T, T);
+        const stones = ["#d2c4a8", "#c4b494", "#e0d4bc", "#b8a888"];
+        ctx.fillStyle = stones[s & 3]; ctx.fillRect(1, 1, 14, 13);
+        ctx.fillStyle = stones[(s >> 2) & 3]; ctx.fillRect(16, 1, 15, 14);
+        ctx.fillStyle = stones[(s >> 4) & 3]; ctx.fillRect(1, 16, 15, 15);
+        ctx.fillStyle = stones[(s >> 6) & 3]; ctx.fillRect(17, 17, 14, 14);
+        ctx.strokeStyle = "#7a6a54"; ctx.strokeRect(0.5, 0.5, 31, 31);
         break;
       }
-      case 3: case 19: { // water
-        const w = 0.5 + Math.sin(S.tileFx / 400 + x * 0.4 + y * 0.3) * 0.5;
-        ctx.fillStyle = night ? "#163048" : "#2a6a9a";
+      case 3: case 19: { // teal canal water + lily
+        const w = 0.5 + Math.sin(S.tileFx / 380 + x * 0.35 + y * 0.25) * 0.5;
+        ctx.fillStyle = night ? "#163830" : "#2a7a82";
         ctx.fillRect(0, 0, T, T);
-        ctx.fillStyle = night ? "#1c4a68" : "#3a88b8";
-        ctx.globalAlpha = 0.5 + w * 0.3;
-        ctx.fillRect(0, (8 + w * 10) % T, T, 4);
+        ctx.fillStyle = night ? "#1c5048" : "#3a98a0";
+        ctx.globalAlpha = 0.45 + w * 0.35;
+        ctx.fillRect(0, (6 + w * 12) % T, T, 5);
         ctx.globalAlpha = 1;
+        ctx.fillStyle = "rgba(180,230,230,0.25)";
+        ctx.fillRect(4, (14 + w * 8) % T, 12, 2);
         if (type === 19) {
-          ctx.fillStyle = "#8fd48f";
-          ctx.beginPath(); ctx.ellipse(16, 16, 10, 6, 0, 0, 6.3); ctx.fill();
-          ctx.fillStyle = "#e8e0a0";
+          ctx.fillStyle = "#3a8c34";
+          ctx.beginPath(); ctx.ellipse(16, 17, 11, 7, 0, 0, 6.3); ctx.fill();
+          ctx.fillStyle = "#f0e8a0";
           ctx.beginPath(); ctx.arc(16, 16, 3, 0, 6.3); ctx.fill();
         }
         break;
       }
-      case 4: { // stone wall
-        ctx.fillStyle = "#4a4e58"; ctx.fillRect(0, 0, T, T);
-        ctx.fillStyle = "#5c616c";
+      case 4: { // tan house wall
+        ctx.fillStyle = "#d8c4a0"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#e8d8b8";
         ctx.fillRect(1, 1, T - 2, 14); ctx.fillRect(1, 17, T - 2, 14);
-        ctx.strokeStyle = "#2e323a"; ctx.strokeRect(0.5, 0.5, 31, 31);
-        if ((x + y) % 3 === 0) {
-          ctx.fillStyle = "#1a2838"; ctx.fillRect(8, 6, 16, 12);
-          ctx.fillStyle = "#7ec0e8"; ctx.globalAlpha = 0.35; ctx.fillRect(10, 8, 12, 8); ctx.globalAlpha = 1;
-        }
+        ctx.strokeStyle = "#c0a878"; ctx.strokeRect(0.5, 0.5, 31, 31);
+        ctx.fillStyle = "#c4b090"; ctx.fillRect(0, 15, T, 2);
         break;
       }
       case 5: ctx.fillStyle = "#c9c0a8"; ctx.fillRect(0, 0, T, T);
@@ -878,25 +873,28 @@
         }
         break;
       case 7: { // tree
-        ctx.fillStyle = night ? "#1a3320" : "#3d7a3a"; ctx.fillRect(0, 0, T, T);
-        ctx.fillStyle = "#4a3020"; ctx.fillRect(13, 20, 6, 12);
-        ctx.fillStyle = night ? "#163018" : "#1e5a28";
-        ctx.beginPath(); ctx.arc(16, 14, 13, 0, 6.3); ctx.fill();
-        ctx.fillStyle = night ? "#1e4a24" : "#2e7a38";
+        ctx.fillStyle = night ? "#1c3c18" : "#3d9c34"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#6a4428"; ctx.fillRect(13, 20, 6, 12);
+        ctx.fillStyle = night ? "#1a4a20" : "#247a2c";
+        ctx.beginPath(); ctx.arc(16, 13, 13, 0, 6.3); ctx.fill();
+        ctx.fillStyle = night ? "#2a6a30" : "#3da03c";
         ctx.beginPath(); ctx.arc(10, 16, 8, 0, 6.3); ctx.fill();
+        ctx.beginPath(); ctx.arc(22, 15, 7, 0, 6.3); ctx.fill();
         break;
       }
-      case 8: ctx.fillStyle = "#8a5a30"; ctx.fillRect(0, 0, T, T);
+      case 8: ctx.fillStyle = "#2a7a82"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#a07040"; ctx.fillRect(0, 6, T, 20);
         ctx.strokeStyle = "#c49a60";
-        for (let i = 4; i < 32; i += 8) { ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 32); ctx.stroke(); }
+        for (let i = 4; i < 32; i += 7) { ctx.beginPath(); ctx.moveTo(i, 6); ctx.lineTo(i, 26); ctx.stroke(); }
         break;
-      case 9: { // roof
-        ctx.fillStyle = "#2e5a32"; ctx.fillRect(0, 0, T, T);
-        ctx.fillStyle = "#3a6a38"; ctx.fillRect(0, 4, T, T - 4);
-        ctx.fillStyle = "#1e3a22"; ctx.fillRect(0, 0, T, 5);
-        ctx.strokeStyle = "#4a8a44";
+      case 9: { // bright green roof
+        ctx.fillStyle = "#2a6e30"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#3d9c3a"; ctx.fillRect(0, 5, T, T - 5);
+        ctx.fillStyle = "#1e4e24"; ctx.fillRect(0, 0, T, 5);
+        ctx.strokeStyle = "#2e7a32";
         for (let i = 6; i < 32; i += 4) { ctx.beginPath(); ctx.moveTo(0, i); ctx.lineTo(32, i); ctx.stroke(); }
-        ctx.fillStyle = "#c4a060"; ctx.fillRect(14, 0, 4, 6);
+        ctx.fillStyle = "#8a5a30"; ctx.fillRect(22, 0, 6, 7);
+        ctx.fillStyle = "#5a3a18"; ctx.fillRect(23, 0, 4, 2);
         break;
       }
       case 10: { // altar
@@ -908,25 +906,32 @@
         ctx.fillStyle = g; ctx.fillRect(0, 0, T, T);
         break;
       }
-      case 11: ctx.fillStyle = night ? "#1a3320" : "#3d7a3a"; ctx.fillRect(0, 0, T, T);
-        ctx.strokeStyle = "#c0c4c8"; ctx.lineWidth = 2;
-        ctx.strokeRect(4, 8, 24, 18); ctx.beginPath(); ctx.moveTo(16, 8); ctx.lineTo(16, 26); ctx.stroke();
-        ctx.lineWidth = 1; break;
-      case 12: { // lamp
-        ctx.fillStyle = night ? "#3a3e48" : "#6a6e78"; ctx.fillRect(0, 0, T, T);
-        ctx.fillStyle = "#3a3a44"; ctx.fillRect(14, 10, 4, 22);
-        ctx.fillStyle = night ? "#ffe8a0" : "#d4c070";
-        ctx.beginPath(); ctx.arc(16, 8, 6, 0, 6.3); ctx.fill();
-        if (night) {
-          const g = ctx.createRadialGradient(16, 8, 2, 16, 8, 22);
-          g.addColorStop(0, "rgba(255,220,140,0.55)"); g.addColorStop(1, "rgba(255,220,140,0)");
-          ctx.fillStyle = g; ctx.fillRect(-8, -8, 48, 48);
-        }
+      case 11: { // wooden fence
+        ctx.fillStyle = night ? "#1c3c18" : "#3d9c34"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#c4a070"; ctx.fillRect(4, 10, 24, 5);
+        ctx.fillStyle = "#8a6030"; ctx.fillRect(6, 8, 4, 18); ctx.fillRect(22, 8, 4, 18);
         break;
       }
-      case 13: ctx.fillStyle = "#5a3a20"; ctx.fillRect(0, 0, T, T);
-        ctx.fillStyle = "#8a5a30"; ctx.fillRect(6, 2, 20, 28);
-        ctx.fillStyle = "#d4b46a"; ctx.fillRect(22, 16, 3, 3); break;
+      case 12: { // lamp over cobble
+        ctx.fillStyle = "#8a7a64"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#d2c4a8"; ctx.fillRect(1, 1, 14, 14); ctx.fillRect(16, 16, 15, 15);
+        const g = ctx.createRadialGradient(16, 7, 2, 16, 7, 16);
+        g.addColorStop(0, "rgba(255,230,140,0.7)"); g.addColorStop(1, "rgba(255,230,140,0)");
+        ctx.fillStyle = g; ctx.fillRect(-4, -8, 40, 36);
+        ctx.fillStyle = "#2a2420"; ctx.fillRect(14, 12, 4, 18);
+        ctx.fillStyle = "#ffe56a";
+        ctx.beginPath(); ctx.arc(16, 8, 6, 0, 6.3); ctx.fill();
+        ctx.fillStyle = "#fff4c0";
+        ctx.beginPath(); ctx.arc(15, 7, 2, 0, 6.3); ctx.fill();
+        break;
+      }
+      case 13: { // brown door on tan wall
+        ctx.fillStyle = "#d8c4a0"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#7a4a24"; ctx.fillRect(6, 2, 20, 28);
+        ctx.fillStyle = "#9a6230"; ctx.fillRect(8, 4, 16, 24);
+        ctx.fillStyle = "#d4b46a"; ctx.beginPath(); ctx.arc(22, 18, 2, 0, 6.3); ctx.fill();
+        break;
+      }
       case 14: ctx.fillStyle = "#6a2a3a"; ctx.fillRect(0, 0, T, T);
         ctx.fillStyle = "#8a3a4a"; ctx.fillRect(2, 2, T - 4, T - 4); break;
       case 15: ctx.fillStyle = "#4a4440"; ctx.fillRect(0, 0, T, T);
@@ -939,9 +944,14 @@
       case 18: ctx.fillStyle = "#3a4a30"; ctx.fillRect(0, 0, T, T);
         ctx.fillStyle = "#6a3a78"; ctx.globalAlpha = 0.45;
         ctx.fillRect(4, 8, 8, 6); ctx.fillRect(18, 16, 10, 7); ctx.globalAlpha = 1; break;
-      case 20: ctx.fillStyle = night ? "#1a3320" : "#3d7a3a"; ctx.fillRect(0, 0, T, T);
-        ctx.fillStyle = "#2e6a30";
-        ctx.fillRect(2, 10, 28, 18); ctx.fillRect(6, 4, 20, 12); break;
+      case 20: { // round bush
+        ctx.fillStyle = night ? "#1c3c18" : "#3d9c34"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = night ? "#1e5a24" : "#2e8c30";
+        ctx.beginPath(); ctx.arc(16, 18, 13, 0, 6.3); ctx.fill();
+        ctx.fillStyle = night ? "#2a6a30" : "#48a840";
+        ctx.beginPath(); ctx.arc(16, 14, 10, 0, 6.3); ctx.fill();
+        break;
+      }
       case 21: ctx.fillStyle = "#4a3020"; ctx.fillRect(0, 0, T, T);
         ctx.strokeStyle = "#2a1810"; ctx.strokeRect(0.5, 0.5, 31, 31); break;
       case 22: ctx.fillStyle = "#c9c0a8"; ctx.fillRect(0, 0, T, T);
@@ -949,16 +959,13 @@
         ctx.fillStyle = "#d4b46a"; ctx.fillRect(8, 0, 16, 6); break;
       case 23: ctx.fillStyle = "#b0b8c0"; ctx.fillRect(0, 0, T, T);
         ctx.fillStyle = "#d0d6dc"; ctx.fillRect(2, 2, 12, 12); break;
-      case 24: ctx.fillStyle = "#8a8490"; ctx.fillRect(0, 0, T, T);
-        ctx.fillStyle = "#d4b46a"; ctx.globalAlpha = 0.35;
-        ctx.fillRect(8, 8, 16, 16); ctx.globalAlpha = 1; break;
       case 25: ctx.fillStyle = "#6a5a40"; ctx.fillRect(0, 0, T, T);
         ctx.fillStyle = "#8a7a58"; ctx.fillRect(j(2) * 16, j(4) * 16, 10, 8); break;
       case 26: ctx.fillStyle = "#d8d0c8"; ctx.fillRect(0, 0, T, T);
         ctx.strokeStyle = "#b0a8a0"; ctx.strokeRect(0.5, 0.5, 31, 31); break;
       case 27: { // flowers
-        ctx.fillStyle = night ? "#1a3320" : "#3d7a3a"; ctx.fillRect(0, 0, T, T);
-        ctx.fillStyle = "#4e9250"; ctx.fillRect(2, 2, T - 4, T - 4);
+        ctx.fillStyle = night ? "#1c3c18" : "#3d9c34"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#52b844"; ctx.fillRect(2, 2, T - 4, T - 4);
         const cols = ["#e070a0", "#e8e070", "#f4ead4", "#80c0e8", "#e09050"];
         for (let i = 0; i < 5; i++) {
           ctx.fillStyle = cols[(s >> (i * 3)) & 7] || cols[0];
@@ -967,7 +974,7 @@
         break;
       }
       case 28: { // statue
-        ctx.fillStyle = night ? "#1a3320" : "#3d7a3a"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = night ? "#1c3c18" : "#3d9c34"; ctx.fillRect(0, 0, T, T);
         ctx.fillStyle = "#c0c4c8"; ctx.fillRect(8, 22, 16, 8);
         ctx.fillStyle = "#d8dce0"; ctx.fillRect(12, 6, 8, 18);
         ctx.beginPath(); ctx.arc(16, 6, 6, 0, 6.3); ctx.fill();
@@ -989,12 +996,11 @@
         for (let i = 0; i < 4; i++) ctx.strokeRect(2.5, 4.5 + i * 7, 27, 5);
         break;
       }
-      case 31: { // window wall
-        ctx.fillStyle = "#4a4e58"; ctx.fillRect(0, 0, T, T);
-        ctx.fillStyle = "#5c616c"; ctx.fillRect(1, 1, T - 2, T - 2);
-        ctx.fillStyle = "#122030"; ctx.fillRect(6, 6, 20, 18);
-        ctx.fillStyle = "#6ab0d8"; ctx.globalAlpha = 0.45; ctx.fillRect(8, 8, 16, 14); ctx.globalAlpha = 1;
-        ctx.strokeStyle = "#d4b46a"; ctx.strokeRect(6.5, 6.5, 19, 17);
+      case 31: { // window on tan wall
+        ctx.fillStyle = "#d8c4a0"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#2a3848"; ctx.fillRect(6, 6, 20, 18);
+        ctx.fillStyle = "#7ec8e8"; ctx.globalAlpha = 0.4; ctx.fillRect(8, 8, 16, 14); ctx.globalAlpha = 1;
+        ctx.strokeStyle = "#c0a070"; ctx.strokeRect(6.5, 6.5, 19, 17);
         ctx.beginPath(); ctx.moveTo(16, 6); ctx.lineTo(16, 24); ctx.moveTo(6, 15); ctx.lineTo(26, 15); ctx.stroke();
         break;
       }
@@ -1006,7 +1012,8 @@
         break;
       }
       case 33: { // bench
-        ctx.fillStyle = night ? "#3a3e48" : "#6a6e78"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#8a7a64"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = "#d2c4a8"; ctx.fillRect(1, 1, 14, 14);
         ctx.fillStyle = "#6a4a28"; ctx.fillRect(4, 14, 24, 6);
         ctx.fillStyle = "#4a3020"; ctx.fillRect(4, 20, 4, 8); ctx.fillRect(24, 20, 4, 8);
         break;
@@ -1027,7 +1034,7 @@
         break;
       }
       case 36: { // stall
-        ctx.fillStyle = night ? "#1a3320" : "#3d7a3a"; ctx.fillRect(0, 0, T, T);
+        ctx.fillStyle = night ? "#1c3c18" : "#3d9c34"; ctx.fillRect(0, 0, T, T);
         ctx.fillStyle = "#c23b4a"; ctx.fillRect(2, 4, 28, 10);
         ctx.fillStyle = "#f4ead4"; ctx.fillRect(2, 8, 28, 3);
         ctx.fillStyle = "#8a5a30"; ctx.fillRect(4, 14, 24, 12);

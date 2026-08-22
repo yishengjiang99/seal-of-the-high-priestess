@@ -90,11 +90,15 @@ window.MAPS = (() => {
   function lamps(m, x, y0, y1, step) {
     for (let y = y0; y <= y1; y += step) set(m, x, y, t.LAMP);
   }
-  function house(m, x, y, w, h) {
-    rect(m, x, y, w, 2, t.ROOF);
-    rect(m, x, y + 2, w, h - 2, t.WALL);
-    for (let i = 1; i < w - 1; i += 2) set(m, x + i, y + 2, t.WINDOW);
-    const dx = x + (w >> 1), dy = y + h - 1;
+  function house(m, x, y, w, h, door) {
+    door = door || "s";
+    const rh = Math.max(2, Math.min(3, (h / 2) | 0));
+    rect(m, x, y, w, rh, t.ROOF);
+    rect(m, x, y + rh, w, h - rh, t.WALL);
+    for (let i = 1; i < w - 1; i += 2) set(m, x + i, y + rh, t.WINDOW);
+    let dx = x + (w >> 1), dy = y + h - 1;
+    if (door === "e") { dx = x + w - 1; dy = y + rh + Math.max(0, ((h - rh) >> 1)); }
+    if (door === "w") { dx = x; dy = y + rh + Math.max(0, ((h - rh) >> 1)); }
     set(m, dx, dy, t.DOOR);
     return { x, y, w, h, dx, dy };
   }
@@ -104,7 +108,7 @@ window.MAPS = (() => {
     scatter(m, x + 1, y + 1, w - 2, h - 2, t.FLOWER, (w * h) >> 2, (c) => c === t.GRASS, rnd);
   }
   function plaza(m, x, y, w, h) {
-    rect(m, x, y, w, h, t.PLAZA);
+    rect(m, x, y, w, h, t.PATH);
     set(m, x + (w >> 1), y + (h >> 1), t.FOUNT);
   }
   function done(id, name, music, m, extras) {
@@ -112,6 +116,7 @@ window.MAPS = (() => {
   }
 
   const M = {};
+  const DOORS = {};
 
   // ----- TEMPLE compound 72x52 -----
   (function () {
@@ -176,99 +181,94 @@ window.MAPS = (() => {
     });
   })();
 
-  // ----- VILLAGE 100x76 canal town -----
+  // ----- VILLAGE: Lina-ref canal street (houses | canal | lamps | cobble | lamps | canal | houses) -----
   (function () {
     const rnd = rng(77);
-    const m = make(100, 76, t.GRASS);
-    // forest belt
-    rect(m, 0, 0, 100, 6, t.TREE);
-    rect(m, 0, 70, 100, 6, t.TREE);
-    rect(m, 0, 0, 4, 76, t.TREE);
-    rect(m, 96, 0, 4, 76, t.TREE);
-    scatter(m, 4, 6, 92, 8, t.TREE, 40, (c) => c === t.GRASS, rnd);
-    // temple approach
-    rect(m, 46, 4, 8, 12, t.PATH);
-    set(m, 47, 4, t.STAIR); set(m, 48, 4, t.STAIR); set(m, 49, 4, t.STAIR);
-    set(m, 48, 6, t.STATUE); set(m, 46, 8, t.LAMP); set(m, 53, 8, t.LAMP);
-    // dual canals
-    canalV(m, 32, 12, 62, 4);
-    canalV(m, 64, 12, 62, 4);
-    canalH(m, 62, 32, 67, 3);
-    // main cobble
-    rect(m, 36, 12, 28, 50, t.PATH);
-    rect(m, 8, 20, 24, 6, t.PATH);
-    rect(m, 68, 20, 24, 6, t.PATH);
-    rect(m, 8, 38, 24, 5, t.PATH);
-    rect(m, 68, 38, 24, 5, t.PATH);
-    plaza(m, 45, 24, 10, 8);
-    set(m, 50, 28, t.ALTAR);
-    set(m, 46, 25, t.BENCH); set(m, 53, 25, t.BENCH);
-    set(m, 46, 30, t.STALL); set(m, 53, 30, t.STALL);
-    set(m, 44, 28, t.LAMP); set(m, 55, 28, t.LAMP);
-    lamps(m, 37, 14, 58, 5); lamps(m, 62, 14, 58, 5);
-    lamps(m, 44, 14, 20, 6); lamps(m, 55, 14, 20, 6);
-    // bridges across canals
-    bridgeH(m, 32, 22, 4); bridgeH(m, 64, 22, 4);
-    bridgeH(m, 32, 40, 4); bridgeH(m, 64, 40, 4);
-    bridgeH(m, 32, 54, 4); bridgeH(m, 64, 54, 4);
-    // docks
-    bridgeV(m, 31, 28, 4); bridgeV(m, 68, 28, 4);
-    set(m, 31, 30, t.CRATE); set(m, 68, 32, t.CRATE);
-    // houses west
-    const inn = house(m, 8, 14, 8, 7);
-    const wen = house(m, 8, 28, 7, 6);
-    house(m, 18, 14, 7, 6);
-    house(m, 8, 46, 7, 6);
-    house(m, 18, 46, 6, 6);
-    // houses east
-    const mira = house(m, 76, 14, 7, 6);
-    house(m, 84, 14, 7, 6);
-    house(m, 76, 28, 7, 6);
-    house(m, 84, 44, 8, 7);
-    house(m, 74, 44, 7, 6);
-    // south row
-    house(m, 38, 56, 7, 6);
-    house(m, 48, 56, 6, 6);
-    house(m, 56, 56, 7, 6);
-    // gardens / market
-    garden(m, 38, 14, 8, 6, rnd);
-    garden(m, 54, 14, 8, 6, rnd);
-    set(m, 40, 48, t.STALL); set(m, 43, 48, t.STALL); set(m, 56, 48, t.STALL);
-    set(m, 46, 50, t.BENCH); set(m, 53, 50, t.BENCH);
-    scatter(m, 6, 54, 20, 12, t.FLOWER, 24, (c) => c === t.GRASS, rnd);
-    scatter(m, 72, 54, 20, 12, t.FLOWER, 20, (c) => c === t.GRASS, rnd);
-    scatter(m, 6, 8, 20, 6, t.HEDGE, 10, (c) => c === t.GRASS, rnd);
-    scatter(m, 5, 64, 90, 6, t.TREE, 28, (c) => c === t.GRASS, rnd);
-    // south road to forest
-    rect(m, 46, 62, 8, 10, t.PATH);
-    set(m, 45, 64, t.LAMP); set(m, 54, 64, t.LAMP);
+    const m = make(100, 80, t.GRASS);
+    rect(m, 0, 0, 100, 5, t.TREE);
+    rect(m, 0, 75, 100, 5, t.TREE);
+    rect(m, 0, 0, 5, 80, t.TREE);
+    rect(m, 95, 0, 5, 80, t.TREE);
+    // north temple stairs onto the street
+    rect(m, 40, 4, 12, 8, t.PATH);
+    set(m, 44, 4, t.STAIR); set(m, 45, 4, t.STAIR); set(m, 46, 4, t.STAIR);
+    set(m, 41, 6, t.LAMP); set(m, 50, 6, t.LAMP);
+    // dual canals hugging the street
+    canalV(m, 31, 10, 68, 3);
+    canalV(m, 58, 10, 68, 3);
+    // cobble street between canals
+    rect(m, 34, 10, 24, 60, t.PATH);
+    // lamp rows on the inner banks (on cobble)
+    lamps(m, 35, 12, 66, 4);
+    lamps(m, 56, 12, 66, 4);
+    // round bushes along the canal inner edge (like the ref)
+    for (let y = 13; y < 66; y += 5) {
+      set(m, 36, y, t.HEDGE); set(m, 55, y, t.HEDGE);
+    }
+    // wooden bridges over canals
+    bridgeH(m, 31, 18, 3); bridgeH(m, 58, 18, 3);
+    bridgeH(m, 31, 34, 3); bridgeH(m, 58, 34, 3);
+    bridgeH(m, 31, 50, 3); bridgeH(m, 58, 50, 3);
+    // packed west houses facing the street (doors east)
+    const inn = house(m, 8, 12, 9, 7, "e");
+    const wen = house(m, 8, 28, 8, 7, "e");
+    house(m, 8, 44, 8, 7, "e");
+    house(m, 18, 20, 7, 6, "e");
+    house(m, 18, 36, 7, 6, "e");
+    house(m, 18, 52, 7, 6, "e");
+    // packed east houses facing the street (doors west)
+    const mira = house(m, 75, 12, 9, 7, "w");
+    house(m, 84, 12, 8, 7, "w");
+    house(m, 75, 28, 8, 7, "w");
+    house(m, 84, 28, 8, 7, "w");
+    house(m, 75, 44, 8, 7, "w");
+    house(m, 84, 52, 8, 7, "w");
+    // flower beds / fences against house fronts
+    for (let y = 14; y < 62; y += 3) {
+      if (get(m, 29, y) === t.GRASS) set(m, 29, y, t.FLOWER);
+      if (get(m, 62, y) === t.GRASS) set(m, 62, y, t.FLOWER);
+    }
+    for (let y = 16; y < 60; y += 8) {
+      set(m, 7, y, t.FENCE); set(m, 93, y, t.FENCE);
+    }
+    set(m, 46, 22, t.ALTAR);
+    set(m, 42, 26, t.BENCH); set(m, 49, 26, t.BENCH);
+    set(m, 38, 40, t.STALL); set(m, 52, 40, t.STALL);
+    set(m, 45, 16, t.STATUE);
+    scatter(m, 6, 64, 20, 8, t.FLOWER, 18, (c) => c === t.GRASS, rnd);
+    scatter(m, 70, 64, 20, 8, t.FLOWER, 16, (c) => c === t.GRASS, rnd);
+    scatter(m, 6, 68, 88, 6, t.TREE, 30, (c) => c === t.GRASS, rnd);
+    // south road
+    rect(m, 42, 68, 10, 8, t.PATH);
+    set(m, 41, 70, t.LAMP); set(m, 52, 70, t.LAMP);
+
+    DOORS.inn = inn; DOORS.mira = mira; DOORS.wen = wen;
 
     M.village = done("village", "Lotus-Step Village", "town", m, {
-      spawn: { x: 48, y: 8 },
+      spawn: { x: 46, y: 10 },
       events: [
-        { type: "warp", x: 47, y: 5, map: "temple", tx: 36, ty: 48, dir: "up" },
-        { type: "warp", x: 48, y: 5, map: "temple", tx: 36, ty: 48, dir: "up" },
-        { type: "warp", x: 49, y: 5, map: "temple", tx: 36, ty: 48, dir: "up" },
+        { type: "warp", x: 44, y: 5, map: "temple", tx: 36, ty: 48, dir: "up" },
+        { type: "warp", x: 45, y: 5, map: "temple", tx: 36, ty: 48, dir: "up" },
+        { type: "warp", x: 46, y: 5, map: "temple", tx: 36, ty: 48, dir: "up" },
         { type: "warp", x: inn.dx, y: inn.dy, map: "inn", tx: 8, ty: 10, dir: "up", door: true },
         { type: "warp", x: mira.dx, y: mira.dy, map: "house_mira", tx: 6, ty: 8, dir: "up", door: true },
         { type: "warp", x: wen.dx, y: wen.dy, map: "house_wen", tx: 5, ty: 8, dir: "up", door: true },
-        { type: "npc", x: 40, y: 36, id: "jori", name: "Jori", hue: "#e8c070", talk: "jori", quest: "canal_fox" },
-        { type: "npc", x: 31, y: 29, id: "fisherman", name: "Canal Fisher", hue: "#6a8aaa", talk: "fisherman" },
-        { type: "npc", x: 50, y: 52, id: "hana_out", name: "Hana", hue: "#d4a0b0", talk: "hana" },
-        { type: "npc", x: 41, y: 48, id: "baker", name: "Baker", hue: "#e0b080", talk: "baker" },
-        { type: "npc", x: 57, y: 48, id: "florist", name: "Florist", hue: "#d0e0a0", talk: "florist" },
-        { type: "npc", x: 70, y: 24, id: "boatman", name: "Boatman", hue: "#6a90a8", talk: "boatman" },
-        { type: "npc", x: 22, y: 22, id: "kid2", name: "Lantern Kid", hue: "#f0d090", talk: "kid2" },
-        { type: "save", x: 50, y: 28 },
-        { type: "chest", x: 6, y: 56, id: "chest_village_chalice", item: "moonwell_chalice" },
-        { type: "chest", x: 90, y: 58, id: "chest_village_petal", item: "lotus_petal" },
-        { type: "sign", x: 50, y: 12, text: "Lotus-Step Village — last kind light before the trees begin to speak." },
-        { type: "sign", x: 50, y: 44, text: "West canal / East canal. Do not swim. The water has opinions." },
-        { type: "trigger", x: 46, y: 68, w: 8, h: 1, flagNeed: "intro_done", flagNeedOff: "camp1_done", scene: "first_camp" },
-        { type: "warp", x: 47, y: 70, map: "forest", tx: 50, ty: 4, dir: "down" },
-        { type: "warp", x: 48, y: 70, map: "forest", tx: 50, ty: 4, dir: "down" },
-        { type: "warp", x: 49, y: 70, map: "forest", tx: 50, ty: 4, dir: "down" },
-        { type: "warp", x: 50, y: 70, map: "forest", tx: 50, ty: 4, dir: "down" }
+        { type: "npc", x: 40, y: 32, id: "jori", name: "Jori", hue: "#e8c070", talk: "jori", quest: "canal_fox" },
+        { type: "npc", x: 32, y: 34, id: "fisherman", name: "Canal Fisher", hue: "#6a8aaa", talk: "fisherman" },
+        { type: "npc", x: 48, y: 42, id: "hana_out", name: "Hana", hue: "#d4a0b0", talk: "hana" },
+        { type: "npc", x: 38, y: 40, id: "baker", name: "Baker", hue: "#e0b080", talk: "baker" },
+        { type: "npc", x: 52, y: 40, id: "florist", name: "Florist", hue: "#d0e0a0", talk: "florist" },
+        { type: "npc", x: 59, y: 34, id: "boatman", name: "Boatman", hue: "#6a90a8", talk: "boatman" },
+        { type: "npc", x: 43, y: 20, id: "kid2", name: "Lantern Kid", hue: "#f0d090", talk: "kid2" },
+        { type: "save", x: 46, y: 22 },
+        { type: "chest", x: 7, y: 60, id: "chest_village_chalice", item: "moonwell_chalice" },
+        { type: "chest", x: 91, y: 62, id: "chest_village_petal", item: "lotus_petal" },
+        { type: "sign", x: 46, y: 12, text: "Lotus-Step Village — last kind light before the trees begin to speak." },
+        { type: "trigger", x: 42, y: 72, w: 10, h: 1, flagNeed: "intro_done", flagNeedOff: "camp1_done", scene: "first_camp" },
+        { type: "warp", x: 44, y: 76, map: "forest", tx: 50, ty: 4, dir: "down" },
+        { type: "warp", x: 45, y: 76, map: "forest", tx: 50, ty: 4, dir: "down" },
+        { type: "warp", x: 46, y: 76, map: "forest", tx: 50, ty: 4, dir: "down" },
+        { type: "warp", x: 47, y: 76, map: "forest", tx: 50, ty: 4, dir: "down" }
       ]
     });
   })();
@@ -601,7 +601,7 @@ window.MAPS = (() => {
     events: [
       { type: "npc", x: 8, y: 5, id: "hana", name: "Hana", hue: "#d4a0b0", talk: "hana" },
       { type: "chest", x: 2, y: 2, id: "chest_inn_salve", item: "sealing_salve" },
-      { type: "warp", x: 8, y: 11, map: "village", tx: 12, ty: 22, dir: "down" }
+      { type: "warp", x: 8, y: 11, map: "village", tx: DOORS.inn.dx + 1, ty: DOORS.inn.dy, dir: "right" }
     ]
   });
 
@@ -621,7 +621,7 @@ window.MAPS = (() => {
       { type: "npc", x: 6, y: 4, id: "mira", name: "Acolyte Mira", hue: "#e0b0d0", talk: "mira", appearIf: "quest_acolyte_found" },
       { type: "chest", x: 2, y: 2, id: "chest_mira", item: "prayer_beads", appearIf: "quest_acolyte_found" },
       { type: "sign", x: 4, y: 4, text: "A half-finished letter: 'Mother, the canal fox is real—' the rest is wet.", set: "quest_acolyte_found" },
-      { type: "warp", x: 6, y: 8, map: "village", tx: 79, ty: 21, dir: "down" }
+      { type: "warp", x: 6, y: 8, map: "village", tx: DOORS.mira.dx - 1, ty: DOORS.mira.dy, dir: "left" }
     ]
   });
 
@@ -640,7 +640,7 @@ window.MAPS = (() => {
     events: [
       { type: "chest", x: 2, y: 2, id: "chest_wen", item: "lore_west" },
       { type: "sign", x: 5, y: 4, text: "Seed packets: LOTUS (do not let demon prince near), LOTUS (backup), BEANS." },
-      { type: "warp", x: 6, y: 8, map: "village", tx: 11, ty: 35, dir: "down" }
+      { type: "warp", x: 6, y: 8, map: "village", tx: DOORS.wen.dx + 1, ty: DOORS.wen.dy, dir: "right" }
     ]
   });
 
