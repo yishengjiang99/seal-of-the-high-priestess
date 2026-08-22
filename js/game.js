@@ -835,6 +835,12 @@
         ctx.fillStyle = stones[(s >> 4) & 3]; ctx.fillRect(1, 16, 15, 15);
         ctx.fillStyle = stones[(s >> 6) & 3]; ctx.fillRect(17, 17, 14, 14);
         ctx.strokeStyle = "#7a6a54"; ctx.strokeRect(0.5, 0.5, 31, 31);
+        const gish = (tt) => tt === 1 || tt === 7 || tt === 20 || tt === 27;
+        ctx.fillStyle = "rgba(40,70,30,0.35)";
+        if (gish(tileAt(x, y - 1))) ctx.fillRect(0, 0, T, 4);
+        if (gish(tileAt(x, y + 1))) ctx.fillRect(0, T - 4, T, 4);
+        if (gish(tileAt(x - 1, y))) ctx.fillRect(0, 0, 4, T);
+        if (gish(tileAt(x + 1, y))) ctx.fillRect(T - 4, 0, 4, T);
         break;
       }
       case 3: case 19: { // teal canal water + lily
@@ -1066,8 +1072,10 @@
     ctx.save();
     ctx.translate(x, y + bob);
     ctx.scale(sc, sc);
-    ctx.fillStyle = "rgba(0,0,0,0.3)";
-    ctx.beginPath(); ctx.ellipse(0, 10, 8, 3, 0, 0, 6.3); ctx.fill();
+    ctx.fillStyle = "rgba(0,0,0,0.35)";
+    ctx.beginPath(); ctx.ellipse(0, 12, 9, 3.5, 0, 0, 6.3); ctx.fill();
+    ctx.strokeStyle = "rgba(10,8,16,0.85)";
+    ctx.lineWidth = 1.4;
     // body
     ctx.fillStyle = ch.color;
     if (who === "elara") ctx.fillStyle = "#e8eef8";
@@ -1075,6 +1083,9 @@
     if (who === "lyra") ctx.fillStyle = "#6a5030";
     if (who === "thorn") ctx.fillStyle = "#3a4a30";
     ctx.fillRect(-7, -4, 14, 14);
+    ctx.strokeStyle = "#1a1020";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-7.5, -4.5, 15, 15);
     if (who === "elara") {
       ctx.fillStyle = "#a0c8e0"; ctx.fillRect(-7, 4, 14, 6);
       ctx.fillStyle = "#d4b46a"; ctx.fillRect(-7, -4, 14, 2);
@@ -1087,6 +1098,8 @@
     ctx.fillStyle = "#f0d0b8";
     if (who === "thorn") ctx.fillStyle = "#8a8a84";
     ctx.beginPath(); ctx.arc(0, -12, 8, 0, 6.3); ctx.fill();
+    ctx.strokeStyle = "#1a1020"; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(0, -12, 8, 0, 6.3); ctx.stroke();
     // hair
     if (who === "elara") {
       ctx.fillStyle = "#d8e0ec";
@@ -1134,6 +1147,18 @@
     ctx.fillStyle = "#0a0c10";
     ctx.fillRect(0, 0, W, H);
     for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) paintTile(m.tiles[y][x], x, y, ox, oy);
+    // south-facing drop shadows like FF6 / RPG Maker objects
+    ctx.fillStyle = "rgba(0,0,0,0.22)";
+    for (let y = y0; y < y1; y++) {
+      for (let x = x0; x < x1; x++) {
+        const tt = m.tiles[y][x];
+        if (tt !== 7 && tt !== 9 && tt !== 4 && tt !== 31 && tt !== 37 && tt !== 12) continue;
+        const px = Math.floor(x * T - ox), py = Math.floor(y * T - oy);
+        if (tt === 7 || tt === 37) ctx.fillRect(px + 6, py + 26, 20, 8);
+        else if (tt === 12) ctx.fillRect(px + 12, py + 28, 8, 5);
+        else ctx.fillRect(px + 2, py + 28, 28, 6);
+      }
+    }
     // events
     for (const ev of m.events) {
       if (!eventVisible(ev)) continue;
@@ -1316,21 +1341,30 @@
     $("vn-name").textContent = speakerName(sp);
     left.classList.remove("show", "dim", "blush");
     right.classList.remove("show", "dim", "blush");
+    left.style.transform = "";
+    const talk = vn.def.mode === "talk";
+    $("screen-vn").classList.toggle("no-portrait", talk && sp !== "elara" && sp !== "kael" && sp !== "shade");
     if (sp === "elara" && S.images.elara) {
       left.src = DATA.PORTRAITS.elara.neutral;
       left.classList.add("show");
       if (line.e === "blush") left.classList.add("blush");
-      if (S.images.kael) { right.src = DATA.PORTRAITS.kael.smirk; right.classList.add("show", "dim"); }
+      if (!talk && S.images.kael) { right.src = DATA.PORTRAITS.kael.smirk; right.classList.add("show", "dim"); }
     } else if ((sp === "kael" || sp === "shade") && S.images.kael) {
-      right.src = DATA.PORTRAITS.kael.smirk;
-      right.classList.add("show");
-      if (S.images.elara) { left.src = DATA.PORTRAITS.elara.neutral; left.classList.add("show", "dim"); }
-    } else {
-      if (S.images.elara && (sp === "elara" || S.vn.def.mode === "vn")) {
+      if (talk) {
+        left.src = DATA.PORTRAITS.kael.smirk;
+        left.classList.add("show");
+        left.style.transform = "none";
+      } else {
+        right.src = DATA.PORTRAITS.kael.smirk;
+        right.classList.add("show");
+        if (S.images.elara) { left.src = DATA.PORTRAITS.elara.neutral; left.classList.add("show", "dim"); }
+      }
+    } else if (!talk) {
+      if (S.images.elara) {
         left.src = DATA.PORTRAITS.elara.neutral; left.classList.add("show");
         if (sp !== "elara") left.classList.add("dim");
       }
-      if (S.images.kael && S.vn.def.mode === "vn") {
+      if (S.images.kael) {
         right.src = DATA.PORTRAITS.kael.smirk; right.classList.add("show");
         if (sp !== "kael" && sp !== "shade") right.classList.add("dim");
       }
