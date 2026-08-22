@@ -25,6 +25,8 @@ Then visit http://localhost:8080
 | Esc | Menu |
 | C | Rest at a lotus altar |
 
+Spoken dialogue uses the browser **Web Speech API**. Toggle it under Options (default on). Elara, Kael, and the rest of the cast use different pitch/rate (and different system voices when the browser provides them). Advance a line to cut the current utterance. Auto-advance waits until speech finishes.
+
 ## Host on GitHub Pages
 
 1. Create a repo (example: `seal-of-the-high-priestess`).

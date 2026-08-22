@@ -58,6 +58,10 @@
             </select>
           </label>
           <label class="check"><input id="opt-auto" type="checkbox" /> Auto-advance dialogue</label>
+          <label class="check"><input id="opt-voice" type="checkbox" checked /> Spoken dialogue (Web Speech)</label>
+          <label>Voice Volume <input id="opt-voice-vol" type="range" min="0" max="100" value="85" /></label>
+          <p class="muted" id="opt-voice-status"></p>
+          <button type="button" id="opt-voice-test">Preview voices</button>
           <button data-act="opt-back">Back</button>
         </div>
       </section>

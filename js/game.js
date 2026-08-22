@@ -18,7 +18,7 @@
 
   const S = {
     state: "boot",
-    settings: { vol: 0.7, textSpeed: 2, battleSpeed: 1, auto: false },
+    settings: { vol: 0.7, textSpeed: 2, battleSpeed: 1, auto: false, voice: true, voiceVol: 0.85 },
     flags: {},
     inventory: [],
     quests: {},
@@ -180,6 +180,158 @@
       dg.gain.exponentialRampToValueAtTime(0.001, t + tune.tempo * 2);
       d.start(t); d.stop(t + tune.tempo * 2);
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Web Speech API — per-speaker dialogue
+  // ---------------------------------------------------------------------------
+  const VOICE_PROFILE = {
+    elara: { gender: "f", pitch: 1.28, rate: 0.98, vol: 1, prefer: /samantha|victoria|karen|moira|tessa|zira|fiona|siri|female|google uk english female/i },
+    kael: { gender: "m", pitch: 0.68, rate: 0.9, vol: 1, prefer: /daniel|alex|fred|david|gordon|tom|male|google uk english male/i },
+    shade: { gender: "m", pitch: 0.5, rate: 0.82, vol: 0.95, prefer: /daniel|alex|male/i },
+    lyra: { gender: "f", pitch: 1.08, rate: 1.08, vol: 1, prefer: /karen|moira|female/i },
+    thorn: { gender: "m", pitch: 0.55, rate: 0.8, vol: 1, prefer: /fred|daniel|male/i },
+    suyin: { gender: "f", pitch: 0.88, rate: 0.86, vol: 1, prefer: /moira|fiona|victoria|female/i },
+    shen: { gender: "m", pitch: 0.7, rate: 0.84, vol: 1 },
+    lyra_npc: { gender: "f", pitch: 1.08, rate: 1.08, vol: 1 },
+    bard: { gender: "m", pitch: 1.05, rate: 1.05, vol: 1 },
+    korin: { gender: "m", pitch: 0.62, rate: 0.88, vol: 1 },
+    sera: { gender: "f", pitch: 1.2, rate: 1.05, vol: 1 },
+    keeper: { gender: "m", pitch: 0.78, rate: 0.9, vol: 1 },
+    jori: { gender: "m", pitch: 1.35, rate: 1.12, vol: 0.95 },
+    mira: { gender: "f", pitch: 1.32, rate: 1.1, vol: 1 },
+    hana: { gender: "f", pitch: 1.12, rate: 1.0, vol: 1 },
+    wen: { gender: "m", pitch: 0.58, rate: 0.82, vol: 1 },
+    ren: { gender: "m", pitch: 1.1, rate: 1.05, vol: 1 },
+    echo: { gender: "m", pitch: 0.55, rate: 0.78, vol: 0.85 },
+    fisherman: { gender: "m", pitch: 0.7, rate: 0.9, vol: 1 },
+    captain: { gender: "m", pitch: 0.72, rate: 0.95, vol: 1 },
+    granny: { gender: "f", pitch: 0.8, rate: 0.88, vol: 1 },
+    "": { gender: "n", pitch: 0.82, rate: 0.88, vol: 0.62 }
+  };
+  const FEM_RE = /female|woman|girl|samantha|victoria|karen|moira|tessa|fiona|zira|susan|siri|kathy|princess|grandma/i;
+  const MALE_RE = /male|man|boy|daniel|alex|fred|david|tom|gordon|ralph|jorge|bruce|fred|grandpa|aaron|nicky/i;
+  let voices = [];
+  let voiceBySpeaker = {};
+  let speakTimer = 0;
+  let speaking = false;
+
+  function speechOk() {
+    return typeof window !== "undefined" && "speechSynthesis" in window && typeof SpeechSynthesisUtterance !== "undefined";
+  }
+  function harvestVoices() {
+    if (!speechOk()) return;
+    voices = window.speechSynthesis.getVoices() || [];
+    voiceBySpeaker = {};
+    refreshVoiceStatus();
+  }
+  function refreshVoiceStatus() {
+    const el = $("opt-voice-status");
+    if (!el) return;
+    if (!speechOk()) {
+      el.textContent = "This browser has no Web Speech API — dialogue will stay silent.";
+      return;
+    }
+    const n = voices.filter((v) => /^en/i.test(v.lang) || /english/i.test(v.name)).length || voices.length;
+    el.textContent = n ? n + " English voice" + (n === 1 ? "" : "s") + " available. Elara and Kael use different pitches even on a single voice." : "Waiting for system voices…";
+  }
+  function genderOfVoice(v) {
+    if (FEM_RE.test(v.name) || FEM_RE.test(v.voiceURI || "")) return "f";
+    if (MALE_RE.test(v.name) || MALE_RE.test(v.voiceURI || "")) return "m";
+    return "n";
+  }
+  function pickVoice(sp) {
+    if (voiceBySpeaker[sp]) return voiceBySpeaker[sp];
+    const p = VOICE_PROFILE[sp] || VOICE_PROFILE[""];
+    const en = voices.filter((v) => /^en/i.test(v.lang) || /english/i.test(v.name));
+    const pool = en.length ? en : voices.slice();
+    if (!pool.length) return null;
+    let chosen = null;
+    if (p.prefer) chosen = pool.find((v) => p.prefer.test(v.name) || p.prefer.test(v.voiceURI || ""));
+    if (!chosen && p.gender === "f") chosen = pool.find((v) => genderOfVoice(v) === "f");
+    if (!chosen && p.gender === "m") chosen = pool.find((v) => genderOfVoice(v) === "m");
+    if (!chosen) {
+      const idx = Math.abs([...sp].reduce((a, c) => a + c.charCodeAt(0), 0)) % pool.length;
+      chosen = pool[idx];
+    }
+    // Keep Elara/Kael on different voices when possible
+    if (sp === "kael" && voiceBySpeaker.elara && chosen === voiceBySpeaker.elara && pool.length > 1) {
+      chosen = pool.find((v) => v !== voiceBySpeaker.elara) || chosen;
+    }
+    voiceBySpeaker[sp] = chosen;
+    return chosen;
+  }
+  function cleanSpeech(text) {
+    return String(text || "")
+      .replace(/[—–]/g, ", ")
+      .replace(/\s+/g, " ")
+      .replace(/[♪◈▾]/g, "")
+      .trim();
+  }
+  function stopSpeech() {
+    speaking = false;
+    const name = $("vn-name");
+    if (name) name.classList.remove("speaking");
+    if (!speechOk()) return;
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+    S._utter = null;
+    if (speakTimer) { clearTimeout(speakTimer); speakTimer = 0; }
+  }
+  function speakLine(sp, text) {
+    stopSpeech();
+    if (!S.settings.voice || !speechOk()) return;
+    const t = cleanSpeech(text);
+    if (!t) return;
+    const p = VOICE_PROFILE[sp] || VOICE_PROFILE[""] || { pitch: 1, rate: 1, vol: 1 };
+    const u = new SpeechSynthesisUtterance(t);
+    const v = pickVoice(sp);
+    if (v) u.voice = v;
+    u.lang = (v && v.lang) || "en-US";
+    u.rate = clamp(p.rate || 1, 0.6, 1.4);
+    u.pitch = clamp(p.pitch || 1, 0.4, 1.8);
+    u.volume = clamp((S.settings.voiceVol || 0) * (p.vol == null ? 1 : p.vol), 0, 1);
+    if (u.volume <= 0.01) return;
+    u.onstart = () => {
+      speaking = true;
+      const name = $("vn-name");
+      if (name && name.textContent) name.classList.add("speaking");
+    };
+    u.onend = () => {
+      speaking = false;
+      const name = $("vn-name");
+      if (name) name.classList.remove("speaking");
+      if (S.vn) S.vn.speechDone = true;
+    };
+    u.onerror = () => { speaking = false; };
+    S._utter = u;
+    S.vn && (S.vn.speechDone = false);
+    // Chrome drops speak() if it follows cancel() in the same turn
+    speakTimer = setTimeout(() => {
+      speakTimer = 0;
+      try { window.speechSynthesis.speak(u); } catch (e) {}
+    }, 40);
+  }
+  function previewVoices() {
+    if (!speechOk()) return;
+    S.settings.voice = true;
+    const lines = [
+      ["elara", "The scriptures say patience is a virtue. But you are testing every one of them."],
+      ["kael", "Little saint. Your sermons are as dull as your fashion sense."]
+    ];
+    let i = 0;
+    const next = () => {
+      if (i >= lines.length) return;
+      const [sp, t] = lines[i++];
+      stopSpeech();
+      speakLine(sp, t);
+      const u = S._utter;
+      if (u) u.onend = () => { speaking = false; setTimeout(next, 280); };
+    };
+    next();
+  }
+  if (speechOk()) {
+    harvestVoices();
+    window.speechSynthesis.addEventListener("voiceschanged", harvestVoices);
   }
 
   // ---------------------------------------------------------------------------
@@ -391,6 +543,7 @@
     $("screen-vn").classList.remove("open-vn", "talk");
   }
   function showTitle() {
+    stopSpeech();
     S.state = "title";
     hideAllScreens();
     const t = $("screen-title");
@@ -433,11 +586,27 @@
     $("opt-text").value = String(S.settings.textSpeed);
     $("opt-battle").value = String(S.settings.battleSpeed);
     $("opt-auto").checked = S.settings.auto;
+    $("opt-voice").checked = !!S.settings.voice;
+    $("opt-voice-vol").value = ((S.settings.voiceVol ?? 0.85) * 100) | 0;
+    $("opt-voice").disabled = !speechOk();
+    $("opt-voice-test").disabled = !speechOk();
+    harvestVoices();
+    refreshVoiceStatus();
   }
   $("opt-vol").addEventListener("input", () => { ensureAudio(); setVol($("opt-vol").value / 100); });
   $("opt-text").addEventListener("change", () => { S.settings.textSpeed = +$("opt-text").value; persistSettings(); });
   $("opt-battle").addEventListener("change", () => { S.settings.battleSpeed = +$("opt-battle").value; persistSettings(); });
   $("opt-auto").addEventListener("change", () => { S.settings.auto = $("opt-auto").checked; persistSettings(); });
+  $("opt-voice").addEventListener("change", () => {
+    S.settings.voice = $("opt-voice").checked;
+    if (!S.settings.voice) stopSpeech();
+    persistSettings();
+  });
+  $("opt-voice-vol").addEventListener("input", () => {
+    S.settings.voiceVol = $("opt-voice-vol").value / 100;
+    persistSettings();
+  });
+  $("opt-voice-test").addEventListener("click", () => { previewVoices(); });
   function persistSettings() {
     try { localStorage.setItem("soth_settings", JSON.stringify(S.settings)); } catch (e) {}
   }
@@ -971,6 +1140,7 @@
     if (!vn) return;
     if (!first && vn.shown < vn.full.length) { vn.shown = vn.full.length; renderVnText(); return; }
     if (vn.choices) return;
+    stopSpeech();
     while (vn.i < vn.def.script.length) {
       const line = vn.def.script[vn.i];
       vn.i++;
@@ -986,8 +1156,10 @@
       vn.full = line.t || "";
       vn.shown = 0;
       vn.waiting = false;
+      vn.speechDone = false;
       vn.line = line;
       renderVn(line);
+      speakLine(line.s || "", line.t || "");
       return;
     }
     endScene();
@@ -1069,12 +1241,14 @@
     vn.shown = Math.min(vn.full.length, vn.shown + dt * spd);
     renderVnText();
     if (S.settings.auto && vn.shown >= vn.full.length) {
+      const voiceHold = S.settings.voice && speechOk() && !vn.speechDone && !!vn.full;
       vn.autoT += dt;
-      if (vn.autoT > 900) { vn.autoT = 0; vnAdvance(); }
+      if (!voiceHold && vn.autoT > 900) { vn.autoT = 0; vnAdvance(); }
     }
     if (pressed("ok") || pressed("cancel")) { vnAdvance(); sfx("ui"); }
   }
   function endScene() {
+    stopSpeech();
     const sc = S.vn.def;
     S.vn = null;
     const end = sc.onEnd || { type: "map" };
@@ -1985,7 +2159,7 @@
     showTitle();
     requestAnimationFrame(frame);
     // click anywhere to unlock audio
-    window.addEventListener("pointerdown", () => ensureAudio(), { once: true });
+    window.addEventListener("pointerdown", () => { ensureAudio(); harvestVoices(); }, { once: true });
   }
 
   // Debug

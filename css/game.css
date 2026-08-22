@@ -218,6 +218,11 @@ button, select, input { font-family: inherit; }
   text-transform: uppercase;
 }
 #vn-name:empty { display: none; }
+#vn-name.speaking::after {
+  content: " ◈";
+  color: var(--lotus);
+  animation: blink 1s steps(2) infinite;
+}
 #vn-text {
   font-family: var(--serif);
   font-size: 22px;
