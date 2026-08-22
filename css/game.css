@@ -311,7 +311,7 @@ button, select, input { font-family: inherit; }
 .bar { height: 8px; background: #1c1826; margin-top: 4px; position: relative; overflow: hidden; }
 .bar > i { display: block; height: 100%; }
 .bar.hp > i { background: linear-gradient(90deg, #6d2b38, #d45a6a); }
-.bar.res > i { background: linear-gradient(90deg, #2a4a7a, #7eb8d4); }
+.bar.res > i, .bar.mana > i { background: linear-gradient(90deg, #2a4a7a, #7eb8d4); }
 .bar.fury > i { background: linear-gradient(90deg, #5a1a1a, #c23b4a); }
 .bar.focus > i { background: linear-gradient(90deg, #3a5a2a, #9bc47b); }
 .bar.blood > i { background: linear-gradient(90deg, #4a1a3a, #c47bb0); }

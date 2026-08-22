@@ -125,8 +125,8 @@ window.MAPS = (() => {
       { type: "warp", x: 23, y: 2, map: "temple", tx: 23, ty: 26, dir: "up" },
       { type: "warp", x: 25, y: 2, map: "temple", tx: 23, ty: 26, dir: "up" },
       { type: "warp", x: 9, y: 4, map: "inn", tx: 6, ty: 8, dir: "up", door: true },
-      { type: "warp", x: 40, y: 4, map: "house_mira", tx: 5, ty: 7, dir: "up", door: true },
-      { type: "warp", x: 8, y: 10, map: "house_wen", tx: 5, ty: 7, dir: "up", door: true },
+      { type: "warp", x: 40, y: 4, map: "house_mira", tx: 5, ty: 6, dir: "up", door: true },
+      { type: "warp", x: 8, y: 10, map: "house_wen", tx: 5, ty: 6, dir: "up", door: true },
       { type: "npc", x: 18, y: 16, id: "jori", name: "Jori", hue: "#e8c070", talk: "jori", quest: "canal_fox" },
       { type: "npc", x: 32, y: 9, id: "fisherman", name: "Canal Fisher", hue: "#6a8aaa", talk: "fisherman" },
       { type: "npc", x: 28, y: 20, id: "hana_out", name: "Hana", hue: "#d4a0b0", talk: "hana" },
@@ -175,7 +175,7 @@ window.MAPS = (() => {
       { type: "npc", x: 5, y: 4, id: "mira", name: "Acolyte Mira", hue: "#e0b0d0", talk: "mira",
         appearIf: "quest_acolyte_found", },
       { type: "chest", x: 2, y: 2, id: "chest_mira", item: "prayer_beads", appearIf: "quest_acolyte_found" },
-      { type: "sign", x: 3, y: 4, text: "A half-finished letter: 'Mother, the canal fox is real, I swear—' the rest is wet." },
+      { type: "sign", x: 3, y: 4, text: "A half-finished letter: 'Mother, the canal fox is real, I swear—' the rest is wet.", set: "quest_acolyte_found" },
       { type: "warp", x: 5, y: 7, map: "village", tx: 40, ty: 5, dir: "down" }
     ]
   });
@@ -278,9 +278,9 @@ window.MAPS = (() => {
     events: [
       { type: "warp", x: 22, y: 1, map: "forest", tx: 24, ty: 20, dir: "up" },
       { type: "warp", x: 8, y: 4, map: "tavern", tx: 7, ty: 10, dir: "up", door: true },
-      { type: "warp", x: 39, y: 4, map: "blacksmith", tx: 6, ty: 8, dir: "up", door: true },
-      { type: "warp", x: 9, y: 10, map: "keeper_house", tx: 5, ty: 7, dir: "up", door: true },
-      { type: "warp", x: 10, y: 19, map: "korin_home", tx: 5, ty: 7, dir: "up", door: true },
+      { type: "warp", x: 39, y: 4, map: "blacksmith", tx: 6, ty: 7, dir: "up", door: true },
+      { type: "warp", x: 9, y: 10, map: "keeper_house", tx: 5, ty: 6, dir: "up", door: true },
+      { type: "warp", x: 10, y: 19, map: "korin_home", tx: 5, ty: 6, dir: "up", door: true },
       { type: "npc", x: 22, y: 9, id: "lyra_npc", name: "Lyra", hue: "#c4a06a", scene: "meridia_arrival",
         appearIfOff: "lyra_joined" },
       { type: "npc", x: 30, y: 15, id: "captain", name: "Watch-Captain", hue: "#7080a0", talk: "captain" },
@@ -292,9 +292,9 @@ window.MAPS = (() => {
       { type: "sign", x: 24, y: 5, text: "MERIDIA — By canal and lantern, we keep the west at a polite distance." },
       { type: "encounter", x: 22, y: 21, battle: "canal_specter", once: "quest_canal",
         appearIf: "canal_ready", appearIfOff: "quest_canal", name: "The Canal's Mouth" },
-      { type: "warp", x: 22, y: 23, map: "ashen", tx: 14, ty: 2, dir: "down", needFlag: "lyra_joined" },
-      { type: "warp", x: 21, y: 23, map: "ashen", tx: 14, ty: 2, dir: "down", needFlag: "lyra_joined" },
-      { type: "warp", x: 23, y: 23, map: "ashen", tx: 14, ty: 2, dir: "down", needFlag: "lyra_joined" },
+      { type: "warp", x: 22, y: 23, map: "ashen", tx: 6, ty: 2, dir: "down", needFlag: "lyra_joined" },
+      { type: "warp", x: 21, y: 23, map: "ashen", tx: 6, ty: 2, dir: "down", needFlag: "lyra_joined" },
+      { type: "warp", x: 23, y: 23, map: "ashen", tx: 6, ty: 2, dir: "down", needFlag: "lyra_joined" },
       { type: "block", x: 22, y: 23, needFlagOff: "lyra_joined", text: "The watch will not open the western gate without a scout's word. Find Lyra in the plaza." }
     ]
   });
@@ -419,7 +419,7 @@ window.MAPS = (() => {
         appearIfOff: "quest_hound", name: "The Bound Hound" },
       { type: "encounter", x: 6, y: 27, battle: "gate_warden", once: "warden_dead",
         appearIfOff: "warden_dead", name: "Ashen Gate Warden" },
-      { type: "warp", x: 6, y: 28, map: "ruins", tx: 18, ty: 2, dir: "down", needFlag: "warden_dead" },
+      { type: "warp", x: 6, y: 28, map: "ruins", tx: 18, ty: 3, dir: "down", needFlag: "warden_dead" },
       { type: "sign", x: 8, y: 4, text: "ASHEN PASS — The mountain keeps what the war would not bury." }
     ]
   });
