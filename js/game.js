@@ -1636,6 +1636,9 @@
   }
   function renderBattleHUD() {
     const b = S.battle; if (!b) return;
+    const isCmd = b.phase === "cmd" && b.actor && b.actor.side === "p";
+
+    // Party status cards
     $("battle-party").innerHTML = b.pals.map((p) => {
       const hp = Math.max(0, p.hp / p.maxHp * 100);
       const rs = Math.max(0, p.res / p.maxRes * 100);
@@ -1648,7 +1651,8 @@
       if (p.empowered) tags.push("EMPOWERED");
       if (!p.alive) tags.push("DOWN");
       const rk = p.resKey || "res";
-      return `<div class="battler-card">
+      const isActive = b.actor && b.actor.id === p.id;
+      return `<div class="battler-card${isActive ? " active-hero" : ""}">
         <div class="nm">${p.name} <span class="tag">${tags.join(" · ")}</span></div>
         <div class="bar-label"><span>HP</span><span>${Math.max(0, p.hp|0)}/${p.maxHp}</span></div>
         <div class="bar hp"><i style="width:${hp}%"></i></div>
@@ -1656,9 +1660,51 @@
         <div class="bar ${rk}"><i style="width:${rs}%"></i></div>
       </div>`;
     }).join("");
+
+    // Hero selector tabs
+    const heroSel = $("battle-hero-select");
+    heroSel.innerHTML = b.pals.map((p) => {
+      const isActive = b.actor && b.actor.id === p.id;
+      const dead = !p.alive;
+      return `<button class="hero-tab${isActive ? " active" : ""}${dead ? " dead" : ""}" data-hero="${p.id}" title="${p.name}${dead ? " (down)" : ""}">
+        ${p.name}
+      </button>`;
+    }).join("");
+    heroSel.querySelectorAll(".hero-tab:not(.dead)").forEach((btn) => {
+      btn.addEventListener("click", () => selectHero(btn.dataset.hero));
+    });
+
+    // Action bar — always show skills for the active player hero (or first alive pal if no cmd phase)
+    const barHero = (isCmd ? b.actor : (b.pals.find((p) => p.alive) || b.pals[0]));
+    const actionBar = $("battle-action-bar");
+    if (barHero) {
+      const skills = skillsOf(S.chars[barHero.id] || barHero);
+      actionBar.innerHTML = skills.map((sid) => {
+        const sk = DATA.SKILLS[sid];
+        if (!sk) return "";
+        const locked = !isCmd
+          || (sk.berserkOnly && !barHero.berserk)
+          || (sk.requireFull && barHero.res < barHero.maxRes)
+          || (sk.cost === "all" ? false : barHero.res < (sk.cost || 0))
+          || (sid === "unseal" && (S.chars.kael?.unsealCd > 0 || barHero.unsealCd > 0));
+        const costTxt = sk.cost === "all" ? "ALL" : (sk.cost ? sk.cost + " " + (barHero.resName || "") : "");
+        return `<button class="action-btn${locked ? " locked" : ""}" data-skill="${sid}" title="${sk.desc || sk.name}">
+          <span class="ab-name">${sk.name}</span>
+          ${costTxt ? `<span class="ab-cost">${costTxt}</span>` : ""}
+        </button>`;
+      }).join("");
+      if (isCmd) {
+        actionBar.querySelectorAll(".action-btn:not(.locked)").forEach((btn) => {
+          btn.addEventListener("click", () => quickSkill(btn.dataset.skill));
+        });
+      }
+    } else {
+      actionBar.innerHTML = "";
+    }
+
     const menu = $("battle-cmds");
     const who = $("battle-who");
-    if (b.phase !== "cmd" || !b.actor || b.actor.side !== "p") {
+    if (!isCmd) {
       who.textContent = b.actor ? b.actor.name : "";
       menu.innerHTML = "";
       $("battle-menu").style.opacity = b.phase === "cmd" ? 1 : 0.45;
@@ -1702,6 +1748,38 @@
     menu.querySelectorAll("button").forEach((btn) => {
       btn.addEventListener("click", () => { b.cmdIdx = +btn.dataset.i; confirmCmd(); });
     });
+  }
+  function selectHero(id) {
+    const b = S.battle;
+    if (!b || b.phase !== "cmd") return;
+    const pal = b.pals.find((p) => p.id === id && p.alive);
+    if (!pal) return;
+    b.actor = pal;
+    b.menu = "cmd"; b.cmdIdx = 0;
+    sfx("ok");
+    renderBattleHUD();
+  }
+  function quickSkill(sid) {
+    const b = S.battle;
+    if (!b || b.phase !== "cmd" || !b.actor || b.actor.side !== "p") return;
+    const sk = DATA.SKILLS[sid];
+    if (!sk) return;
+    b.menu = "skill";
+    // find index in skill list so confirmCmd works correctly
+    const skills = skillsOf(S.chars[b.actor.id] || b.actor);
+    const idx = skills.indexOf(sid);
+    b._items = skills.map((s2, i) => {
+      const sk2 = DATA.SKILLS[s2];
+      const lock = (sk2.berserkOnly && !b.actor.berserk) || (sk2.requireFull && b.actor.res < b.actor.maxRes)
+        || (sk2.cost === "all" ? false : b.actor.res < (sk2.cost || 0))
+        || (s2 === "unseal" && (S.chars.kael?.unsealCd > 0 || b.actor.unsealCd > 0));
+      const cost = sk2.cost === "all" ? "ALL" : (sk2.cost ? sk2.cost + " " + (b.actor.resName || "") : "");
+      return { id: s2, name: sk2.name, cost, lock };
+    });
+    b._items.push({ id: "_back", name: "Back" });
+    b.cmdIdx = idx >= 0 ? idx : 0;
+    sfx("ok");
+    confirmCmd();
   }
   function confirmCmd() {
     const b = S.battle, a = b.actor, it = b._items[b.cmdIdx];

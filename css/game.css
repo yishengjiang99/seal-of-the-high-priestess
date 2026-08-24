@@ -330,7 +330,7 @@ button, select, input { font-family: inherit; }
 }
 #battle-party {
   position: absolute;
-  left: 20px; right: 340px; bottom: 16px;
+  left: 20px; right: 340px; bottom: 72px;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
@@ -343,6 +343,10 @@ button, select, input { font-family: inherit; }
   padding: 8px 12px 10px;
   font-size: 13px;
 }
+.battler-card.active-hero {
+  border-color: var(--gold);
+  box-shadow: inset 0 0 0 2px var(--gold-dim), 0 0 8px rgba(212,180,106,0.35);
+}
 .battler-card .nm { color: var(--gold); letter-spacing: 0.08em; font-size: 12px; }
 .battler-card .nm .tag { color: var(--crimson); margin-left: 8px; font-size: 10px; letter-spacing: 0.14em; }
 .bar { height: 8px; background: #1c1826; margin-top: 4px; position: relative; overflow: hidden; }
@@ -354,6 +358,67 @@ button, select, input { font-family: inherit; }
 .bar.blood > i { background: linear-gradient(90deg, #4a1a3a, #c47bb0); }
 .bar-label { display: flex; justify-content: space-between; color: var(--muted); font-size: 10px; }
 .icons { margin-top: 4px; color: var(--gold); font-size: 11px; letter-spacing: 0.08em; min-height: 14px; }
+
+/* Hero selector */
+#battle-hero-select {
+  position: absolute;
+  left: 20px; right: 340px;
+  bottom: 268px;
+  display: flex;
+  gap: 6px;
+  pointer-events: auto;
+  z-index: 7;
+}
+.hero-tab {
+  flex: 1;
+  background: linear-gradient(180deg, rgba(16, 24, 64, 0.92), rgba(8, 12, 36, 0.96));
+  border: 2px solid var(--gold-dim);
+  color: var(--silver);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 5px 8px;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.15s, color 0.15s;
+}
+.hero-tab:hover { border-color: var(--gold); color: var(--cream); }
+.hero-tab.active { border-color: var(--gold); color: var(--gold); background: linear-gradient(180deg, rgba(40,32,12,0.96), rgba(24,18,6,0.98)); }
+.hero-tab.dead { color: #5a5a68; border-color: #3a3a48; cursor: default; }
+
+/* Action bar */
+#battle-action-bar {
+  position: absolute;
+  left: 20px; right: 340px; bottom: 16px;
+  height: 52px;
+  display: flex;
+  gap: 6px;
+  align-items: stretch;
+  pointer-events: auto;
+  z-index: 7;
+}
+.action-btn {
+  flex: 1;
+  background: linear-gradient(180deg, rgba(16, 24, 64, 0.94), rgba(8, 12, 36, 0.97));
+  border: 2px solid #3a58a0;
+  color: var(--cream);
+  font-size: 11px;
+  padding: 4px 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+  line-height: 1.2;
+  transition: border-color 0.15s, color 0.15s;
+  position: relative;
+}
+.action-btn:hover { border-color: var(--gold); color: var(--gold); }
+.action-btn.locked { color: #5a5a68; border-color: #2a2a38; cursor: default; }
+.action-btn .ab-name { font-size: 10px; letter-spacing: 0.04em; }
+.action-btn .ab-cost { color: var(--lotus); font-size: 9px; }
 
 #battle-menu {
   position: absolute;
