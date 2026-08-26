@@ -65,7 +65,9 @@ jobs:
           test -s artifacts/homepage.png
 
       - name: Upload screenshot artifact
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: headless-chrome-screenshot
           path: artifacts/homepage.png
+          if-no-files-found: ignore
