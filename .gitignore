@@ -4,4 +4,3 @@ playwright-report/
 test-results/
 artifacts/
 playwright-results.xml
-package-lock.json
