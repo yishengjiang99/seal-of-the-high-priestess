@@ -1,0 +1,21 @@
+{
+  "name": "seal-of-the-high-priestess",
+  "version": "1.0.0",
+  "description": "A browser-native 2D JRPG / visual-novel hybrid. Design inspiration: **LinaHua (@Linahuaa)** — a solo, AI-assisted epic in the spirit of Final Fantasy VI × Fate/Stay Night, built around kickass dialogue, named gear, and slow strategic combat.",
+  "main": "index.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://localhost:26831/yishengjiang99/seal-of-the-high-priestess"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@playwright/test": "^1.62.1"
+  }
+}

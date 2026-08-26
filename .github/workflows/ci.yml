@@ -137,3 +137,101 @@ jobs:
                 body
               });
             }
+
+  e2e:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run e2e tests
+        run: npx playwright test --reporter=list,junit
+        env:
+          CI: true
+
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Upload e2e screenshots
+        if: always()
+        id: upload-e2e-screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots
+          path: artifacts/
+          retention-days: 14
+          if-no-files-found: ignore
+
+      - name: Post e2e results to PR comment
+        if: ${{ always() && github.event_name == 'pull_request' }}
+        uses: actions/github-script@v7
+        env:
+          SCREENSHOTS_URL: ${{ steps.upload-e2e-screenshots.outputs.artifact-url }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          JOB_STATUS: ${{ job.status }}
+        with:
+          script: |
+            const marker = '<!-- ci-e2e-results -->';
+            const screenshotsUrl = process.env.SCREENSHOTS_URL;
+            const runUrl = process.env.RUN_URL;
+            const status = process.env.JOB_STATUS;
+            const icon = status === 'success' ? '✅' : '❌';
+            const body = [
+              marker,
+              `### ${icon} E2E test results — ${status}`,
+              screenshotsUrl
+                ? `- [Download e2e screenshots](${screenshotsUrl})`
+                : '- E2E screenshots unavailable for this run.',
+              `- [Workflow run details](${runUrl})`
+            ].join('\n');
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number
+            });
+
+            const existing = comments.find(
+              (comment) =>
+                comment.user?.type === 'Bot' &&
+                comment.user?.login === 'github-actions[bot]' &&
+                comment.body?.includes(marker)
+            );
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body
+              });
+            }
