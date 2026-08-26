@@ -39,7 +39,7 @@
     shake: 0,
     keys: {},
     just: {},
-    mouse: { x: 0, y: 0, click: false },
+    mouse: { x: W * 0.5, y: H * 0.5, click: false, locked: false },
     hover: 0,
     titleIdx: 0,
     anim: 0,
@@ -58,11 +58,17 @@
     KeyZ: "ok", Enter: "ok", Space: "ok",
     KeyX: "cancel", ShiftLeft: "cancel", ShiftRight: "cancel",
     Escape: "menu", KeyC: "camp", KeyQ: "menu",
-    ControlLeft: "skip", ControlRight: "skip", KeyF: "skip"
+    ControlLeft: "skip", ControlRight: "skip", KeyF: "skip",
+    Digit3: "macro3", Numpad3: "macro3"
   };
   window.addEventListener("keydown", (e) => {
     const k = KEYMAP[e.code] || KEYMAP[e.key];
     if (!k) return;
+    if (k === "macro3") {
+      beginHealingRainAim();
+      e.preventDefault();
+      return;
+    }
     if (!S.keys[k]) S.just[k] = true;
     S.keys[k] = true;
     if (["ok", "cancel", "menu", "up", "down", "left", "right", "skip"].includes(k)) e.preventDefault();
@@ -72,11 +78,28 @@
     if (k) S.keys[k] = false;
   });
   canvas.addEventListener("mousemove", (e) => {
+    if (document.pointerLockElement === canvas) {
+      const r = canvas.getBoundingClientRect();
+      S.mouse.x = clamp(S.mouse.x + e.movementX * (W / r.width), 0, W);
+      S.mouse.y = clamp(S.mouse.y + e.movementY * (H / r.height), 0, H);
+      return;
+    }
     const r = canvas.getBoundingClientRect();
     S.mouse.x = (e.clientX - r.left) * (W / r.width);
     S.mouse.y = (e.clientY - r.top) * (H / r.height);
   });
-  canvas.addEventListener("mousedown", () => { S.mouse.click = true; S.just.ok = true; });
+  canvas.addEventListener("mousedown", (e) => {
+    if (e.button === 2 || e.button === 3) {
+      beginHealingRainAim();
+      e.preventDefault();
+      return;
+    }
+    S.mouse.click = true; S.just.ok = true;
+  });
+  canvas.addEventListener("contextmenu", (e) => e.preventDefault());
+  document.addEventListener("pointerlockchange", () => {
+    S.mouse.locked = document.pointerLockElement === canvas;
+  });
 
   $("touch").addEventListener("pointerdown", (e) => {
     const b = e.target.closest("button");
@@ -93,6 +116,14 @@
 
   function pressed(k) { const v = S.just[k]; S.just[k] = false; return v; }
   function flushJust() { /* kept until consumed */ }
+  function requestBattlePointerLock() {
+    if (document.pointerLockElement === canvas || !canvas.requestPointerLock) return;
+    try { canvas.requestPointerLock(); } catch (e) {}
+  }
+  function releaseBattlePointerLock() {
+    if (document.pointerLockElement !== canvas || !document.exitPointerLock) return;
+    document.exitPointerLock();
+  }
 
   // ---------------------------------------------------------------------------
   // Audio — oscillator SFX + looping ambient cells
@@ -1491,7 +1522,7 @@
       id, def, pals, foes, log: [], queue: [], qi: 0, phase: "intro",
       menu: "cmd", cmdIdx: 0, skillList: [], targetList: [],
       wait: 700, actor: null, empoweredThisFight: new Set(),
-      unsealedHere: false
+      unsealedHere: false, healingRainAim: null
     };
     S.state = "battle";
     hideAllScreens();
@@ -1781,6 +1812,49 @@
     sfx("ok");
     confirmCmd();
   }
+  function canUseBattleSkill(actor, sid) {
+    if (!actor || !sid) return null;
+    const sk = DATA.SKILLS[sid];
+    if (!sk) return null;
+    const known = skillsOf(S.chars[actor.id] || actor);
+    if (!known.includes(sid)) return null;
+    if (sk.berserkOnly && !actor.berserk) return null;
+    if (sk.requireFull && actor.res < actor.maxRes) return null;
+    const cost = sk.cost === "all" ? actor.res : (sk.cost || 0);
+    if (typeof cost === "number" && actor.res < cost) return null;
+    return sk;
+  }
+  function beginHealingRainAim() {
+    const b = S.battle;
+    if (!b || b.phase !== "cmd" || !b.actor || b.actor.side !== "p") return false;
+    const sk = canUseBattleSkill(b.actor, "healing_rain");
+    if (!sk) return false;
+    b.healingRainAim = { skillId: sk.id, radius: 180 };
+    requestBattlePointerLock();
+    renderBattleHUD();
+    toast("Healing Rain ready — aim, then click or Z. X cancels.");
+    sfx("ok");
+    return true;
+  }
+  function cancelHealingRainAim(silent = false) {
+    if (!S.battle?.healingRainAim) return;
+    S.battle.healingRainAim = null;
+    releaseBattlePointerLock();
+    if (!silent) {
+      sfx("cancel");
+      renderBattleHUD();
+    }
+  }
+  function confirmHealingRainAim() {
+    const b = S.battle;
+    if (!b || !b.healingRainAim || !b.actor) return;
+    const sk = canUseBattleSkill(b.actor, b.healingRainAim.skillId);
+    b.healingRainAim = null;
+    releaseBattlePointerLock();
+    if (!sk) { sfx("cancel"); renderBattleHUD(); return; }
+    useSkill(b.actor, sk, null);
+    finishPlayer();
+  }
   function confirmCmd() {
     const b = S.battle, a = b.actor, it = b._items[b.cmdIdx];
     if (!it || it.lock) { sfx("cancel"); return; }
@@ -2065,6 +2139,11 @@
       return;
     }
     if (b.phase === "cmd") {
+      if (b.healingRainAim) {
+        if (pressed("cancel")) { cancelHealingRainAim(); return; }
+        if (pressed("ok") || S.mouse.click) { confirmHealingRainAim(); return; }
+        return;
+      }
       if (pressed("up")) { b.cmdIdx = Math.max(0, b.cmdIdx - 1); renderBattleHUD(); sfx("ui"); }
       if (pressed("down")) { b.cmdIdx = Math.min((b._items || []).length - 1, b.cmdIdx + 1); renderBattleHUD(); sfx("ui"); }
       if (pressed("ok")) confirmCmd();
@@ -2080,6 +2159,7 @@
   }
   function winBattle() {
     const b = S.battle;
+    cancelHealingRainAim(true);
     blog("Victory. No experience. The story moves.");
     if (b.def.victoryFlag) setFlag(b.def.victoryFlag, 1);
     const post = b.def.post;
@@ -2099,6 +2179,7 @@
     else enterMap();
   }
   function loseBattle() {
+    cancelHealingRainAim(true);
     S.state = "gameover";
     hideAllScreens();
     $("screen-over").classList.remove("hidden");
@@ -2144,6 +2225,22 @@
         ctx.beginPath(); ctx.moveTo(pos.x, pos.y - 58); ctx.lineTo(pos.x - 7, pos.y - 46); ctx.lineTo(pos.x + 7, pos.y - 46); ctx.fill();
       }
     });
+    if (b.healingRainAim) {
+      const x = clamp(S.mouse.x, 0, W);
+      const y = clamp(S.mouse.y, 0, H);
+      const r = b.healingRainAim.radius || 180;
+      ctx.fillStyle = "rgba(90, 210, 120, 0.22)";
+      ctx.strokeStyle = "rgba(150, 255, 170, 0.95)";
+      ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, 6.3); ctx.fill(); ctx.stroke();
+      ctx.setLineDash([12, 8]);
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(x, y, r * 0.62, 0, 6.3); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "rgba(190, 255, 205, 0.95)";
+      ctx.beginPath(); ctx.arc(x, y, 6, 0, 6.3); ctx.fill();
+      ctx.lineWidth = 1;
+    }
   }
   function drawFoe(x, y, e) {
     ctx.save(); ctx.translate(x, y);
