@@ -139,21 +139,100 @@
     g.gain.exponentialRampToValueAtTime(0.001, t + d);
     o.start(t); o.stop(t + d + 0.02);
   }
+  // ---------------------------------------------------------------------------
+  // TUNES — each zone has: base freq (Hz), melody sequence (semitones from base),
+  // a chord table (semitone triads played every N beats), bass line, tempo, and
+  // waveform.  Melody arrays can include octave shifts via plain semitone values
+  // (e.g. 12 = one octave up).  A null in melody = rest.
+  // ---------------------------------------------------------------------------
   const TUNES = {
-    temple: { base: 220, scale: [0, 2, 4, 7, 9], tempo: 0.55, wave: "sine" },
-    town: { base: 196, scale: [0, 2, 3, 7, 9], tempo: 0.42, wave: "triangle" },
-    city: { base: 174, scale: [0, 3, 5, 7, 10], tempo: 0.4, wave: "triangle" },
-    forest: { base: 146, scale: [0, 1, 3, 7, 8], tempo: 0.7, wave: "sine" },
-    pass: { base: 130, scale: [0, 2, 3, 7, 10], tempo: 0.62, wave: "sawtooth" },
-    ruins: { base: 110, scale: [0, 1, 4, 7, 8], tempo: 0.8, wave: "triangle" },
-    throne: { base: 98, scale: [0, 3, 7, 10], tempo: 0.9, wave: "sine" },
-    battle: { base: 164, scale: [0, 1, 3, 6, 7], tempo: 0.28, wave: "square" }
+    // Temple of the Priestess — pentatonic A minor, meditative, ethereal
+    temple: {
+      base: 220, wave: "sine", tempo: 0.48,
+      melody: [0, 4, 7, 12, 9, 7, 4, 0, 2, 4, 7, 9, 12, 9, 7, null,
+               0, 7, 12, 16, 14, 12, 7, 4, 2, 0, 4, 7, 9, 7, 4, null],
+      chords: [[0, 7, 12], [2, 9, 14], [4, 7, 11], [0, 7, 12]],
+      chordEvery: 8,
+      bass: [0, 0, 7, 0, 9, 0, 7, 0],
+      bassOct: 0.5
+    },
+    // Town — lively Dorian, bouncy triangle feel
+    town: {
+      base: 196, wave: "triangle", tempo: 0.22,
+      melody: [0, 2, 3, 5, 7, 5, 3, 2, 0, 3, 7, 10, 9, 7, 5, 3,
+               2, 3, 5, 7, 9, 10, 9, 7, 5, 3, 2, 0, null, 0, 2, null],
+      chords: [[0, 7, 10], [3, 7, 10], [5, 9, 12], [2, 5, 9]],
+      chordEvery: 8,
+      bass: [0, 0, 3, 0, 5, 0, 7, 0],
+      bassOct: 0.5
+    },
+    // City — jazz-inflected Mixolydian, bustling, confident
+    city: {
+      base: 174, wave: "triangle", tempo: 0.19,
+      melody: [0, 4, 7, 10, 12, 10, 7, 4, 5, 9, 12, 10, 7, 5, 4, null,
+               3, 7, 10, 12, 14, 12, 10, 7, 5, 3, 0, 3, 5, 7, null, null],
+      chords: [[0, 7, 10], [5, 9, 12], [3, 7, 10], [0, 4, 7]],
+      chordEvery: 8,
+      bass: [0, 0, 5, 0, 3, 0, 7, 0],
+      bassOct: 0.5
+    },
+    // Forest — Lydian shimmer, wandering, mysterious
+    forest: {
+      base: 146, wave: "sine", tempo: 0.58,
+      melody: [0, 2, 4, 6, 7, 9, 11, 12, 11, 9, 7, 6, 4, 2, 0, null,
+               7, 9, 11, 12, 14, 12, 11, 9, 7, 6, 4, 2, 4, 6, 7, null],
+      chords: [[0, 7, 11], [2, 6, 9], [4, 7, 11], [6, 9, 14]],
+      chordEvery: 8,
+      bass: [0, 0, 7, 0, 4, 0, 7, 0],
+      bassOct: 0.5
+    },
+    // Mountain Pass — Phrygian tension, cold and exposed
+    pass: {
+      base: 130, wave: "sawtooth", tempo: 0.52,
+      melody: [0, 1, 3, 5, 7, 8, 7, 5, 3, 1, 0, 3, 7, 10, 8, null,
+               0, 1, 3, 7, 8, 10, 8, 7, 5, 3, 1, 0, null, 0, 1, null],
+      chords: [[0, 7, 10], [1, 5, 8], [3, 7, 10], [0, 3, 7]],
+      chordEvery: 8,
+      bass: [0, 0, 1, 0, 3, 0, 7, 0],
+      bassOct: 0.5
+    },
+    // Ruins — Locrian dread, sparse, haunting
+    ruins: {
+      base: 110, wave: "triangle", tempo: 0.72,
+      melody: [0, 1, 3, null, 6, null, 8, 6, null, 3, 1, 0, null, 8, 6, null,
+               0, null, 6, null, 8, 10, 8, 6, null, 3, null, 1, 0, null, null, null],
+      chords: [[0, 6, 8], [1, 6, 10], [3, 8, 13], [0, 3, 6]],
+      chordEvery: 8,
+      bass: [0, 0, 6, 0, 1, 0, 6, 0],
+      bassOct: 0.5
+    },
+    // Throne Room — majestic, low D, full voicing, slow and weighty
+    throne: {
+      base: 98, wave: "sine", tempo: 0.78,
+      melody: [0, 3, 7, 10, 12, 15, 12, 10, 7, 3, 0, null, 5, 8, 12, null,
+               0, 7, 12, 15, 19, 15, 12, 7, 5, 3, 0, 3, 7, 10, null, null],
+      chords: [[0, 7, 12], [3, 7, 10], [5, 8, 12], [0, 5, 10]],
+      chordEvery: 4,
+      bass: [0, 0, 5, 0, 3, 0, 7, 0],
+      bassOct: 0.5
+    },
+    // Battle — diminished / octatonic, fast, aggressive, urgent
+    battle: {
+      base: 164, wave: "square", tempo: 0.14,
+      melody: [0, 3, 6, 9, 0, 6, 3, 9, 1, 4, 7, 10, 1, 7, 4, 10,
+               0, 1, 3, 6, 7, 9, 10, null, 0, 3, 6, 9, 7, 4, 1, null],
+      chords: [[0, 6, 9], [3, 6, 10], [1, 4, 9], [0, 3, 7]],
+      chordEvery: 8,
+      bass: [0, 3, 6, 9, 0, 6, 3, 9],
+      bassOct: 0.5
+    }
   };
   let musicId = null, musicTimer = 0, musicStep = 0;
   function playMusic(id) {
     if (musicId === id) return;
     musicId = id;
     musicStep = 0;
+    musicTimer = 0;
   }
   function tickMusic(dt) {
     if (!actx || !musicId || S.settings.vol <= 0) return;
@@ -162,25 +241,58 @@
     musicTimer += dt / 1000;
     if (musicTimer < tune.tempo) return;
     musicTimer = 0;
-    const n = tune.scale[musicStep % tune.scale.length];
-    musicStep++;
-    const o = actx.createOscillator();
-    const g = actx.createGain();
-    o.type = tune.wave;
-    o.frequency.value = tune.base * Math.pow(2, n / 12);
-    o.connect(g); g.connect(master);
+    const step = musicStep++;
     const t = actx.currentTime;
-    g.gain.setValueAtTime(0.035, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + tune.tempo * 1.6);
-    o.start(t); o.stop(t + tune.tempo * 1.8);
-    if (musicStep % 4 === 0) {
-      const d = actx.createOscillator();
-      const dg = actx.createGain();
-      d.type = "sine"; d.frequency.value = tune.base / 2;
-      d.connect(dg); dg.connect(master);
-      dg.gain.setValueAtTime(0.02, t);
-      dg.gain.exponentialRampToValueAtTime(0.001, t + tune.tempo * 2);
-      d.start(t); d.stop(t + tune.tempo * 2);
+    const semitone = tune.melody[step % tune.melody.length];
+
+    // Melody note (skip if rest)
+    if (semitone !== null) {
+      const o = actx.createOscillator();
+      const g = actx.createGain();
+      o.type = tune.wave;
+      o.frequency.value = tune.base * Math.pow(2, semitone / 12);
+      // Subtle vibrato on slow tunes
+      if (tune.tempo >= 0.45) {
+        const lfo = actx.createOscillator();
+        const lfoG = actx.createGain();
+        lfo.frequency.value = 5;
+        lfoG.gain.value = tune.base * 0.003;
+        lfo.connect(lfoG); lfoG.connect(o.frequency);
+        lfo.start(t); lfo.stop(t + tune.tempo * 1.8);
+      }
+      o.connect(g); g.connect(master);
+      g.gain.setValueAtTime(0.04, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + tune.tempo * 1.5);
+      o.start(t); o.stop(t + tune.tempo * 1.7);
+    }
+
+    // Bass note every beat
+    const bassNote = tune.bass[step % tune.bass.length];
+    if (bassNote !== null) {
+      const b = actx.createOscillator();
+      const bg = actx.createGain();
+      b.type = "sine";
+      b.frequency.value = tune.base * tune.bassOct * Math.pow(2, bassNote / 12);
+      b.connect(bg); bg.connect(master);
+      bg.gain.setValueAtTime(0.03, t);
+      bg.gain.exponentialRampToValueAtTime(0.001, t + tune.tempo * 1.9);
+      b.start(t); b.stop(t + tune.tempo * 2);
+    }
+
+    // Chord voicing every N steps
+    if (tune.chords && step % tune.chordEvery === 0) {
+      const chord = tune.chords[Math.floor(step / tune.chordEvery) % tune.chords.length];
+      chord.forEach((cn, i) => {
+        const c = actx.createOscillator();
+        const cg = actx.createGain();
+        c.type = tune.wave === "square" ? "sawtooth" : "sine";
+        c.frequency.value = tune.base * Math.pow(2, cn / 12);
+        c.connect(cg); cg.connect(master);
+        const vel = 0.012 - i * 0.003;
+        cg.gain.setValueAtTime(vel, t + i * 0.018);
+        cg.gain.exponentialRampToValueAtTime(0.001, t + tune.tempo * tune.chordEvery * 0.9);
+        c.start(t + i * 0.018); c.stop(t + tune.tempo * tune.chordEvery);
+      });
     }
   }
 
