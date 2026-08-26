@@ -115,6 +115,22 @@ window.MAPS = (() => {
     return { id, name, music, w: m.w, h: m.h, tiles: m.tiles, ...(extras || {}) };
   }
 
+  // Bilinear value noise — returns a function(x, y) -> [0,1]
+  function noise2d(seed, W, H, scale) {
+    const r = rng(seed);
+    const gw = Math.ceil(W / scale) + 2;
+    const gh = Math.ceil(H / scale) + 2;
+    const grid = Array.from({ length: gh }, () => Array.from({ length: gw }, () => r()));
+    return (x, y) => {
+      const gx = Math.floor(x / scale), gy = Math.floor(y / scale);
+      const fx = (x / scale) - gx, fy = (y / scale) - gy;
+      const cx = (v) => Math.min(v, gw - 1), cy = (v) => Math.min(v, gh - 1);
+      const a = grid[cy(gy)][cx(gx)], b = grid[cy(gy)][cx(gx + 1)];
+      const c = grid[cy(gy + 1)][cx(gx)], d = grid[cy(gy + 1)][cx(gx + 1)];
+      return a * (1 - fx) * (1 - fy) + b * fx * (1 - fy) + c * (1 - fx) * fy + d * fx * fy;
+    };
+  }
+
   const M = {};
   const DOORS = {};
 
@@ -265,225 +281,330 @@ window.MAPS = (() => {
         { type: "chest", x: 91, y: 62, id: "chest_village_petal", item: "lotus_petal" },
         { type: "sign", x: 46, y: 12, text: "Lotus-Step Village — last kind light before the trees begin to speak." },
         { type: "trigger", x: 42, y: 72, w: 10, h: 1, flagNeed: "intro_done", flagNeedOff: "camp1_done", scene: "first_camp" },
-        { type: "warp", x: 44, y: 76, map: "forest", tx: 50, ty: 4, dir: "down" },
-        { type: "warp", x: 45, y: 76, map: "forest", tx: 50, ty: 4, dir: "down" },
-        { type: "warp", x: 46, y: 76, map: "forest", tx: 50, ty: 4, dir: "down" },
-        { type: "warp", x: 47, y: 76, map: "forest", tx: 50, ty: 4, dir: "down" }
+        { type: "warp", x: 44, y: 76, map: "forest", tx: 100, ty: 4, dir: "down" },
+        { type: "warp", x: 45, y: 76, map: "forest", tx: 100, ty: 4, dir: "down" },
+        { type: "warp", x: 46, y: 76, map: "forest", tx: 100, ty: 4, dir: "down" },
+        { type: "warp", x: 47, y: 76, map: "forest", tx: 100, ty: 4, dir: "down" }
       ]
     });
   })();
 
-  // ----- FOREST 104x88 -----
+  // ----- FOREST 200x160 (procedural) -----
   (function () {
     const rnd = rng(404);
-    const m = make(104, 88, t.TREE);
-    rect(m, 2, 2, 100, 84, t.GRASS);
-    scatter(m, 2, 2, 100, 84, t.TREE, 1400, (c) => c === t.GRASS, rnd);
-    scatter(m, 2, 2, 100, 84, t.DEAD, 80, (c) => c === t.GRASS || c === t.TREE, rnd);
-    scatter(m, 2, 2, 100, 84, t.HEDGE, 60, (c) => c === t.GRASS, rnd);
-    // main trail
-    line(m, 50, 2, 50, 18, t.DIRT, 1);
-    line(m, 50, 18, 28, 32, t.DIRT, 1);
-    line(m, 28, 32, 28, 48, t.DIRT, 1);
-    line(m, 28, 48, 50, 58, t.DIRT, 1);
-    line(m, 50, 58, 50, 84, t.DIRT, 1);
-    line(m, 50, 18, 74, 30, t.DIRT, 1);
-    line(m, 74, 30, 78, 52, t.DIRT, 1);
-    line(m, 78, 52, 60, 64, t.DIRT, 1);
-    line(m, 60, 64, 50, 70, t.DIRT, 1);
-    line(m, 28, 40, 12, 44, t.DIRT, 1);
-    line(m, 74, 36, 94, 40, t.DIRT, 1);
-    // stream
-    canalV(m, 40, 20, 50, 2);
-    bridgeH(m, 40, 32, 2);
-    canalH(m, 50, 40, 62, 2);
-    bridgeV(m, 50, 50, 2);
-    // clearings
-    rect(m, 22, 36, 14, 10, t.GRASS);
-    scatter(m, 22, 36, 14, 10, t.FLOWER, 16, () => true, rnd);
-    set(m, 28, 40, t.ALTAR);
-    rect(m, 68, 28, 16, 12, t.GRASS);
-    scatter(m, 68, 28, 16, 12, t.FLOWER, 10, () => true, rnd);
-    set(m, 76, 32, t.STATUE);
-    // corrupt grove
-    rect(m, 16, 58, 22, 16, t.CORRUPT);
-    scatter(m, 16, 58, 22, 16, t.DEAD, 28, () => true, rnd);
-    // boss grove
-    rect(m, 40, 68, 24, 14, t.CORRUPT);
-    scatter(m, 40, 68, 24, 14, t.DEAD, 18, () => true, rnd);
-    rect(m, 48, 72, 8, 6, t.DIRT);
-    set(m, 52, 74, t.ALTAR);
-    // east ruin
-    rect(m, 84, 54, 12, 10, t.RUBBLE);
-    rect(m, 86, 56, 8, 6, t.DIRT);
-    set(m, 90, 58, t.STATUE);
-    lamps(m, 49, 6, 16, 5);
-    lamps(m, 27, 34, 48, 5);
-    lamps(m, 51, 60, 80, 6);
+    const W = 200, H = 160;
+    const m = make(W, H, t.TREE);
+    // Noise-based biome layers
+    const n1 = noise2d(404, W, H, 22);   // open grass patches
+    const n2 = noise2d(807, W, H, 18);   // corrupt zones
+    const n3 = noise2d(1123, W, H, 28);  // wetland patches
+    const n4 = noise2d(321, W, H, 12);   // tree density
+    for (let y = 1; y < H - 1; y++) {
+      for (let x = 1; x < W - 1; x++) {
+        const v1 = n1(x, y), v2 = n2(x, y), v3 = n3(x, y), v4 = n4(x, y);
+        if (v2 > 0.73 && y > 30) {
+          set(m, x, y, t.CORRUPT);
+        } else if (v3 > 0.77 && y > 40 && y < H - 20) {
+          set(m, x, y, t.WATER);
+        } else if (v1 > 0.52) {
+          set(m, x, y, v4 > 0.58 ? t.GRASS : t.DEAD);
+        } else {
+          set(m, x, y, t.TREE);
+        }
+      }
+    }
+    // Main winding trail (north to south)
+    line(m, 100, 2, 100, 22, t.DIRT, 1);
+    line(m, 100, 22, 80, 40, t.DIRT, 1);
+    line(m, 80, 40, 80, 60, t.DIRT, 1);
+    line(m, 80, 60, 100, 74, t.DIRT, 1);
+    line(m, 100, 74, 112, 92, t.DIRT, 1);
+    line(m, 112, 92, 100, 112, t.DIRT, 1);
+    line(m, 100, 112, 100, 132, t.DIRT, 1);
+    line(m, 100, 132, 100, 156, t.DIRT, 1);
+    // Branch trails
+    line(m, 100, 22, 132, 36, t.DIRT, 1);
+    line(m, 132, 36, 150, 52, t.DIRT, 1);
+    line(m, 150, 52, 142, 72, t.DIRT, 1);
+    line(m, 80, 40, 56, 44, t.DIRT, 1);
+    line(m, 56, 44, 40, 62, t.DIRT, 1);
+    line(m, 80, 60, 60, 74, t.DIRT, 1);
+    line(m, 60, 74, 44, 80, t.DIRT, 1);
+    line(m, 112, 92, 132, 98, t.DIRT, 1);
+    line(m, 132, 98, 162, 102, t.DIRT, 1);
+    line(m, 100, 112, 80, 116, t.DIRT, 1);
+    line(m, 112, 92, 130, 106, t.DIRT, 1);
+    line(m, 130, 106, 162, 110, t.DIRT, 1);
+    // Rivers
+    canalV(m, 70, 20, 62, 2);
+    bridgeH(m, 70, 40, 2);
+    canalH(m, 62, 72, 92, 2);
+    bridgeV(m, 80, 60, 2);
+    canalV(m, 120, 68, 90, 2);
+    bridgeH(m, 120, 74, 2);
+    canalH(m, 100, 102, 132, 2);
+    bridgeV(m, 100, 112, 2);
+    // West clearing — altar camp (Master Shen)
+    rect(m, 72, 34, 20, 14, t.GRASS);
+    scatter(m, 72, 34, 20, 14, t.FLOWER, 24, () => true, rnd);
+    set(m, 80, 40, t.ALTAR);
+    set(m, 74, 36, t.BENCH); set(m, 88, 36, t.BENCH);
+    // East clearing — stone statue
+    rect(m, 122, 30, 20, 16, t.GRASS);
+    scatter(m, 122, 30, 20, 16, t.FLOWER, 18, () => true, rnd);
+    set(m, 132, 36, t.STATUE);
+    // Southwest clearing
+    rect(m, 34, 56, 18, 12, t.GRASS);
+    scatter(m, 34, 56, 18, 12, t.FLOWER, 14, () => true, rnd);
+    set(m, 42, 62, t.ALTAR);
+    // Southeast clearing
+    rect(m, 114, 86, 24, 16, t.GRASS);
+    scatter(m, 114, 86, 24, 16, t.FLOWER, 20, () => true, rnd);
+    set(m, 124, 92, t.ALTAR);
+    set(m, 118, 90, t.BENCH); set(m, 128, 90, t.BENCH);
+    // Hidden NW grotto
+    rect(m, 14, 48, 18, 12, t.GRASS);
+    set(m, 22, 54, t.FOUNT);
+    frame(m, 14, 48, 18, 12, t.HEDGE);
+    // Ancient shrine SE corner
+    rect(m, 158, 132, 14, 12, t.MARBLE);
+    frame(m, 159, 133, 12, 10, t.WALL);
+    set(m, 164, 136, t.ALTAR); set(m, 165, 136, t.ALTAR);
+    set(m, 164, 141, t.DOOR);
+    // Mid-map camp
+    rect(m, 98, 70, 8, 6, t.DIRT);
+    set(m, 101, 72, t.ALTAR); set(m, 99, 74, t.CRATE); set(m, 105, 72, t.BENCH);
+    // Lower camp
+    rect(m, 76, 108, 8, 6, t.DIRT);
+    set(m, 80, 110, t.ALTAR);
+    // Corrupt grove (mid)
+    rect(m, 28, 72, 28, 22, t.CORRUPT);
+    scatter(m, 28, 72, 28, 22, t.DEAD, 42, () => true, rnd);
+    // Boss grove (south)
+    rect(m, 88, 142, 28, 16, t.CORRUPT);
+    scatter(m, 88, 142, 28, 16, t.DEAD, 24, () => true, rnd);
+    rect(m, 96, 146, 12, 8, t.DIRT);
+    set(m, 101, 149, t.ALTAR);
+    // East ruins pocket
+    rect(m, 158, 82, 16, 14, t.RUBBLE);
+    rect(m, 160, 84, 10, 8, t.DIRT);
+    set(m, 164, 88, t.STATUE);
+    lamps(m, 99, 6, 22, 6);
+    lamps(m, 79, 42, 60, 6);
+    lamps(m, 99, 76, 132, 6);
+    lamps(m, 111, 94, 110, 6);
 
     M.forest = done("forest", "Whispering Forest", "forest", m, {
-      spawn: { x: 50, y: 4 },
+      spawn: { x: 100, y: 4 },
       events: [
-        { type: "warp", x: 49, y: 2, map: "village", tx: 48, ty: 68, dir: "up" },
-        { type: "warp", x: 50, y: 2, map: "village", tx: 48, ty: 68, dir: "up" },
-        { type: "warp", x: 51, y: 2, map: "village", tx: 48, ty: 68, dir: "up" },
-        { type: "save", x: 28, y: 40 },
-        { type: "save", x: 76, y: 32 },
-        { type: "save", x: 52, y: 64 },
-        { type: "npc", x: 29, y: 41, id: "shen", name: "Master Shen", hue: "#c0c4a0", scene: "quest_shen", appearIfOff: "quest_shen" },
-        { type: "chest", x: 12, y: 44, id: "chest_forest_bow", item: "whisperwood_bow" },
-        { type: "chest", x: 94, y: 40, id: "chest_forest_petal", item: "lotus_petal" },
-        { type: "chest", x: 90, y: 57, id: "chest_forest_salve", item: "sealing_salve" },
-        { type: "encounter", x: 36, y: 22, battle: "tutorial_wisp", once: "tut_wisp", appearIfOff: "tut_wisp" },
-        { type: "encounter", x: 20, y: 64, battle: "forest_vines", once: "forest_skirmish", appearIfOff: "forest_skirmish" },
-        { type: "encounter", x: 52, y: 74, battle: "hollow_oak", once: "hollow_oak_dead", appearIfOff: "hollow_oak_dead", name: "Heartwood Hollow" },
-        { type: "sign", x: 50, y: 8, text: "The trees whisper. Do not answer unless you can afford the reply." },
-        { type: "sign", x: 76, y: 34, text: "A stone with no name. Someone loved a scout here." },
-        { type: "warp", x: 49, y: 85, map: "meridia", tx: 50, ty: 6, dir: "down", needFlag: "hollow_oak_dead" },
-        { type: "warp", x: 50, y: 85, map: "meridia", tx: 50, ty: 6, dir: "down", needFlag: "hollow_oak_dead" },
-        { type: "warp", x: 51, y: 85, map: "meridia", tx: 50, ty: 6, dir: "down", needFlag: "hollow_oak_dead" },
-        { type: "block", x: 50, y: 85, needFlagOff: "hollow_oak_dead", text: "The heartwood still bars the west." }
+        { type: "warp", x: 99, y: 2, map: "village", tx: 45, ty: 68, dir: "up" },
+        { type: "warp", x: 100, y: 2, map: "village", tx: 46, ty: 68, dir: "up" },
+        { type: "warp", x: 101, y: 2, map: "village", tx: 47, ty: 68, dir: "up" },
+        { type: "save", x: 80, y: 40 },
+        { type: "save", x: 132, y: 36 },
+        { type: "save", x: 101, y: 72 },
+        { type: "save", x: 124, y: 92 },
+        { type: "save", x: 80, y: 110 },
+        { type: "npc", x: 81, y: 41, id: "shen", name: "Master Shen", hue: "#c0c4a0", scene: "quest_shen", appearIfOff: "quest_shen" },
+        { type: "chest", x: 16, y: 54, id: "chest_forest_grotto", item: "moonwell_chalice" },
+        { type: "chest", x: 40, y: 62, id: "chest_forest_bow", item: "whisperwood_bow" },
+        { type: "chest", x: 154, y: 88, id: "chest_forest_petal", item: "lotus_petal" },
+        { type: "chest", x: 160, y: 86, id: "chest_forest_salve", item: "sealing_salve" },
+        { type: "chest", x: 163, y: 135, id: "chest_forest_shrine", item: "prayer_beads" },
+        { type: "encounter", x: 86, y: 24, battle: "tutorial_wisp", once: "tut_wisp", appearIfOff: "tut_wisp" },
+        { type: "encounter", x: 38, y: 80, battle: "forest_vines", once: "forest_skirmish", appearIfOff: "forest_skirmish" },
+        { type: "encounter", x: 101, y: 149, battle: "hollow_oak", once: "hollow_oak_dead", appearIfOff: "hollow_oak_dead", name: "Heartwood Hollow" },
+        { type: "sign", x: 100, y: 8, text: "The trees whisper. Do not answer unless you can afford the reply." },
+        { type: "sign", x: 132, y: 38, text: "A stone with no name. Someone loved a scout here." },
+        { type: "sign", x: 22, y: 50, text: "Grotto of Quiet Weeping — some names endure in water." },
+        { type: "sign", x: 164, y: 134, text: "Ancient Shrine of the Second Light — old when the forest was young." },
+        { type: "warp", x: 99, y: 157, map: "meridia", tx: 79, ty: 8, dir: "down", needFlag: "hollow_oak_dead" },
+        { type: "warp", x: 100, y: 157, map: "meridia", tx: 79, ty: 8, dir: "down", needFlag: "hollow_oak_dead" },
+        { type: "warp", x: 101, y: 157, map: "meridia", tx: 79, ty: 8, dir: "down", needFlag: "hollow_oak_dead" },
+        { type: "block", x: 100, y: 157, needFlagOff: "hollow_oak_dead", text: "The heartwood still bars the west." }
       ]
     });
   })();
 
-  // ----- MERIDIA 108x84 -----
+  // ----- MERIDIA 160x120 (expanded city) -----
   (function () {
     const rnd = rng(900);
-    const m = make(108, 84, t.GRASS);
-    // mountain walls
-    rect(m, 0, 0, 108, 4, t.MTN);
-    rect(m, 0, 0, 6, 84, t.MTN);
-    rect(m, 102, 0, 6, 84, t.MTN);
-    rect(m, 0, 80, 108, 4, t.MTN);
-    rect(m, 6, 4, 96, 8, t.PALE);
-    // canals
-    canalV(m, 30, 14, 70, 4);
-    canalV(m, 74, 14, 70, 4);
-    canalH(m, 70, 30, 77, 3);
-    // streets
-    rect(m, 34, 12, 40, 58, t.PATH);
-    rect(m, 10, 24, 20, 6, t.PATH);
-    rect(m, 78, 24, 20, 6, t.PATH);
-    rect(m, 10, 48, 20, 6, t.PATH);
-    rect(m, 78, 48, 20, 6, t.PATH);
-    plaza(m, 48, 22, 12, 10);
-    set(m, 54, 27, t.ALTAR);
-    set(m, 50, 24, t.BENCH); set(m, 57, 24, t.BENCH);
-    set(m, 50, 30, t.STATUE); set(m, 57, 30, t.STALL);
-    set(m, 47, 27, t.LAMP); set(m, 60, 27, t.LAMP);
-    lamps(m, 35, 14, 66, 5); lamps(m, 72, 14, 66, 5);
-    lamps(m, 48, 14, 20, 5); lamps(m, 60, 14, 20, 5);
-    bridgeH(m, 30, 26, 4); bridgeH(m, 74, 26, 4);
-    bridgeH(m, 30, 50, 4); bridgeH(m, 74, 50, 4);
-    bridgeH(m, 30, 64, 4); bridgeH(m, 74, 64, 4);
-    // districts
-    const tavern = house(m, 10, 16, 9, 8);
-    const smith = house(m, 84, 16, 9, 8);
-    const keep = house(m, 10, 40, 8, 7);
-    const korin = house(m, 84, 40, 8, 7);
-    house(m, 10, 56, 8, 7);
-    house(m, 20, 56, 7, 6);
-    house(m, 82, 56, 8, 7);
-    house(m, 92, 56, 7, 6);
-    house(m, 40, 58, 8, 7);
-    house(m, 52, 58, 7, 6);
-    house(m, 62, 58, 8, 7);
-    garden(m, 38, 14, 8, 6, rnd);
-    garden(m, 62, 14, 8, 6, rnd);
-    set(m, 42, 46, t.STALL); set(m, 46, 46, t.STALL); set(m, 50, 46, t.STALL);
-    set(m, 58, 46, t.STALL); set(m, 62, 46, t.STALL);
-    set(m, 44, 52, t.BENCH); set(m, 64, 52, t.BENCH);
-    set(m, 54, 40, t.STATUE);
-    scatter(m, 8, 66, 92, 12, t.FLOWER, 40, (c) => c === t.GRASS, rnd);
-    // south gate road
-    rect(m, 50, 70, 8, 10, t.PATH);
-    rect(m, 48, 76, 12, 4, t.PALE);
-    set(m, 49, 76, t.WALL); set(m, 58, 76, t.WALL);
+    const W = 160, H = 120;
+    const m = make(W, H, t.GRASS);
+    // Mountain border
+    rect(m, 0, 0, W, 4, t.MTN);
+    rect(m, 0, 0, 6, H, t.MTN);
+    rect(m, W - 6, 0, 6, H, t.MTN);
+    rect(m, 0, H - 4, W, 4, t.MTN);
+    rect(m, 6, 4, W - 12, 8, t.PALE);
+    // Main streets
+    rect(m, 50, 12, 60, 80, t.PATH);     // north-south boulevard
+    rect(m, 10, 30, 40, 6, t.PATH);      // west cross street
+    rect(m, 110, 30, 40, 6, t.PATH);     // east cross street
+    rect(m, 10, 52, 40, 6, t.PATH);      // west mid street
+    rect(m, 110, 52, 40, 6, t.PATH);     // east mid street
+    rect(m, 10, 72, 140, 6, t.PATH);     // south market street
+    rect(m, 50, 92, 60, 22, t.PATH);     // south road to gate
+    // Plazas
+    plaza(m, 68, 24, 24, 14);
+    set(m, 79, 30, t.ALTAR);
+    set(m, 72, 26, t.BENCH); set(m, 84, 26, t.BENCH);
+    set(m, 72, 36, t.STATUE); set(m, 84, 36, t.STALL);
+    set(m, 70, 30, t.LAMP); set(m, 88, 30, t.LAMP);
+    plaza(m, 68, 64, 24, 10);
+    set(m, 79, 68, t.STATUE);
+    // Canals
+    canalV(m, 42, 18, 78, 4);
+    canalV(m, 110, 18, 78, 4);
+    canalH(m, 78, 42, 113, 3);
+    bridgeH(m, 42, 30, 4); bridgeH(m, 110, 30, 4);
+    bridgeH(m, 42, 54, 4); bridgeH(m, 110, 54, 4);
+    bridgeH(m, 42, 74, 4); bridgeH(m, 110, 74, 4);
+    lamps(m, 51, 14, 90, 5); lamps(m, 108, 14, 90, 5);
+    lamps(m, 72, 14, 24, 5); lamps(m, 84, 14, 24, 5);
+    // Districts — west
+    const tavern = house(m, 10, 18, 12, 10);
+    const keep = house(m, 10, 38, 10, 8);
+    house(m, 10, 58, 10, 8);
+    house(m, 22, 18, 10, 8);
+    house(m, 22, 38, 9, 7);
+    house(m, 22, 58, 9, 7);
+    house(m, 10, 76, 10, 8);
+    house(m, 22, 76, 9, 7);
+    house(m, 34, 76, 8, 7);
+    // Districts — east
+    const smith = house(m, 128, 18, 12, 10);
+    const korin = house(m, 128, 38, 10, 8);
+    house(m, 128, 58, 10, 8);
+    house(m, 116, 18, 10, 8);
+    house(m, 116, 38, 9, 7);
+    house(m, 116, 58, 9, 7);
+    house(m, 128, 76, 10, 8);
+    house(m, 116, 76, 9, 7);
+    house(m, 104, 76, 8, 7);
+    // Central district houses (south market)
+    house(m, 52, 86, 10, 9);
+    house(m, 64, 86, 9, 9);
+    house(m, 76, 86, 10, 9);
+    house(m, 88, 86, 9, 9);
+    house(m, 100, 86, 10, 9);
+    garden(m, 56, 14, 10, 8, rnd);
+    garden(m, 94, 14, 10, 8, rnd);
+    for (let x = 56; x < 108; x += 6) set(m, x, 72, t.STALL);
+    set(m, 60, 68, t.BENCH); set(m, 80, 68, t.BENCH); set(m, 100, 68, t.BENCH);
+    set(m, 79, 42, t.STATUE);
+    scatter(m, 8, 90, 144, 14, t.FLOWER, 60, (c) => c === t.GRASS, rnd);
+    // South gate
+    rect(m, 74, 108, 12, 8, t.PATH);
+    set(m, 72, 110, t.LAMP); set(m, 86, 110, t.LAMP);
+    set(m, 75, 112, t.WALL); set(m, 84, 112, t.WALL);
+
+    DOORS.tavern = tavern; DOORS.smith = smith; DOORS.keep = keep; DOORS.korin = korin;
 
     M.meridia = done("meridia", "Kingdom of Meridia", "city", m, {
-      spawn: { x: 54, y: 8 },
+      spawn: { x: 79, y: 8 },
       events: [
-        { type: "warp", x: 53, y: 5, map: "forest", tx: 50, ty: 83, dir: "up" },
-        { type: "warp", x: 54, y: 5, map: "forest", tx: 50, ty: 83, dir: "up" },
-        { type: "warp", x: 55, y: 5, map: "forest", tx: 50, ty: 83, dir: "up" },
+        { type: "warp", x: 78, y: 5, map: "forest", tx: 100, ty: 155, dir: "up" },
+        { type: "warp", x: 79, y: 5, map: "forest", tx: 100, ty: 155, dir: "up" },
+        { type: "warp", x: 80, y: 5, map: "forest", tx: 100, ty: 155, dir: "up" },
         { type: "warp", x: tavern.dx, y: tavern.dy, map: "tavern", tx: 8, ty: 12, dir: "up", door: true },
         { type: "warp", x: smith.dx, y: smith.dy, map: "blacksmith", tx: 7, ty: 10, dir: "up", door: true },
         { type: "warp", x: keep.dx, y: keep.dy, map: "keeper_house", tx: 6, ty: 8, dir: "up", door: true },
         { type: "warp", x: korin.dx, y: korin.dy, map: "korin_home", tx: 6, ty: 8, dir: "up", door: true },
-        { type: "npc", x: 54, y: 30, id: "lyra_npc", name: "Lyra", hue: "#c4a06a", scene: "meridia_arrival", appearIfOff: "lyra_joined" },
-        { type: "npc", x: 62, y: 40, id: "captain", name: "Watch-Captain", hue: "#7080a0", talk: "captain" },
-        { type: "npc", x: 46, y: 46, id: "granny", name: "Market Granny", hue: "#c0a080", talk: "granny" },
-        { type: "npc", x: 36, y: 36, id: "jori2", name: "Jori", hue: "#e8c070", scene: "canal_quest_start", appearIf: "camp1_done", appearIfOff: "quest_canal" },
-        { type: "npc", x: 50, y: 46, id: "baker2", name: "Spice Seller", hue: "#d09070", talk: "baker" },
-        { type: "npc", x: 20, y: 28, id: "guard", name: "Gate Guard", hue: "#8090a8", talk: "guard" },
-        { type: "npc", x: 80, y: 28, id: "guard2", name: "Canal Watch", hue: "#8090a8", talk: "guard" },
-        { type: "save", x: 54, y: 27 },
-        { type: "chest", x: 12, y: 68, id: "chest_meridia_petal", item: "lotus_petal" },
-        { type: "chest", x: 96, y: 68, id: "chest_meridia_salve", item: "sealing_salve" },
-        { type: "sign", x: 54, y: 16, text: "MERIDIA — By canal and lantern, we keep the west at a polite distance." },
-        { type: "encounter", x: 54, y: 72, battle: "canal_specter", once: "quest_canal", appearIf: "canal_ready", appearIfOff: "quest_canal", name: "The Canal's Mouth" },
-        { type: "warp", x: 53, y: 78, map: "ashen", tx: 18, ty: 4, dir: "down", needFlag: "lyra_joined" },
-        { type: "warp", x: 54, y: 78, map: "ashen", tx: 18, ty: 4, dir: "down", needFlag: "lyra_joined" },
-        { type: "warp", x: 55, y: 78, map: "ashen", tx: 18, ty: 4, dir: "down", needFlag: "lyra_joined" },
-        { type: "block", x: 54, y: 78, needFlagOff: "lyra_joined", text: "The western gate stays shut without a scout's word. Find Lyra in the plaza." }
+        { type: "npc", x: 79, y: 36, id: "lyra_npc", name: "Lyra", hue: "#c4a06a", scene: "meridia_arrival", appearIfOff: "lyra_joined" },
+        { type: "npc", x: 90, y: 50, id: "captain", name: "Watch-Captain", hue: "#7080a0", talk: "captain" },
+        { type: "npc", x: 68, y: 68, id: "granny", name: "Market Granny", hue: "#c0a080", talk: "granny" },
+        { type: "npc", x: 52, y: 44, id: "jori2", name: "Jori", hue: "#e8c070", scene: "canal_quest_start", appearIf: "camp1_done", appearIfOff: "quest_canal" },
+        { type: "npc", x: 76, y: 72, id: "baker2", name: "Spice Seller", hue: "#d09070", talk: "baker" },
+        { type: "npc", x: 20, y: 36, id: "guard", name: "Gate Guard", hue: "#8090a8", talk: "guard" },
+        { type: "npc", x: 120, y: 36, id: "guard2", name: "Canal Watch", hue: "#8090a8", talk: "guard" },
+        { type: "npc", x: 60, y: 76, id: "merchant", name: "Traveling Merchant", hue: "#b0c070", talk: "florist" },
+        { type: "npc", x: 96, y: 76, id: "herbalist", name: "Herbalist", hue: "#70c090", talk: "baker" },
+        { type: "save", x: 79, y: 30 },
+        { type: "save", x: 79, y: 68 },
+        { type: "chest", x: 12, y: 102, id: "chest_meridia_petal", item: "lotus_petal" },
+        { type: "chest", x: 146, y: 102, id: "chest_meridia_salve", item: "sealing_salve" },
+        { type: "chest", x: 60, y: 90, id: "chest_meridia_charm", item: "climber_charm" },
+        { type: "sign", x: 79, y: 18, text: "MERIDIA — By canal and lantern, we keep the west at a polite distance." },
+        { type: "sign", x: 79, y: 70, text: "South Market — The best bread in the west, or possibly the last." },
+        { type: "encounter", x: 79, y: 105, battle: "canal_specter", once: "quest_canal", appearIf: "canal_ready", appearIfOff: "quest_canal", name: "The Canal's Mouth" },
+        { type: "warp", x: 78, y: 114, map: "ashen", tx: 30, ty: 4, dir: "down", needFlag: "lyra_joined" },
+        { type: "warp", x: 79, y: 114, map: "ashen", tx: 30, ty: 4, dir: "down", needFlag: "lyra_joined" },
+        { type: "warp", x: 80, y: 114, map: "ashen", tx: 30, ty: 4, dir: "down", needFlag: "lyra_joined" },
+        { type: "block", x: 79, y: 114, needFlagOff: "lyra_joined", text: "The western gate stays shut without a scout's word. Find Lyra in the plaza." }
       ]
     });
   })();
 
-  // ----- ASHEN PASS 40x110 switchbacks -----
+  // ----- ASHEN PASS 60x160 (expanded switchbacks) -----
   (function () {
     const rnd = rng(3);
-    const m = make(40, 110, t.MTN);
-    rect(m, 2, 2, 36, 106, t.ASH);
-    scatter(m, 2, 2, 36, 106, t.RUBBLE, 120, () => true, rnd);
-    scatter(m, 2, 2, 36, 106, t.DEAD, 40, () => true, rnd);
-    // switchback trail
-    line(m, 18, 2, 18, 16, t.PATH, 1);
-    line(m, 18, 16, 8, 28, t.PATH, 1);
-    line(m, 8, 28, 8, 40, t.PATH, 1);
-    line(m, 8, 40, 28, 52, t.PATH, 1);
-    line(m, 28, 52, 28, 64, t.PATH, 1);
-    line(m, 28, 64, 10, 76, t.PATH, 1);
-    line(m, 10, 76, 10, 88, t.PATH, 1);
-    line(m, 10, 88, 20, 98, t.PATH, 1);
-    line(m, 20, 98, 20, 108, t.PATH, 1);
-    // camps / overlooks
-    rect(m, 14, 18, 10, 6, t.DIRT);
-    set(m, 18, 20, t.ALTAR); set(m, 16, 20, t.BENCH); set(m, 20, 20, t.CRATE);
-    rect(m, 6, 42, 8, 6, t.DIRT);
-    set(m, 8, 44, t.ALTAR);
-    rect(m, 24, 66, 10, 6, t.DIRT);
-    set(m, 28, 68, t.ALTAR); set(m, 26, 68, t.CRATE);
-    rect(m, 8, 90, 10, 6, t.DIRT);
-    set(m, 12, 92, t.STATUE);
-    lamps(m, 17, 4, 14, 5);
-    lamps(m, 9, 30, 40, 5);
-    lamps(m, 27, 54, 64, 5);
-    lamps(m, 11, 78, 88, 5);
-    // cave pockets
-    rect(m, 30, 30, 6, 5, t.RUBBLE);
-    rect(m, 4, 70, 6, 5, t.RUBBLE);
+    const W = 60, H = 160;
+    const m = make(W, H, t.MTN);
+    rect(m, 2, 2, W - 4, H - 4, t.ASH);
+    scatter(m, 2, 2, W - 4, H - 4, t.RUBBLE, 200, () => true, rnd);
+    scatter(m, 2, 2, W - 4, H - 4, t.DEAD, 60, () => true, rnd);
+    // Longer switchback trail
+    line(m, 30, 2, 30, 20, t.PATH, 1);
+    line(m, 30, 20, 14, 36, t.PATH, 1);
+    line(m, 14, 36, 14, 56, t.PATH, 1);
+    line(m, 14, 56, 44, 72, t.PATH, 1);
+    line(m, 44, 72, 44, 92, t.PATH, 1);
+    line(m, 44, 92, 20, 108, t.PATH, 1);
+    line(m, 20, 108, 20, 124, t.PATH, 1);
+    line(m, 20, 124, 38, 138, t.PATH, 1);
+    line(m, 38, 138, 38, 150, t.PATH, 1);
+    line(m, 38, 150, 30, 156, t.PATH, 1);
+    // Overlook branches
+    line(m, 44, 80, 54, 76, t.PATH, 1);
+    line(m, 14, 46, 6, 42, t.PATH, 1);
+    line(m, 20, 116, 8, 114, t.PATH, 1);
+    // Camp clearings
+    rect(m, 22, 22, 16, 8, t.DIRT);
+    set(m, 30, 25, t.ALTAR); set(m, 24, 26, t.BENCH); set(m, 34, 26, t.CRATE);
+    rect(m, 8, 58, 12, 8, t.DIRT);
+    set(m, 12, 62, t.ALTAR); set(m, 10, 60, t.CRATE);
+    rect(m, 36, 94, 14, 8, t.DIRT);
+    set(m, 44, 97, t.ALTAR); set(m, 40, 98, t.BENCH); set(m, 48, 97, t.CRATE);
+    rect(m, 14, 126, 14, 8, t.DIRT);
+    set(m, 20, 130, t.STATUE);
+    rect(m, 30, 150, 14, 8, t.DIRT);
+    set(m, 36, 154, t.ALTAR);
+    // Lamps
+    lamps(m, 29, 4, 20, 5);
+    lamps(m, 15, 38, 56, 5);
+    lamps(m, 43, 74, 92, 5);
+    lamps(m, 21, 110, 124, 5);
+    lamps(m, 39, 140, 150, 5);
+    // Cave pockets
+    rect(m, 46, 42, 8, 6, t.RUBBLE); rect(m, 48, 44, 6, 4, t.DIRT);
+    rect(m, 4, 78, 8, 6, t.RUBBLE);  rect(m, 6, 80, 6, 4, t.DIRT);
+    rect(m, 48, 114, 8, 6, t.RUBBLE); rect(m, 50, 116, 6, 4, t.DIRT);
+    rect(m, 4, 136, 8, 6, t.RUBBLE);  rect(m, 6, 138, 6, 4, t.DIRT);
 
     M.ashen = done("ashen", "Ashen Pass", "pass", m, {
-      spawn: { x: 18, y: 4 },
+      spawn: { x: 30, y: 4 },
       events: [
-        { type: "warp", x: 17, y: 2, map: "meridia", tx: 54, ty: 76, dir: "up" },
-        { type: "warp", x: 18, y: 2, map: "meridia", tx: 54, ty: 76, dir: "up" },
-        { type: "warp", x: 19, y: 2, map: "meridia", tx: 54, ty: 76, dir: "up" },
-        { type: "save", x: 18, y: 20 },
-        { type: "save", x: 8, y: 44 },
-        { type: "save", x: 28, y: 68 },
-        { type: "chest", x: 32, y: 32, id: "chest_pass_charm", item: "climber_charm" },
-        { type: "chest", x: 5, y: 72, id: "chest_pass_petal", item: "lotus_petal" },
-        { type: "trigger", x: 16, y: 50, w: 6, h: 1, scene: "ashen_camp", flagNeedOff: "ashen_camp_done" },
-        { type: "encounter", x: 12, y: 92, battle: "bound_hound", once: "quest_hound", appearIfOff: "quest_hound", name: "The Bound Hound" },
-        { type: "encounter", x: 20, y: 104, battle: "gate_warden", once: "warden_dead", appearIfOff: "warden_dead", name: "Ashen Gate Warden" },
-        { type: "warp", x: 19, y: 107, map: "ruins", tx: 40, ty: 4, dir: "down", needFlag: "warden_dead" },
-        { type: "warp", x: 20, y: 107, map: "ruins", tx: 40, ty: 4, dir: "down", needFlag: "warden_dead" },
-        { type: "warp", x: 21, y: 107, map: "ruins", tx: 40, ty: 4, dir: "down", needFlag: "warden_dead" },
-        { type: "sign", x: 20, y: 8, text: "ASHEN PASS — The mountain keeps what the war would not bury." },
-        { type: "sign", x: 28, y: 66, text: "Look down. Meridia is a rumor of lamps." }
+        { type: "warp", x: 29, y: 2, map: "meridia", tx: 79, ty: 112, dir: "up" },
+        { type: "warp", x: 30, y: 2, map: "meridia", tx: 79, ty: 112, dir: "up" },
+        { type: "warp", x: 31, y: 2, map: "meridia", tx: 79, ty: 112, dir: "up" },
+        { type: "save", x: 30, y: 25 },
+        { type: "save", x: 12, y: 62 },
+        { type: "save", x: 44, y: 97 },
+        { type: "save", x: 36, y: 154 },
+        { type: "chest", x: 50, y: 44, id: "chest_pass_charm", item: "climber_charm" },
+        { type: "chest", x: 7, y: 80, id: "chest_pass_petal", item: "lotus_petal" },
+        { type: "chest", x: 50, y: 116, id: "chest_pass_salve", item: "sealing_salve" },
+        { type: "chest", x: 7, y: 138, id: "chest_pass_beads", item: "prayer_beads" },
+        { type: "trigger", x: 28, y: 56, w: 6, h: 1, scene: "ashen_camp", flagNeedOff: "ashen_camp_done" },
+        { type: "encounter", x: 20, y: 130, battle: "bound_hound", once: "quest_hound", appearIfOff: "quest_hound", name: "The Bound Hound" },
+        { type: "encounter", x: 36, y: 154, battle: "gate_warden", once: "warden_dead", appearIfOff: "warden_dead", name: "Ashen Gate Warden" },
+        { type: "warp", x: 29, y: 157, map: "ruins", tx: 60, ty: 5, dir: "down", needFlag: "warden_dead" },
+        { type: "warp", x: 30, y: 157, map: "ruins", tx: 60, ty: 5, dir: "down", needFlag: "warden_dead" },
+        { type: "warp", x: 31, y: 157, map: "ruins", tx: 60, ty: 5, dir: "down", needFlag: "warden_dead" },
+        { type: "sign", x: 30, y: 8, text: "ASHEN PASS — The mountain keeps what the war would not bury." },
+        { type: "sign", x: 44, y: 94, text: "Look down. Meridia is a rumor of lamps." },
+        { type: "sign", x: 38, y: 152, text: "Beyond here — the ruins remember what we refused to." }
       ]
     });
   })();
