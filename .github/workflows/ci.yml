@@ -74,5 +74,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: headless-chrome-screenshot
-          path: artifacts/homepage.png
+          path: artifacts/
           if-no-files-found: ignore
