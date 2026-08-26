@@ -60,7 +60,12 @@ jobs:
             http://127.0.0.1:8080/index.html
 
           "$CHROME_BIN" --headless --disable-gpu --disable-dev-shm-usage \
-            --dump-dom http://127.0.0.1:8080/index.html | grep -q "Seal of the High Priestess"
+            --dump-dom http://127.0.0.1:8080/index.html > artifacts/dom.html
+
+          if ! grep -q "Seal of the High Priestess" artifacts/dom.html; then
+            echo "Expected title text was not found in DOM output"
+            exit 1
+          fi
 
           test -s artifacts/homepage.png
 
