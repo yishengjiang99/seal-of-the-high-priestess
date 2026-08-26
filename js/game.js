@@ -1829,7 +1829,7 @@
     if (!b || b.phase !== "cmd" || !b.actor || b.actor.side !== "p") return false;
     const sk = canUseBattleSkill(b.actor, "healing_rain");
     if (!sk) return false;
-    b.healingRainAim = { skillId: sk.id, radius: 180 };
+    b.healingRainAim = { skillId: "healing_rain", radius: 180 };
     requestBattlePointerLock();
     renderBattleHUD();
     toast("Healing Rain ready — aim, then click or Z. X cancels.");
@@ -1848,6 +1848,7 @@
   function confirmHealingRainAim() {
     const b = S.battle;
     if (!b || !b.healingRainAim || !b.actor) return;
+    S.mouse.click = false;
     const sk = canUseBattleSkill(b.actor, b.healingRainAim.skillId);
     b.healingRainAim = null;
     releaseBattlePointerLock();
