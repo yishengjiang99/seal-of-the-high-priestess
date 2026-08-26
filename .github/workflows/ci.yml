@@ -1,0 +1,60 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: JavaScript syntax checks
+        run: |
+          node --check js/content.js
+          node --check js/dialogue.js
+          node --check js/game.js
+          node --check js/maps.js
+
+      - name: Set up Chrome
+        uses: browser-actions/setup-chrome@v1
+
+      - name: Capture headless Chrome screenshot
+        run: |
+          mkdir -p artifacts
+          python3 -m http.server 8080 &
+          server_pid=$!
+          trap "kill $server_pid" EXIT
+
+          for _ in {1..20}; do
+            if curl -sSf http://127.0.0.1:8080/index.html >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+
+          chrome --headless --disable-gpu --no-sandbox \
+            --window-size=1366,768 \
+            --screenshot=artifacts/homepage.png \
+            http://127.0.0.1:8080/index.html
+
+          chrome --headless --disable-gpu --no-sandbox \
+            --dump-dom http://127.0.0.1:8080/index.html | grep -q "Seal of the High Priestess"
+
+          test -s artifacts/homepage.png
+
+      - name: Upload screenshot artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: headless-chrome-screenshot
+          path: artifacts/homepage.png
