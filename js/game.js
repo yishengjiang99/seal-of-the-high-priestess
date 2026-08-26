@@ -252,18 +252,21 @@
       o.type = tune.wave;
       o.frequency.value = tune.base * Math.pow(2, semitone / 12);
       // Subtle vibrato on slow tunes
+      let lfo = null, lfoG = null;
       if (tune.tempo >= 0.45) {
-        const lfo = actx.createOscillator();
-        const lfoG = actx.createGain();
+        lfo = actx.createOscillator();
+        lfoG = actx.createGain();
         lfo.frequency.value = 5;
         lfoG.gain.value = tune.base * 0.003;
         lfo.connect(lfoG); lfoG.connect(o.frequency);
-        lfo.start(t); lfo.stop(t + tune.tempo * 1.8);
+        lfo.start(t); lfo.stop(t + tune.tempo * 1.7);
       }
       o.connect(g); g.connect(master);
       g.gain.setValueAtTime(0.04, t);
       g.gain.exponentialRampToValueAtTime(0.001, t + tune.tempo * 1.5);
       o.start(t); o.stop(t + tune.tempo * 1.7);
+      // Disconnect vibrato nodes when the melody note ends to allow GC
+      if (lfo) o.onended = () => { try { lfoG.disconnect(); lfo.disconnect(); } catch (_) {} };
     }
 
     // Bass note every beat
@@ -288,7 +291,7 @@
         c.type = tune.wave === "square" ? "sawtooth" : "sine";
         c.frequency.value = tune.base * Math.pow(2, cn / 12);
         c.connect(cg); cg.connect(master);
-        const vel = 0.012 - i * 0.003;
+        const vel = Math.max(0.001, 0.012 - i * 0.003);
         cg.gain.setValueAtTime(vel, t + i * 0.018);
         cg.gain.exponentialRampToValueAtTime(0.001, t + tune.tempo * tune.chordEvery * 0.9);
         c.start(t + i * 0.018); c.stop(t + tune.tempo * tune.chordEvery);
