@@ -300,5 +300,192 @@ window.SCENES = {
       { s: "", t: "End of the slice. The Throne waits." },
       { set: { slice_ending_seen: 1 } }
     ]
+  },
+
+  midnight_watch: {
+    id: "midnight_watch", bg: "camp", mode: "vn",
+    onEnd: { type: "map" },
+    script: [
+      { s: "", t: "The third watch. The fire has gone to embers. Kael is awake. He did not plan to be." },
+      { s: "elara", e: "neutral", t: "You were supposed to sleep." },
+      { s: "kael", e: "serious", t: "Princes learn to stay awake at table. Habit." },
+      { s: "elara", e: "sad", t: "The court taught you to be afraid of sleep." },
+      { s: "kael", e: "smirk", t: "The court taught me to be afraid of my siblings. Sleep was their best opportunity." },
+      { s: "elara", e: "blush", t: "That is—" },
+      { s: "kael", e: "serious", t: "Normal, in my house. Don't look at me like that." },
+      { s: "elara", e: "neutral", t: "I am looking at the fire." },
+      { s: "kael", e: "soft", t: "..." },
+      { choices: [
+        { t: "\"You are safe here. For tonight.\"", set: { midnight_kind: 1, midnight_done: 1, kael_aff: 1 }, goto: "kind" },
+        { t: "Keep the silence. Pour him tea.", set: { midnight_tea: 1, midnight_done: 1, kael_aff: 1 }, goto: "tea" }
+      ]},
+      { label: "kind", s: "kael", e: "smirk", t: "Don't make promises that only require my cooperation." },
+      { s: "elara", e: "blush", t: "You would have to cooperate by sleeping." },
+      { s: "kael", e: "soft", t: "...Fine. One hour." },
+      { goto: "end" },
+      { label: "tea", s: "kael", e: "serious", t: "The fourth tea. Suyin said to use them in order." },
+      { s: "elara", e: "neutral", t: "She said not to let you drink them." },
+      { s: "kael", e: "soft", t: "And yet." },
+      { s: "elara", e: "blush", t: "And yet." },
+      { label: "end", s: "", t: "He sleeps before the cup is empty. She watches the west and says nothing that costs her." }
+    ]
+  },
+
+  sparring_scene: {
+    id: "sparring_scene", bg: "forest", mode: "vn",
+    onEnd: { type: "map" },
+    script: [
+      { s: "kael", e: "smirk", t: "Your stance is wrong." },
+      { s: "elara", e: "angry", t: "I was not aware we were fighting." },
+      { s: "kael", e: "serious", t: "You will be fighting. Your feet are apologizing to the ground. Stop apologizing to the ground." },
+      { s: "lyra", t: "He's not wrong." },
+      { s: "elara", e: "determined", t: "Fine. Show me." },
+      { s: "kael", e: "serious", t: "Weight back. Chin down. Stop looking like you are delivering a verdict and look like you are a verdict." },
+      { s: "elara", e: "blush", t: "That is extremely abstract instruction." },
+      { s: "kael", e: "smirk", t: "You are a High Priestess. You are used to abstract." },
+      { s: "", t: "She adjusts. His eyes do the thing where they stop being cruel for a moment." },
+      { s: "kael", e: "serious", t: "Better. The temple trained you to hold space. I am teaching you to claim it." },
+      { s: "elara", e: "neutral", t: "There's a difference." },
+      { s: "kael", e: "soft", t: "Yes." },
+      { s: "elara", e: "determined", t: "Show me the difference." },
+      { s: "kael", e: "smirk", t: "Don't ask me like that." },
+      { s: "elara", e: "blush", t: "Like what." },
+      { s: "kael", e: "serious", t: "Like you're already sure I will." },
+      { s: "", t: "He teaches her. It takes the whole afternoon. Neither of them calls it what it is." },
+      { set: { sparring_done: 1 } }
+    ]
+  },
+
+  lyra_backstory: {
+    id: "lyra_backstory", bg: "camp", mode: "vn",
+    onEnd: { type: "map" },
+    script: [
+      { s: "elara", e: "neutral", t: "You guarded the temple for three years. Why did you leave?" },
+      { s: "lyra", t: "Because I was good at it." },
+      { s: "elara", e: "blush", t: "That is the opposite of a reason to leave." },
+      { s: "lyra", t: "When you're good at standing still, you have to choose: stay still, or find out what you're good at when you move." },
+      { s: "kael", e: "soft", t: "And?" },
+      { s: "lyra", t: "I'm very good at moving." },
+      { s: "thorn", t: "She's good at counting, too. She counted forty-two of them before the prince went berserk." },
+      { s: "lyra", t: "Forty-three. I counted the warden." },
+      { s: "elara", e: "neutral", t: "I'm glad you moved." },
+      { s: "lyra", t: "Don't make it sentimental. I'm going the same direction. It was efficient." },
+      { s: "elara", e: "blush", t: "Noted." },
+      { s: "lyra", t: "...I'm glad you asked." }
+    ]
+  },
+
+  thorn_confession: {
+    id: "thorn_confession", bg: "pass", mode: "vn",
+    onEnd: { type: "map" },
+    script: [
+      { s: "", t: "After the hound. Thorn has not spoken. The mountain has." },
+      { s: "elara", e: "sad", t: "You knew them." },
+      { s: "thorn", t: "Name was Veth. Outer Court. Good with walls. Better with people, when anyone looked." },
+      { s: "kael", e: "serious", t: "I remember. Veth kept a list. Of names to say at the end." },
+      { s: "thorn", t: "Yeah." },
+      { s: "elara", e: "neutral", t: "The chain wasn't punishment." },
+      { s: "thorn", t: "It was. I let myself get caught because I didn't know what else to do when the war stopped." },
+      { s: "kael", e: "soft", t: "I kneeled for the same reason." },
+      { s: "thorn", t: "..." },
+      { s: "elara", e: "sad", t: "You both stayed in the old shape because the new one hadn't arrived yet." },
+      { s: "thorn", t: "Is that what this is? The new one?" },
+      { s: "elara", e: "determined", t: "The road toward it." },
+      { s: "thorn", t: "That's enough." },
+      { set: { thorn_confession: 1 } }
+    ]
+  },
+
+  kael_letter_alone: {
+    id: "kael_letter_alone", bg: "tavern", mode: "vn",
+    onEnd: { type: "map" },
+    script: [
+      { s: "", t: "After the bard. The letter is in Kael's hand. He has not opened it." },
+      { s: "elara", e: "neutral", t: "You don't have to read it now." },
+      { s: "kael", e: "serious", t: "I know their handwriting. My brother. Eldest. He was last." },
+      { s: "elara", e: "sad", t: "You saved the poison for them." },
+      { s: "kael", e: "soft", t: "And they used it first. On me. That's—" },
+      { s: "kael", e: "angry", t: "That's a very old joke." },
+      { s: "elara", e: "neutral", t: "What does the letter say?" },
+      { s: "kael", e: "soft", t: "\"I'm sorry. I was afraid. I was wrong. I hope you became something I couldn't ruin.\"" },
+      { s: "", t: "Silence that has weight. She does not fill it." },
+      { s: "kael", e: "smirk", t: "He always wrote too much." },
+      { s: "elara", e: "blush", t: "That was the right amount." },
+      { s: "kael", e: "soft", t: "...yes." },
+      { s: "", t: "He folds the letter. Keeps it." }
+    ]
+  },
+
+  elara_doubt: {
+    id: "elara_doubt", bg: "ruins", mode: "vn",
+    onEnd: { type: "map" },
+    script: [
+      { s: "", t: "Before the throne gates. The west smells like something that has been patient a long time." },
+      { s: "elara", e: "sad", t: "I don't know if I can do this." },
+      { s: "kael", e: "serious", t: "You can." },
+      { s: "elara", e: "angry", t: "Don't say it like that. Don't say it like it's simple." },
+      { s: "kael", e: "soft", t: "You are seventeen and you have carried a court, a seal, a demon, a scout, and a mountain since dawn. I'm not saying it's simple. I'm saying you can." },
+      { s: "lyra", t: "He's right. And he hates being right. Look how much he hates it." },
+      { s: "kael", e: "smirk", t: "Completely." },
+      { s: "thorn", t: "I've been the door for fifteen months. If the kid can do this, it's worth the door." },
+      { s: "elara", e: "blush", t: "I'm not—I'm the High Priestess." },
+      { s: "thorn", t: "That too." },
+      { s: "elara", e: "determined", t: "...okay." },
+      { s: "kael", e: "soft", t: "Okay." },
+      { s: "", t: "She walks first. Because she always does." }
+    ]
+  },
+
+  dawn_banter: {
+    id: "dawn_banter", bg: "camp", mode: "vn",
+    onEnd: { type: "map" },
+    script: [
+      { s: "", t: "Dawn. Wrong side of the pass. Everyone awake before they wanted to be." },
+      { s: "lyra", t: "The prince snores." },
+      { s: "kael", e: "angry", t: "I do not snore." },
+      { s: "lyra", t: "I timed it. Twelve seconds, pause, seven seconds, a sound like someone losing an argument." },
+      { s: "elara", e: "blush", t: "I did not hear anything." },
+      { s: "kael", e: "smirk", t: "Because she is polite." },
+      { s: "thorn", t: "I heard it." },
+      { s: "kael", e: "serious", t: "..." },
+      { s: "elara", e: "neutral", t: "The tea is ready. No one is going to mention what they heard in exchange for hot tea. That is the deal." },
+      { s: "lyra", t: "Deal." },
+      { s: "thorn", t: "Deal." },
+      { s: "kael", e: "smirk", t: "The deal is insulting. I accept." },
+      { s: "elara", e: "blush", t: "Good morning." },
+      { s: "", t: "The morning is good. It holds its breath and stays that way." }
+    ]
+  },
+
+  post_meridia_skirmish: {
+    id: "post_meridia_skirmish", bg: "meridia", mode: "vn",
+    onEnd: { type: "map" },
+    script: [
+      { s: "lyra", t: "Shadow knights. They weren't here last month." },
+      { s: "kael", e: "serious", t: "Court remnants. Someone is calling old armor with fresh orders." },
+      { s: "elara", e: "neutral", t: "Does someone know we're coming?" },
+      { s: "kael", e: "smirk", t: "Someone has always known. That's the point of the gate." },
+      { s: "thorn", t: "Then we stop being subtle." },
+      { s: "lyra", t: "We were never subtle. We had a demon prince and a priestess walking a canal street." },
+      { s: "elara", e: "determined", t: "The pass, then. No detours." },
+      { s: "kael", e: "soft", t: "No detours." }
+    ]
+  },
+
+  quest_herbalist: {
+    id: "quest_herbalist", bg: "meridia", mode: "vn",
+    onEnd: { type: "map" },
+    script: [
+      { s: "herbalist", t: "You went into the margins. You're still here." },
+      { s: "lyra", t: "The plants were moving. We did not ask them why. We asked them to stop." },
+      { s: "herbalist", t: "That's better than the last three." },
+      { s: "elara", e: "neutral", t: "What happened to the last three?" },
+      { s: "herbalist", t: "They asked why. Plants don't have a short answer." },
+      { s: "kael", e: "smirk", t: "Neither do priests." },
+      { s: "elara", e: "blush", t: "I have short answers." },
+      { s: "herbalist", t: "You have correct answers at length. Different thing." },
+      { s: "herbalist", t: "Here. Canal-herb bundle. Use it before the pass — the mountain doesn't like people who arrive tired." },
+      { set: { quest_herbalist: 1 } }
+    ]
   }
 };
