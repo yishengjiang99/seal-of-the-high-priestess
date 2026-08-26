@@ -274,7 +274,9 @@ window.DATA = (() => {
     courtyard_tablet: { id: "courtyard_tablet", name: "The Courtyard Tablet", desc: "In Kael's former palace, a tablet still waits to be read by someone who is not a demon.", reward: "seal_circlet" },
     bound_hound: { id: "bound_hound", name: "The Bound Hound", desc: "Something large is chained in Ashen Pass, answering to a name Thorn flinches at.", reward: "climber_charm" },
     herbalist_errand: { id: "herbalist_errand", name: "What the Canal Grows", desc: "An old herbalist in Meridia needs someone who can walk the water margin without running. She says the plants have been moving.", reward: "canal_herb" },
-    sparring_kael: { id: "sparring_kael", name: "Lessons from a Prince", desc: "Kael offers to teach Elara how to stand in a fight. She accepts. Neither of them will say why.", reward: null }
+    sparring_kael: { id: "sparring_kael", name: "Lessons from a Prince", desc: "Kael offers to teach Elara how to stand in a fight. She accepts. Neither of them will say why.", reward: null },
+    idle_vision_1: { id: "idle_vision_1", name: "Waxing Vision", desc: "Gather 24 Divine Favor through temple automation to receive the first moon-vision.", reward: "lore fragment" },
+    idle_vision_2: { id: "idle_vision_2", name: "Seal Communion", desc: "Deepen communion by surpassing 60 Divine Favor, then sustain growth to 90 to stabilize the rite.", reward: "ascension lore" }
   };
 
   // ---- Enemies / bosses ----
@@ -501,6 +503,83 @@ window.DATA = (() => {
       { s: "elara", e: "blush", t: "I will not ask." },
       { s: "kael", e: "smirk", t: "Good." }
     ]
+  };
+
+  C.IDLE = {
+    resources: {
+      moonlight_essence: { id: "moonlight_essence", name: "Moonlight Essence", icon: "☾", rarity: "common" },
+      sacred_incense: { id: "sacred_incense", name: "Sacred Incense", icon: "🕯", rarity: "common" },
+      temple_offerings: { id: "temple_offerings", name: "Temple Offerings", icon: "◈", rarity: "common" },
+      ritual_ash: { id: "ritual_ash", name: "Ritual Ash", icon: "✦", rarity: "uncommon" },
+      starlight_dust: { id: "starlight_dust", name: "Starlight Dust", icon: "✧", rarity: "uncommon" },
+      seal_fragments: { id: "seal_fragments", name: "Seal Fragments", icon: "⬡", rarity: "rare" },
+      divine_favor: { id: "divine_favor", name: "Divine Favor", icon: "❂", rarity: "epic" },
+      chronos_crystals: { id: "chronos_crystals", name: "Chronos Crystals", icon: "⟡", rarity: "premium" }
+    },
+    focusModes: {
+      balanced: { id: "balanced", name: "Balanced Growth", bonuses: {} },
+      essence: { id: "essence", name: "Essence Priority", bonuses: { moonlight_essence: 0.25, sacred_incense: 0.2 } },
+      fragments: { id: "fragments", name: "Fragment Farming", bonuses: { seal_fragments: 0.35, ritual_ash: 0.15 } }
+    },
+    structures: {
+      incense_grove: {
+        id: "incense_grove", name: "Incense Grove", tierZone: "Outer Courtyard", unlockRank: 1,
+        baseCapacity: 340, perTierCapacity: 260, baseRates: { sacred_incense: 0.22 }, upgradeCost: { moonlight_essence: 120, temple_offerings: 40 }
+      },
+      reflecting_pool: {
+        id: "reflecting_pool", name: "Lunar Reflecting Pool", tierZone: "Middle Sanctum", unlockRank: 2,
+        baseCapacity: 420, perTierCapacity: 300, baseRates: { moonlight_essence: 0.19 }, upgradeCost: { sacred_incense: 160, temple_offerings: 60 }
+      },
+      attendant_quarters: {
+        id: "attendant_quarters", name: "Attendant Quarters", tierZone: "Middle Sanctum", unlockRank: 2,
+        baseCapacity: 260, perTierCapacity: 120, baseRates: { temple_offerings: 0.14 }, upgradeCost: { moonlight_essence: 180, sacred_incense: 120 }
+      },
+      relic_shrine: {
+        id: "relic_shrine", name: "Relic Shrine", tierZone: "Inner Holy", unlockRank: 3,
+        baseCapacity: 260, perTierCapacity: 180, baseRates: { starlight_dust: 0.06 }, upgradeCost: { ritual_ash: 80, moonlight_essence: 220 }
+      },
+      automation_glyph: {
+        id: "automation_glyph", name: "Automation Glyph", tierZone: "Inner Holy", unlockRank: 4,
+        baseCapacity: 220, perTierCapacity: 140, baseRates: { divine_favor: 0.01 }, upgradeCost: { starlight_dust: 90, seal_fragments: 30 }
+      },
+      central_spire: {
+        id: "central_spire", name: "Central Seal Spire", tierZone: "Central Spire", unlockRank: 1,
+        baseCapacity: 500, perTierCapacity: 420, baseRates: { moonlight_essence: 0.06, temple_offerings: 0.05 }, upgradeCost: { moonlight_essence: 200, sacred_incense: 200 }
+      }
+    },
+    attendants: {
+      novice_nara: { id: "novice_nara", name: "Novice Nara", role: "grove", unlockRank: 1, bonus: 0.09, automationTier: 1 },
+      sister_ysa: { id: "sister_ysa", name: "Sister Ysa", role: "pool", unlockRank: 2, bonus: 0.12, automationTier: 1 },
+      keeper_tarin: { id: "keeper_tarin", name: "Keeper Tarin", role: "shrine", unlockRank: 3, bonus: 0.15, automationTier: 2 },
+      spectral_ves: { id: "spectral_ves", name: "Spectral Ves", role: "glyph", unlockRank: 4, bonus: 0.18, automationTier: 3 },
+      high_abbess_echo: { id: "high_abbess_echo", name: "High Abbess Echo", role: "spire", unlockRank: 5, bonus: 0.22, automationTier: 3 }
+    },
+    recipes: {
+      incense_to_ash: { id: "incense_to_ash", name: "Incense to Ash", in: { sacred_incense: 16, moonlight_essence: 8 }, out: { ritual_ash: 4 } },
+      ash_to_fragments: { id: "ash_to_fragments", name: "Ash to Fragments", in: { ritual_ash: 18, starlight_dust: 6 }, out: { seal_fragments: 3 } },
+      fragment_offering: { id: "fragment_offering", name: "Fragment Offering", in: { seal_fragments: 20, temple_offerings: 40 }, out: { divine_favor: 4 } }
+    },
+    automationRules: {
+      incense_to_ash: { id: "incense_to_ash", when: { resource: "sacred_incense", pctAbove: 0.8 }, runsPerMinute: 4, recipe: "incense_to_ash" },
+      ash_to_fragments: { id: "ash_to_fragments", when: { resource: "ritual_ash", pctAbove: 0.65 }, runsPerMinute: 3, recipe: "ash_to_fragments" },
+      fragments_to_favor: { id: "fragments_to_favor", when: { resource: "seal_fragments", pctAbove: 0.55 }, runsPerMinute: 2, recipe: "fragment_offering" }
+    },
+    ascension: {
+      name: "Renewal of the Seal",
+      threshold: { seal_fragments: 120, divine_favor: 32 },
+      gainPerAscension: 0.15,
+      keeps: ["chronos_crystals", "ascension_level", "offline_cap_bonus"],
+      loreUnlocks: [
+        "Fragment: The First Seal Was a Promise",
+        "Fragment: The Moon Remembers Oaths",
+        "Fragment: The Priestess Who Refused Sleep"
+      ]
+    },
+    events: {
+      lunar_bloom: { id: "lunar_bloom", name: "Lunar Bloom", bonusResource: "moonlight_essence", bonus: 0.2 },
+      ash_requiem: { id: "ash_requiem", name: "Ash Requiem", bonusResource: "ritual_ash", bonus: 0.25 },
+      mirror_tide: { id: "mirror_tide", name: "Mirror Tide", bonusResource: "seal_fragments", bonus: 0.18 }
+    }
   };
 
   C.PORTRAITS = {

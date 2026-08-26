@@ -46,7 +46,8 @@
     tileFx: 0,
     images: {},
     ready: false,
-    tutorialsSeen: {}
+    tutorialsSeen: {},
+    idle: null
   };
 
   // ---------------------------------------------------------------------------
@@ -441,6 +442,21 @@
     if (k === "hollow_oak_dead" || k === "warden_dead" || k === "court_survived" || k === "unsealed_once") {
       Object.values(S.chars).forEach(applyGrowth);
     }
+    if (S.idle) {
+      if (k === "hollow_oak_dead") {
+        idleAdd("divine_favor", 8, true);
+        idleAdd("starlight_dust", 12, true);
+      }
+      if (k === "quest_canal") idleAdd("ritual_ash", 18, true);
+      if (k === "warden_dead") {
+        idleAdd("seal_fragments", 24, true);
+        S.idle.premium.chronos_crystals += 3;
+      }
+      if (k === "court_survived") {
+        idleAdd("divine_favor", 20, true);
+        S.idle.premium.chronos_crystals += 6;
+      }
+    }
     // quest tracking
     const qmap = {
       missing_acolyte: "quest_acolyte_found", master_shen: "quest_shen", canal_fox: "quest_canal",
@@ -455,6 +471,345 @@
   let toastMsg = "", toastT = 0;
   function toast(m) { toastMsg = m; toastT = 2200; }
 
+  function idleDefaults() {
+    const resources = {};
+    const unclaimed = {};
+    const structures = {};
+    const attendants = {};
+    const assignments = {};
+    const automation = {};
+    Object.keys(DATA.IDLE.resources).forEach((k) => { resources[k] = 0; unclaimed[k] = 0; });
+    Object.values(DATA.IDLE.structures).forEach((st) => {
+      structures[st.id] = { tier: st.id === "incense_grove" || st.id === "central_spire" ? 1 : 0, unlocked: st.id === "incense_grove" || st.id === "central_spire" };
+    });
+    Object.values(DATA.IDLE.attendants).forEach((at) => {
+      attendants[at.id] = { unlocked: at.unlockRank <= 1, rank: 1 };
+    });
+    Object.values(DATA.IDLE.automationRules).forEach((r) => {
+      automation[r.id] = { enabled: r.id === "incense_to_ash", threshold: r.when.pctAbove };
+    });
+    return {
+      version: 1,
+      resources,
+      unclaimed,
+      structures,
+      attendants,
+      assignments,
+      automation,
+      focusMode: "balanced",
+      report: null,
+      overflowLost: {},
+      premium: { chronos_crystals: 8, divine_boons: 0, offlineCapBonusHours: 0, speedBoostMins: 0 },
+      ascension: { level: 0, multiplier: 1, loreUnlocked: [] },
+      event: { activeId: "lunar_bloom", startedAt: Date.now() },
+      options: { reducedMotion: false, highContrastIcons: false, simplifiedAutomation: false, sleepMode: false },
+      timing: { lastTickAt: Date.now(), lastClaimAt: Date.now(), anomalyCount: 0, anomalyReason: "" }
+    };
+  }
+
+  function ensureIdleState() {
+    if (!S.idle) S.idle = idleDefaults();
+    const d = idleDefaults();
+    S.idle.resources = Object.assign({}, d.resources, S.idle.resources || {});
+    S.idle.unclaimed = Object.assign({}, d.unclaimed, S.idle.unclaimed || {});
+    S.idle.structures = Object.assign({}, d.structures, S.idle.structures || {});
+    S.idle.attendants = Object.assign({}, d.attendants, S.idle.attendants || {});
+    S.idle.assignments = Object.assign({}, d.assignments, S.idle.assignments || {});
+    S.idle.automation = Object.assign({}, d.automation, S.idle.automation || {});
+    S.idle.premium = Object.assign({}, d.premium, S.idle.premium || {});
+    S.idle.ascension = Object.assign({}, d.ascension, S.idle.ascension || {});
+    S.idle.event = Object.assign({}, d.event, S.idle.event || {});
+    S.idle.options = Object.assign({}, d.options, S.idle.options || {});
+    S.idle.timing = Object.assign({}, d.timing, S.idle.timing || {});
+    if (!S.idle.focusMode || !DATA.IDLE.focusModes[S.idle.focusMode]) S.idle.focusMode = "balanced";
+  }
+
+  function idleStoryRank() {
+    const marks = ["hollow_oak_dead", "lyra_joined", "quest_canal", "warden_dead", "thorn_joined", "court_survived"];
+    const score = marks.reduce((n, k) => n + (flagOn(k) ? 1 : 0), 0);
+    return 1 + score;
+  }
+
+  function idleCapacityByResource(resId) {
+    ensureIdleState();
+    let cap = 80 + idleStoryRank() * 24 + S.idle.ascension.level * 48;
+    Object.values(DATA.IDLE.structures).forEach((st) => {
+      const inst = S.idle.structures[st.id];
+      const tier = inst?.tier || 0;
+      if (!tier) return;
+      const capAdd = st.baseCapacity + st.perTierCapacity * Math.max(0, tier - 1);
+      cap += capAdd;
+      if ((st.baseRates[resId] || 0) > 0) cap += capAdd * 0.16;
+    });
+    return cap;
+  }
+
+  function idleTotal(resId) {
+    return (S.idle.resources[resId] || 0) + (S.idle.unclaimed[resId] || 0);
+  }
+
+  function idleAdd(resId, amount, toClaimable) {
+    if (!amount || amount <= 0) return 0;
+    const cap = idleCapacityByResource(resId);
+    const room = Math.max(0, cap - idleTotal(resId));
+    const add = Math.min(room, amount);
+    if (add > 0) {
+      if (toClaimable) S.idle.unclaimed[resId] = (S.idle.unclaimed[resId] || 0) + add;
+      else S.idle.resources[resId] = (S.idle.resources[resId] || 0) + add;
+    }
+    const lost = amount - add;
+    if (lost > 0) S.idle.overflowLost[resId] = (S.idle.overflowLost[resId] || 0) + lost;
+    return add;
+  }
+
+  function idleConsume(resId, amount) {
+    if (!amount || amount <= 0) return true;
+    const total = idleTotal(resId);
+    if (total + 1e-6 < amount) return false;
+    const fromUnclaimed = Math.min(S.idle.unclaimed[resId] || 0, amount);
+    S.idle.unclaimed[resId] = (S.idle.unclaimed[resId] || 0) - fromUnclaimed;
+    const rem = amount - fromUnclaimed;
+    if (rem > 0) S.idle.resources[resId] = Math.max(0, (S.idle.resources[resId] || 0) - rem);
+    return true;
+  }
+
+  function idleCanAfford(cost) {
+    if (!cost) return true;
+    return Object.entries(cost).every(([k, v]) => idleTotal(k) >= v);
+  }
+
+  function idleSpend(cost) {
+    if (!idleCanAfford(cost)) return false;
+    Object.entries(cost).forEach(([k, v]) => idleConsume(k, v));
+    return true;
+  }
+
+  function idleProductionRates() {
+    ensureIdleState();
+    const rates = {};
+    Object.keys(DATA.IDLE.resources).forEach((k) => { rates[k] = 0; });
+    const focusBonus = DATA.IDLE.focusModes[S.idle.focusMode]?.bonuses || {};
+    const event = DATA.IDLE.events[S.idle.event.activeId];
+    const storyRank = idleStoryRank();
+    const globalMult = (1 + (storyRank - 1) * 0.07) * (S.idle.ascension.multiplier || 1) * (S.idle.options.sleepMode ? 1.2 : 1);
+    Object.values(DATA.IDLE.structures).forEach((st) => {
+      const inst = S.idle.structures[st.id];
+      const tier = inst?.tier || 0;
+      if (!inst?.unlocked || tier <= 0) return;
+      const tierMult = 1 + (tier - 1) * 0.18;
+      let attendantMult = 1;
+      const aid = S.idle.assignments[st.id];
+      if (aid && S.idle.attendants[aid]?.unlocked) attendantMult += (DATA.IDLE.attendants[aid]?.bonus || 0);
+      Object.entries(st.baseRates).forEach(([resId, base]) => {
+        let v = base * tierMult * attendantMult * globalMult;
+        if (focusBonus[resId]) v *= 1 + focusBonus[resId];
+        if (event && event.bonusResource === resId) v *= 1 + event.bonus;
+        rates[resId] += v;
+      });
+    });
+    return rates;
+  }
+
+  function idleRunRecipe(recipeId, times) {
+    const recipe = DATA.IDLE.recipes[recipeId];
+    if (!recipe || times <= 0) return 0;
+    let done = 0;
+    for (let i = 0; i < times; i++) {
+      if (!Object.entries(recipe.in).every(([k, v]) => idleTotal(k) >= v)) break;
+      Object.entries(recipe.in).forEach(([k, v]) => idleConsume(k, v));
+      Object.entries(recipe.out).forEach(([k, v]) => idleAdd(k, v, true));
+      done++;
+    }
+    return done;
+  }
+
+  function idleRunAutomation(seconds) {
+    Object.values(DATA.IDLE.automationRules).forEach((rule) => {
+      const cfg = S.idle.automation[rule.id];
+      if (!cfg?.enabled) return;
+      const threshold = cfg.threshold ?? rule.when.pctAbove;
+      const cap = idleCapacityByResource(rule.when.resource);
+      const pct = cap > 0 ? idleTotal(rule.when.resource) / cap : 0;
+      if (pct < threshold) return;
+      const autoMult = S.idle.options.simplifiedAutomation ? 1.4 : 1;
+      const count = Math.max(1, Math.floor(seconds * rule.runsPerMinute / 60 * autoMult));
+      idleRunRecipe(rule.recipe, count);
+    });
+    const topTier = Object.values(S.idle.assignments).reduce((m, aid) => Math.max(m, DATA.IDLE.attendants[aid]?.automationTier || 0), 0);
+    if (topTier >= 3 && seconds >= 1) {
+      const claimable = Object.values(S.idle.unclaimed).reduce((n, v) => n + v, 0);
+      const cap = Object.keys(DATA.IDLE.resources).reduce((n, k) => n + idleCapacityByResource(k), 0);
+      if (claimable > cap * 0.28) idleClaimAll();
+    }
+  }
+
+  function idleMilestoneUnlocks() {
+    const f = S.idle.resources.divine_favor || 0;
+    if (f >= 24 && !flagOn("idle_vision_1")) {
+      setFlag("idle_vision_1", 1);
+      S.quests.idle_vision_1 = "active";
+    }
+    if (f >= 60 && !flagOn("idle_vision_2")) {
+      setFlag("idle_vision_2", 1);
+      S.quests.idle_vision_2 = "active";
+    }
+    if (f >= 90 && S.quests.idle_vision_2 === "active") S.quests.idle_vision_2 = "done";
+  }
+
+  function idleSimulate(seconds, mode) {
+    ensureIdleState();
+    if (!seconds || seconds <= 0) return;
+    const rates = idleProductionRates();
+    Object.entries(rates).forEach(([resId, r]) => idleAdd(resId, r * seconds, true));
+    idleRunAutomation(seconds);
+    S.idle.premium.chronos_crystals += seconds * 0.00006 * (1 + (S.idle.ascension.level || 0) * 0.2);
+    idleMilestoneUnlocks();
+    if (mode === "battleReward") {
+      idleAdd("starlight_dust", 4 + idleStoryRank() * 0.5, true);
+      idleAdd("temple_offerings", 6 + idleStoryRank(), true);
+    }
+  }
+
+  function idleOfflineWindows(elapsedSec) {
+    ensureIdleState();
+    const capFull = 12 * 3600 + (S.idle.premium.offlineCapBonusHours || 0) * 3600;
+    const capDim = 24 * 3600;
+    const hardCap = 48 * 3600;
+    const clamp = Math.max(0, Math.min(elapsedSec, hardCap));
+    const full = Math.min(clamp, capFull);
+    const dim = Math.min(Math.max(0, clamp - capFull), capDim);
+    return { clamp, full, dim, hardCap };
+  }
+
+  function idleApplyOffline(elapsedSec, reason) {
+    ensureIdleState();
+    const now = Date.now();
+    const before = Object.assign({}, S.idle.unclaimed);
+    const { clamp, full, dim } = idleOfflineWindows(elapsedSec);
+    if (elapsedSec > 96 * 3600 || elapsedSec < -5) {
+      S.idle.timing.anomalyCount++;
+      S.idle.timing.anomalyReason = "clock_shift";
+    }
+    if (elapsedSec < 0) {
+      S.idle.timing.anomalyCount++;
+      S.idle.timing.anomalyReason = "negative_time";
+      S.idle.timing.lastTickAt = now;
+      return;
+    }
+    const conservative = S.idle.timing.anomalyCount > 0 ? 0.5 : 1;
+    idleSimulate(full * conservative, "offline_full");
+    idleSimulate(dim * 0.25 * conservative, "offline_dim");
+    const report = {};
+    Object.keys(DATA.IDLE.resources).forEach((k) => { report[k] = (S.idle.unclaimed[k] || 0) - (before[k] || 0); });
+    S.idle.report = { reason, elapsedSec: clamp, fullSec: full, dimSec: dim, generated: report, at: now };
+    S.idle.timing.lastTickAt = now;
+  }
+
+  function idleClaimAll() {
+    ensureIdleState();
+    let gained = 0;
+    Object.keys(DATA.IDLE.resources).forEach((k) => {
+      const n = S.idle.unclaimed[k] || 0;
+      if (n <= 0) return;
+      S.idle.unclaimed[k] = 0;
+      S.idle.resources[k] = (S.idle.resources[k] || 0) + n;
+      gained += n;
+    });
+    S.idle.timing.lastClaimAt = Date.now();
+    if (gained > 0) toast("The attendants lay your offerings at the Seal.");
+  }
+
+  function idleApplyAccessibility() {
+    ensureIdleState();
+    document.body.classList.toggle("reduced-motion", !!S.idle.options.reducedMotion);
+    document.body.classList.toggle("high-contrast-icons", !!S.idle.options.highContrastIcons);
+  }
+
+  function idleAvailableAttendants() {
+    const rank = idleStoryRank();
+    return Object.values(DATA.IDLE.attendants).filter((a) => {
+      const unlocked = rank >= a.unlockRank;
+      if (unlocked) S.idle.attendants[a.id].unlocked = true;
+      return S.idle.attendants[a.id].unlocked;
+    });
+  }
+
+  function idleUpgradeStructure(id) {
+    ensureIdleState();
+    const st = DATA.IDLE.structures[id];
+    const inst = S.idle.structures[id];
+    if (!st || !inst) return;
+    const rank = idleStoryRank();
+    if (rank < st.unlockRank) { toast("Your rank is not yet sufficient for this sanctum."); return; }
+    if (!inst.unlocked) inst.unlocked = true;
+    const nextTier = inst.tier + 1;
+    const scale = Math.pow(1.35, Math.max(0, nextTier - 1));
+    const cost = {};
+    Object.entries(st.upgradeCost || {}).forEach(([k, v]) => { cost[k] = Math.ceil(v * scale); });
+    if (!idleSpend(cost)) { toast("Insufficient offerings for that upgrade."); return; }
+    inst.tier = nextTier;
+    toast(`${st.name} rises to tier ${nextTier}.`);
+  }
+
+  function idleAssignAttendant(structureId, attendantId) {
+    ensureIdleState();
+    if (!S.idle.attendants[attendantId]?.unlocked) return;
+    S.idle.assignments[structureId] = attendantId;
+    toast(`${DATA.IDLE.attendants[attendantId].name} now tends the ${DATA.IDLE.structures[structureId].name}.`);
+  }
+
+  function idleAscend() {
+    ensureIdleState();
+    const need = DATA.IDLE.ascension.threshold;
+    if (!idleCanAfford(need)) { toast("The Renewal ritual demands more fragments and favor."); return; }
+    idleSpend(need);
+    const level = (S.idle.ascension.level || 0) + 1;
+    S.idle.ascension.level = level;
+    S.idle.ascension.multiplier = 1 + level * DATA.IDLE.ascension.gainPerAscension;
+    Object.keys(S.idle.resources).forEach((k) => {
+      if (k === "chronos_crystals") return;
+      S.idle.resources[k] = 0;
+      S.idle.unclaimed[k] = 0;
+    });
+    Object.keys(S.idle.structures).forEach((sid) => {
+      const keepBase = sid === "incense_grove" || sid === "central_spire";
+      S.idle.structures[sid].tier = keepBase ? 1 : 0;
+      S.idle.structures[sid].unlocked = keepBase;
+    });
+    const lore = DATA.IDLE.ascension.loreUnlocks[(level - 1) % DATA.IDLE.ascension.loreUnlocks.length];
+    if (lore && !S.idle.ascension.loreUnlocked.includes(lore)) S.idle.ascension.loreUnlocked.push(lore);
+    S.idle.premium.chronos_crystals += 4;
+    toast("Renewal complete. The Seal remembers more than before.");
+  }
+
+  function idleCycleFocus() {
+    const keys = Object.keys(DATA.IDLE.focusModes);
+    const idx = Math.max(0, keys.indexOf(S.idle.focusMode));
+    S.idle.focusMode = keys[(idx + 1) % keys.length];
+    toast(`Focus set: ${DATA.IDLE.focusModes[S.idle.focusMode].name}.`);
+  }
+
+  function idleTickRuntime(dt) {
+    ensureIdleState();
+    const now = Date.now();
+    const sec = Math.max(0, Math.min(3, dt / 1000));
+    let mult = 1;
+    if ((S.idle.premium.speedBoostMins || 0) > 0) {
+      mult = 2.25;
+      S.idle.premium.speedBoostMins = Math.max(0, S.idle.premium.speedBoostMins - sec / 60);
+    }
+    idleSimulate(sec * mult, "online");
+    if (now - (S.idle.event.startedAt || now) > 1000 * 60 * 20) {
+      const ids = Object.keys(DATA.IDLE.events);
+      const i = Math.max(0, ids.indexOf(S.idle.event.activeId));
+      S.idle.event.activeId = ids[(i + 1) % ids.length];
+      S.idle.event.startedAt = now;
+      toast(`Season shifts: ${DATA.IDLE.events[S.idle.event.activeId].name}.`);
+    }
+    S.idle.timing.lastTickAt = now;
+    idleApplyAccessibility();
+  }
+
   function newGame() {
     S.flags = { intro_done: 0 };
     S.inventory = ["moonwell_chalice", "lotus_petal", "sealing_salve"];
@@ -464,6 +819,7 @@
     S.quests = { main_pilgrimage: "active", missing_acolyte: "active" };
     S.chars = { elara: makeChar("elara"), kael: makeChar("kael") };
     S.party = ["elara", "kael"];
+    S.idle = idleDefaults();
     Object.values(S.chars).forEach(applyGrowth);
     S.mapId = "temple";
     const sp = MAPS.temple.spawn;
@@ -486,7 +842,9 @@
       party: S.party, chars: S.chars, mapId: S.mapId,
       px: S.px, py: S.py, dir: S.dir, time: S.time,
       tutorialsSeen: S.tutorialsSeen, itemUses,
-      when: Date.now()
+      idle: S.idle,
+      when: Date.now(),
+      lastActiveAt: Date.now()
     };
   }
   function deserialize(d) {
@@ -503,6 +861,11 @@
     if (d.itemUses) {
       Object.entries(d.itemUses).forEach(([id, n]) => { if (DATA.ITEMS[id]) DATA.ITEMS[id]._uses = n; });
     }
+    S.idle = d.idle || idleDefaults();
+    ensureIdleState();
+    const last = d.lastActiveAt || d.when || Date.now();
+    const elapsed = Math.max(0, (Date.now() - last) / 1000);
+    idleApplyOffline(elapsed, "load");
   }
   function saveSlot(n) {
     try { localStorage.setItem("soth_slot_" + n, JSON.stringify(serialize())); sfx("save"); toast("Saved to slot " + (n + 1)); }
@@ -730,6 +1093,10 @@
     toast("The lotus altar takes the night. The party is whole.");
   }
   function interact() {
+    if (S.idle?.options?.sleepMode) {
+      toast("Deep Meditation is active. Disable it from Temple settings to resume rites and dialogue.");
+      return;
+    }
     const f = facingTile(), here = footTile();
     const list = [...eventsAt(f.x, f.y), ...eventsAt(here.x, here.y)];
     for (const ev of list) {
@@ -2081,6 +2448,7 @@
   function winBattle() {
     const b = S.battle;
     blog("Victory. No experience. The story moves.");
+    if (S.idle) idleSimulate(120, "battleReward");
     if (b.def.victoryFlag) setFlag(b.def.victoryFlag, 1);
     const post = b.def.post;
     S.battle = null;
@@ -2257,7 +2625,127 @@
     }
     if (S.menuTab === "lore") {
       const lore = S.inventory.map((id) => DATA.ITEMS[id]).filter((it) => it && it.type === "lore");
-      body.innerHTML = lore.map((it) => `<h3>${it.name}</h3><p>${it.desc}</p>`).join("") || "<p>No tablets yet.</p>";
+      const idleLore = (S.idle?.ascension?.loreUnlocked || []).map((t) => `<h3>Seal Fragment</h3><p>${t}</p>`).join("");
+      body.innerHTML = (lore.map((it) => `<h3>${it.name}</h3><p>${it.desc}</p>`).join("") + idleLore) || "<p>No tablets yet.</p>";
+    }
+    if (S.menuTab === "temple") {
+      ensureIdleState();
+      const rates = idleProductionRates();
+      const focusName = DATA.IDLE.focusModes[S.idle.focusMode]?.name || "Balanced Growth";
+      const event = DATA.IDLE.events[S.idle.event.activeId];
+      const offline = S.idle.report;
+      const entries = Object.keys(DATA.IDLE.resources).map((k) => {
+        const meta = DATA.IDLE.resources[k];
+        const vault = S.idle.resources[k] || 0;
+        const claim = S.idle.unclaimed[k] || 0;
+        const cap = idleCapacityByResource(k);
+        const fillPct = cap > 0 ? (idleTotal(k) / cap * 100) : 0;
+        return `<div class="idle-card">
+          <div class="row"><span>${meta.icon} ${meta.name}</span><span>${vault.toFixed(1)} + ${claim.toFixed(1)}</span></div>
+          <div class="bar hp"><i style="width:${Math.min(100, fillPct).toFixed(1)}%"></i></div>
+          <p class="mutedline">Rate ${rates[k].toFixed(3)}/s · Cap ${cap.toFixed(0)}</p>
+        </div>`;
+      }).join("");
+      const structRows = Object.values(DATA.IDLE.structures).map((st) => {
+        const inst = S.idle.structures[st.id];
+        const tier = inst?.tier || 0;
+        const unlocked = inst?.unlocked || idleStoryRank() >= st.unlockRank;
+        const aid = S.idle.assignments[st.id];
+        const an = aid ? DATA.IDLE.attendants[aid]?.name : "Unassigned";
+        return `<div class="row">
+          <span>${st.name} · ${st.tierZone} · Tier ${tier}${!unlocked ? " (Locked)" : ""}</span>
+          <span>
+            <button class="tiny temple-up" data-idle-up="${st.id}">Upgrade</button>
+            <button class="tiny temple-assign" data-idle-assign="${st.id}">Assign</button>
+          </span>
+        </div><p class="mutedline">Attendant: ${an}</p>`;
+      }).join("");
+      const attendants = idleAvailableAttendants().map((a) => `<span class="chip">${a.name} · Tier ${a.automationTier}</span>`).join("");
+      const autoRows = Object.values(DATA.IDLE.automationRules).map((rule) => {
+        const cfg = S.idle.automation[rule.id];
+        const on = !!cfg?.enabled;
+        const pct = ((cfg?.threshold ?? rule.when.pctAbove) * 100).toFixed(0);
+        return `<div class="row"><span>${rule.id.replaceAll("_", " ")} (${pct}% threshold)</span><span><button class="tiny temple-auto" data-idle-auto="${rule.id}">${on ? "On" : "Off"}</button></span></div>`;
+      }).join("");
+      const codex = `
+        <h3>Seal Codex</h3>
+        <p>Formula: <strong>Base Rate × Structure Tier × Attendant Bonus × Story Rank × Ascension</strong>, then focus/event bonuses.</p>
+        <p>Offline efficiency: 12h full, then 24h at 25%, then hard-capped. Large clock shifts trigger conservative gains.</p>
+        <p>Sleep Mode improves passive rates but is intended for passive sessions rather than active loops.</p>`;
+      const offlineBits = offline ? Object.entries(offline.generated || {}).filter(([, v]) => v > 0.05).slice(0, 4).map(([k, v]) => `${DATA.IDLE.resources[k].name}: ${v.toFixed(1)}`).join(" · ") : "";
+      const offlineLine = offline ? `<p class="mutedline">While absent (${Math.floor(offline.elapsedSec / 60)}m), attendants gathered power under ${event?.name || "lunar tides"}.${offlineBits ? " " + offlineBits : ""}</p>` : "";
+      body.innerHTML = `
+        <h3>Temple Overview</h3>
+        ${offlineLine}
+        <p class="mutedline">Focus: <strong>${focusName}</strong> · Event: <strong>${event?.name || "None"}</strong> · Ascension: <strong>${S.idle.ascension.level}</strong> (x${(S.idle.ascension.multiplier || 1).toFixed(2)}) · Chronos: <strong>${(S.idle.premium.chronos_crystals || 0).toFixed(1)}</strong></p>
+        <div class="idle-actions">
+          <button class="tiny" data-idle-act="claim">Harvest All</button>
+          <button class="tiny" data-idle-act="focus">Cycle Focus</button>
+          <button class="tiny" data-idle-act="speed">Spend 3 Chronos (+30m speed)</button>
+          <button class="tiny" data-idle-act="cap">Spend 5 Chronos (+1h offline cap)</button>
+          <button class="tiny" data-idle-act="ascend">Renewal of the Seal</button>
+        </div>
+        <h3>Live Production</h3>
+        <div class="idle-grid">${entries}</div>
+        <h3>Structures</h3>
+        ${structRows}
+        <h3>Attendants</h3>
+        <p>${attendants || "None awakened yet."}</p>
+        <h3>Automation</h3>
+        ${autoRows}
+        <h3>Accessibility & Idle QoL</h3>
+        <div class="row"><span>Reduced Motion</span><span><button class="tiny temple-opt" data-idle-opt="reducedMotion">${S.idle.options.reducedMotion ? "On" : "Off"}</button></span></div>
+        <div class="row"><span>High Contrast Icons</span><span><button class="tiny temple-opt" data-idle-opt="highContrastIcons">${S.idle.options.highContrastIcons ? "On" : "Off"}</button></span></div>
+        <div class="row"><span>Simplified Automation Presets</span><span><button class="tiny temple-opt" data-idle-opt="simplifiedAutomation">${S.idle.options.simplifiedAutomation ? "On" : "Off"}</button></span></div>
+        <div class="row"><span>Deep Meditation (Sleep Mode)</span><span><button class="tiny temple-opt" data-idle-opt="sleepMode">${S.idle.options.sleepMode ? "On" : "Off"}</button></span></div>
+        <h3>Codex</h3>
+        ${codex}
+      `;
+      body.querySelectorAll("[data-idle-act]").forEach((btn) => btn.addEventListener("click", () => {
+        const act = btn.dataset.idleAct;
+        if (act === "claim") idleClaimAll();
+        if (act === "focus") idleCycleFocus();
+        if (act === "ascend") idleAscend();
+        if (act === "speed") {
+          if ((S.idle.premium.chronos_crystals || 0) >= 3) {
+            S.idle.premium.chronos_crystals -= 3;
+            S.idle.premium.speedBoostMins = (S.idle.premium.speedBoostMins || 0) + 30;
+            idleSimulate(30 * 60, "premium_speed");
+            toast("Time bends around the spire.");
+          } else toast("Not enough Chronos Crystals.");
+        }
+        if (act === "cap") {
+          if ((S.idle.premium.chronos_crystals || 0) >= 5) {
+            S.idle.premium.chronos_crystals -= 5;
+            S.idle.premium.offlineCapBonusHours = Math.min(24, (S.idle.premium.offlineCapBonusHours || 0) + 1);
+            toast("The seal's offline span grows by one hour.");
+          } else toast("Not enough Chronos Crystals.");
+        }
+        renderMenu();
+      }));
+      body.querySelectorAll("[data-idle-up]").forEach((btn) => btn.addEventListener("click", () => { idleUpgradeStructure(btn.dataset.idleUp); renderMenu(); }));
+      body.querySelectorAll("[data-idle-assign]").forEach((btn) => btn.addEventListener("click", () => {
+        const sid = btn.dataset.idleAssign;
+        const unlocked = idleAvailableAttendants().map((a) => a.id);
+        if (!unlocked.length) { toast("No attendants are yet awake."); return; }
+        const cur = S.idle.assignments[sid];
+        const i = Math.max(-1, unlocked.indexOf(cur));
+        const next = unlocked[(i + 1) % unlocked.length];
+        idleAssignAttendant(sid, next);
+        renderMenu();
+      }));
+      body.querySelectorAll("[data-idle-auto]").forEach((btn) => btn.addEventListener("click", () => {
+        const id = btn.dataset.idleAuto;
+        const cur = !!S.idle.automation[id]?.enabled;
+        S.idle.automation[id].enabled = !cur;
+        renderMenu();
+      }));
+      body.querySelectorAll("[data-idle-opt]").forEach((btn) => btn.addEventListener("click", () => {
+        const key = btn.dataset.idleOpt;
+        S.idle.options[key] = !S.idle.options[key];
+        idleApplyAccessibility();
+        renderMenu();
+      }));
     }
     if (S.menuTab === "save") {
       body.innerHTML = `<p>Lotus altars also rest the party. Saves live in this browser.</p>
@@ -2371,6 +2859,7 @@
     }
     tickMusic(dt);
     updateFx(dt);
+    if (S.state !== "boot") idleTickRuntime(dt);
     ctx.save();
     if (S.shake > 0.4) ctx.translate((Math.random() - 0.5) * S.shake, (Math.random() - 0.5) * S.shake);
     if (S.state === "title" || S.state === "credits" || S.state === "options" || S.state === "saves") {
@@ -2426,6 +2915,8 @@
       const st = JSON.parse(localStorage.getItem("soth_settings") || "null");
       if (st) Object.assign(S.settings, st);
     } catch (e) {}
+    ensureIdleState();
+    idleApplyAccessibility();
     await loadImages();
     $("loader").style.display = "none";
     if (S.images.title) $("screen-title").style.backgroundImage = `url(${DATA.BGS.title})`;
