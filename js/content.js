@@ -275,8 +275,8 @@ window.DATA = (() => {
     bound_hound: { id: "bound_hound", name: "The Bound Hound", desc: "Something large is chained in Ashen Pass, answering to a name Thorn flinches at.", reward: "climber_charm" },
     herbalist_errand: { id: "herbalist_errand", name: "What the Canal Grows", desc: "An old herbalist in Meridia needs someone who can walk the water margin without running. She says the plants have been moving.", reward: "canal_herb" },
     sparring_kael: { id: "sparring_kael", name: "Lessons from a Prince", desc: "Kael offers to teach Elara how to stand in a fight. She accepts. Neither of them will say why.", reward: null },
-    idle_vision_1: { id: "idle_vision_1", name: "Waxing Vision", desc: "Gather 24 Divine Favor through temple automation to receive the first moon-vision.", reward: "lore fragment" },
-    idle_vision_2: { id: "idle_vision_2", name: "Seal Communion", desc: "Deepen communion by surpassing 60 Divine Favor, then sustain growth to 90 to stabilize the rite.", reward: "ascension lore" }
+    idle_vision_1: { id: "idle_vision_1", name: "Waxing Vision", desc: "Gather 24 Divine Favor through temple automation to receive the first moon-vision.", reward: null },
+    idle_vision_2: { id: "idle_vision_2", name: "Seal Communion", desc: "Deepen communion by surpassing 60 Divine Favor, then sustain growth to 90 to stabilize the rite.", reward: null }
   };
 
   // ---- Enemies / bosses ----

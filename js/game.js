@@ -653,6 +653,7 @@
       setFlag("idle_vision_2", 1);
       S.quests.idle_vision_2 = "active";
     }
+    if (f >= 60 && S.quests.idle_vision_1 === "active") S.quests.idle_vision_1 = "done";
     if (f >= 90 && S.quests.idle_vision_2 === "active") S.quests.idle_vision_2 = "done";
   }
 
@@ -686,17 +687,22 @@
     const now = Date.now();
     const before = Object.assign({}, S.idle.unclaimed);
     const { clamp, full, dim } = idleOfflineWindows(elapsedSec);
+    let conservativeFactor = 1;
     if (elapsedSec > 96 * 3600 || elapsedSec < -5) {
       S.idle.timing.anomalyCount++;
       S.idle.timing.anomalyReason = "clock_shift";
-    }
-    if (elapsedSec < 0) {
+      conservativeFactor = 0.1;
+      if (elapsedSec < 0) {
+        S.idle.timing.lastTickAt = now;
+        return;
+      }
+    } else if (elapsedSec < 0) {
       S.idle.timing.anomalyCount++;
       S.idle.timing.anomalyReason = "negative_time";
       S.idle.timing.lastTickAt = now;
       return;
     }
-    const conservative = S.idle.timing.anomalyCount > 0 ? 0.5 : 1;
+    const conservative = (S.idle.timing.anomalyCount > 0 ? 0.5 : 1) * conservativeFactor;
     idleSimulate(full * conservative, "offline_full");
     idleSimulate(dim * 0.25 * conservative, "offline_dim");
     const report = {};
@@ -711,9 +717,17 @@
     Object.keys(DATA.IDLE.resources).forEach((k) => {
       const n = S.idle.unclaimed[k] || 0;
       if (n <= 0) return;
-      S.idle.unclaimed[k] = 0;
       S.idle.resources[k] = (S.idle.resources[k] || 0) + n;
-      gained += n;
+      S.idle.unclaimed[k] = 0;
+      const cap = idleCapacityByResource(k);
+      if (S.idle.resources[k] > cap) {
+        const spill = S.idle.resources[k] - cap;
+        S.idle.resources[k] = cap;
+        S.idle.overflowLost[k] = (S.idle.overflowLost[k] || 0) + spill;
+        gained += n - spill;
+      } else {
+        gained += n;
+      }
     });
     S.idle.timing.lastClaimAt = Date.now();
     if (gained > 0) toast("The attendants lay your offerings at the Seal.");
@@ -807,7 +821,6 @@
       toast(`Season shifts: ${DATA.IDLE.events[S.idle.event.activeId].name}.`);
     }
     S.idle.timing.lastTickAt = now;
-    idleApplyAccessibility();
   }
 
   function newGame() {
@@ -863,6 +876,7 @@
     }
     S.idle = d.idle || idleDefaults();
     ensureIdleState();
+    idleApplyAccessibility();
     const last = d.lastActiveAt || d.when || Date.now();
     const elapsed = Math.max(0, (Date.now() - last) / 1000);
     idleApplyOffline(elapsed, "load");
@@ -2710,7 +2724,6 @@
           if ((S.idle.premium.chronos_crystals || 0) >= 3) {
             S.idle.premium.chronos_crystals -= 3;
             S.idle.premium.speedBoostMins = (S.idle.premium.speedBoostMins || 0) + 30;
-            idleSimulate(30 * 60, "premium_speed");
             toast("Time bends around the spire.");
           } else toast("Not enough Chronos Crystals.");
         }
