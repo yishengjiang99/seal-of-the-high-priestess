@@ -27,15 +27,18 @@ jobs:
           node --check js/maps.js
 
       - name: Set up Chrome
+        id: setup-chrome
         uses: browser-actions/setup-chrome@v1
 
       - name: Capture headless Chrome screenshot
+        env:
+          CHROME_BIN: ${{ steps.setup-chrome.outputs.chrome-path }}
         run: |
           set -euo pipefail
           mkdir -p artifacts
           python3 -m http.server 8080 &
           server_pid=$!
-          trap "kill $server_pid" EXIT
+          trap 'kill $server_pid' EXIT
 
           server_ready=0
           for _ in {1..20}; do
@@ -51,12 +54,12 @@ jobs:
             exit 1
           fi
 
-          chrome --headless --disable-gpu --disable-dev-shm-usage \
+          "$CHROME_BIN" --headless --disable-gpu --disable-dev-shm-usage \
             --window-size=1366,768 \
             --screenshot=artifacts/homepage.png \
             http://127.0.0.1:8080/index.html
 
-          chrome --headless --disable-gpu --disable-dev-shm-usage \
+          "$CHROME_BIN" --headless --disable-gpu --disable-dev-shm-usage \
             --dump-dom http://127.0.0.1:8080/index.html | grep -q "Seal of the High Priestess"
 
           test -s artifacts/homepage.png
