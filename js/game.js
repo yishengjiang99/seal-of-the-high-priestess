@@ -140,110 +140,156 @@
     o.start(t); o.stop(t + d + 0.02);
   }
   // ---------------------------------------------------------------------------
-  // TUNES — each zone has: base freq (Hz), melody sequence (semitones from base),
-  // a chord table (semitone triads played every N beats), bass line, tempo, and
-  // waveform.  Melody arrays can include octave shifts via plain semitone values
-  // (e.g. 12 = one octave up).  A null in melody = rest.
+  // TUNES — each zone has: base freq (Hz), melody (minor/dark) and melodyMaj
+  // (major/bright) sequences, chord table, bass line, tempo, waveform.
+  // A null in a melody array = rest.  Integers are semitones above base.
   // ---------------------------------------------------------------------------
+  // Goal tiles (tile coords) used to detect "approaching goal" → major mode.
+  const MAP_GOALS = {
+    temple: { x: 36, y: 50 }, town: { x: 44, y: 5 },
+    city:   { x: 44, y: 65 }, forest: { x: 50, y: 70 },
+    pass:   { x: 50, y: 70 }, ruins: { x: 44, y: 65 },
+    throne: { x: 28, y: 18 }, battle: { x: 32, y: 32 }
+  };
   const TUNES = {
-    // Temple of the Priestess — pentatonic A minor, meditative, ethereal
+    // Temple of the Priestess — minor: pentatonic A minor; major: A major pentatonic
     temple: {
       base: 220, wave: "sine", tempo: 0.48,
-      melody: [0, 4, 7, 12, 9, 7, 4, 0, 2, 4, 7, 9, 12, 9, 7, null,
-               0, 7, 12, 16, 14, 12, 7, 4, 2, 0, 4, 7, 9, 7, 4, null],
+      melody:    [0, 4, 7, 12, 9, 7, 4, 0, 2, 4, 7, 9, 12, 9, 7, null,
+                  0, 7, 12, 16, 14, 12, 7, 4, 2, 0, 4, 7, 9, 7, 4, null],
+      melodyMaj: [0, 4, 7, 9, 12, 9, 7, 4, 2, 4, 9, 11, 12, 11, 9, null,
+                  4, 7, 9, 12, 16, 14, 12, 9, 7, 4, 2, 4, 7, 9, 4, null],
       chords: [[0, 7, 12], [2, 9, 14], [4, 7, 11], [0, 7, 12]],
       chordEvery: 8,
       bass: [0, 0, 7, 0, 9, 0, 7, 0],
       bassOct: 0.5
     },
-    // Town — lively Dorian, bouncy triangle feel
+    // Town — minor: Dorian; major: bright G major
     town: {
       base: 196, wave: "triangle", tempo: 0.22,
-      melody: [0, 2, 3, 5, 7, 5, 3, 2, 0, 3, 7, 10, 9, 7, 5, 3,
-               2, 3, 5, 7, 9, 10, 9, 7, 5, 3, 2, 0, null, 0, 2, null],
+      melody:    [0, 2, 3, 5, 7, 5, 3, 2, 0, 3, 7, 10, 9, 7, 5, 3,
+                  2, 3, 5, 7, 9, 10, 9, 7, 5, 3, 2, 0, null, 0, 2, null],
+      melodyMaj: [0, 2, 4, 7, 9, 7, 4, 2, 0, 4, 7, 11, 9, 7, 4, 2,
+                  4, 7, 9, 11, 12, 11, 9, 7, 4, 2, 0, 2, 4, 7, null, null],
       chords: [[0, 7, 10], [3, 7, 10], [5, 9, 12], [2, 5, 9]],
       chordEvery: 8,
       bass: [0, 0, 3, 0, 5, 0, 7, 0],
       bassOct: 0.5
     },
-    // City — jazz-inflected Mixolydian, bustling, confident
+    // City — minor: Mixolydian; major: F major, confident and bright
     city: {
       base: 174, wave: "triangle", tempo: 0.19,
-      melody: [0, 4, 7, 10, 12, 10, 7, 4, 5, 9, 12, 10, 7, 5, 4, null,
-               3, 7, 10, 12, 14, 12, 10, 7, 5, 3, 0, 3, 5, 7, null, null],
+      melody:    [0, 4, 7, 10, 12, 10, 7, 4, 5, 9, 12, 10, 7, 5, 4, null,
+                  3, 7, 10, 12, 14, 12, 10, 7, 5, 3, 0, 3, 5, 7, null, null],
+      melodyMaj: [0, 4, 7, 11, 12, 11, 7, 4, 5, 9, 12, 11, 7, 5, 4, null,
+                  4, 7, 11, 12, 14, 12, 11, 7, 5, 4, 0, 4, 5, 7, null, null],
       chords: [[0, 7, 10], [5, 9, 12], [3, 7, 10], [0, 4, 7]],
       chordEvery: 8,
       bass: [0, 0, 5, 0, 3, 0, 7, 0],
       bassOct: 0.5
     },
-    // Forest — Lydian shimmer, wandering, mysterious
+    // Forest — minor: Lydian (already bright); major: D major, open and hopeful
     forest: {
       base: 146, wave: "sine", tempo: 0.58,
-      melody: [0, 2, 4, 6, 7, 9, 11, 12, 11, 9, 7, 6, 4, 2, 0, null,
-               7, 9, 11, 12, 14, 12, 11, 9, 7, 6, 4, 2, 4, 6, 7, null],
+      melody:    [0, 2, 4, 6, 7, 9, 11, 12, 11, 9, 7, 6, 4, 2, 0, null,
+                  7, 9, 11, 12, 14, 12, 11, 9, 7, 6, 4, 2, 4, 6, 7, null],
+      melodyMaj: [0, 4, 7, 9, 11, 12, 11, 9, 7, 4, 2, 0, null, 4, 7, 9,
+                  9, 11, 12, 14, 12, 11, 9, 7, 4, 2, 4, 7, 9, 11, 7, null],
       chords: [[0, 7, 11], [2, 6, 9], [4, 7, 11], [6, 9, 14]],
       chordEvery: 8,
       bass: [0, 0, 7, 0, 4, 0, 7, 0],
       bassOct: 0.5
     },
-    // Mountain Pass — Phrygian tension, cold and exposed
+    // Mountain Pass — minor: Phrygian (very dark); major: C major (lighter)
     pass: {
       base: 130, wave: "sawtooth", tempo: 0.52,
-      melody: [0, 1, 3, 5, 7, 8, 7, 5, 3, 1, 0, 3, 7, 10, 8, null,
-               0, 1, 3, 7, 8, 10, 8, 7, 5, 3, 1, 0, null, 0, 1, null],
+      melody:    [0, 1, 3, 5, 7, 8, 7, 5, 3, 1, 0, 3, 7, 10, 8, null,
+                  0, 1, 3, 7, 8, 10, 8, 7, 5, 3, 1, 0, null, 0, 1, null],
+      melodyMaj: [0, 2, 4, 7, 9, 7, 4, 2, 0, 4, 7, 9, 11, 9, 7, null,
+                  2, 4, 7, 9, 11, 12, 11, 9, 7, 4, 2, 0, null, 2, 4, null],
       chords: [[0, 7, 10], [1, 5, 8], [3, 7, 10], [0, 3, 7]],
       chordEvery: 8,
       bass: [0, 0, 1, 0, 3, 0, 7, 0],
       bassOct: 0.5
     },
-    // Ruins — Locrian dread, sparse, haunting
+    // Ruins — minor: Locrian dread; major: A major sparse, eerie hope
     ruins: {
       base: 110, wave: "triangle", tempo: 0.72,
-      melody: [0, 1, 3, null, 6, null, 8, 6, null, 3, 1, 0, null, 8, 6, null,
-               0, null, 6, null, 8, 10, 8, 6, null, 3, null, 1, 0, null, null, null],
+      melody:    [0, 1, 3, null, 6, null, 8, 6, null, 3, 1, 0, null, 8, 6, null,
+                  0, null, 6, null, 8, 10, 8, 6, null, 3, null, 1, 0, null, null, null],
+      melodyMaj: [0, 4, 7, null, 9, null, 11, 9, null, 7, 4, 0, null, 11, 9, null,
+                  0, null, 7, null, 9, 11, 9, 7, null, 4, null, 2, 0, null, null, null],
       chords: [[0, 6, 8], [1, 6, 10], [3, 8, 13], [0, 3, 6]],
       chordEvery: 8,
       bass: [0, 0, 6, 0, 1, 0, 6, 0],
       bassOct: 0.5
     },
-    // Throne Room — majestic, low D, full voicing, slow and weighty
+    // Throne Room — minor: weighty G minor; major: triumphant G major
     throne: {
       base: 98, wave: "sine", tempo: 0.78,
-      melody: [0, 3, 7, 10, 12, 15, 12, 10, 7, 3, 0, null, 5, 8, 12, null,
-               0, 7, 12, 15, 19, 15, 12, 7, 5, 3, 0, 3, 7, 10, null, null],
+      melody:    [0, 3, 7, 10, 12, 15, 12, 10, 7, 3, 0, null, 5, 8, 12, null,
+                  0, 7, 12, 15, 19, 15, 12, 7, 5, 3, 0, 3, 7, 10, null, null],
+      melodyMaj: [0, 4, 7, 11, 12, 16, 12, 11, 7, 4, 0, null, 5, 9, 12, null,
+                  0, 7, 12, 16, 19, 16, 12, 7, 5, 4, 0, 4, 7, 11, null, null],
       chords: [[0, 7, 12], [3, 7, 10], [5, 8, 12], [0, 5, 10]],
       chordEvery: 4,
       bass: [0, 0, 5, 0, 3, 0, 7, 0],
       bassOct: 0.5
     },
-    // Battle — diminished / octatonic, fast, aggressive, urgent
+    // Battle — minor: diminished/octatonic; major: driving E major pentatonic
     battle: {
       base: 164, wave: "square", tempo: 0.14,
-      melody: [0, 3, 6, 9, 0, 6, 3, 9, 1, 4, 7, 10, 1, 7, 4, 10,
-               0, 1, 3, 6, 7, 9, 10, null, 0, 3, 6, 9, 7, 4, 1, null],
+      melody:    [0, 3, 6, 9, 0, 6, 3, 9, 1, 4, 7, 10, 1, 7, 4, 10,
+                  0, 1, 3, 6, 7, 9, 10, null, 0, 3, 6, 9, 7, 4, 1, null],
+      melodyMaj: [0, 4, 7, 11, 0, 7, 4, 11, 2, 5, 9, 12, 2, 9, 5, 12,
+                  0, 2, 4, 7, 9, 11, 12, null, 0, 4, 7, 11, 9, 5, 2, null],
       chords: [[0, 6, 9], [3, 6, 10], [1, 4, 9], [0, 3, 7]],
       chordEvery: 8,
       bass: [0, 3, 6, 9, 0, 6, 3, 9],
       bassOct: 0.5
     }
   };
+  // "major" when moving closer to the map goal, "minor" when moving away
   let musicId = null, musicTimer = 0, musicStep = 0;
+  let musicMode = "minor", prevGoalDist = Infinity, idleTime = 0, musicFade = 1;
   function playMusic(id) {
     if (musicId === id) return;
     musicId = id;
     musicStep = 0;
     musicTimer = 0;
+    prevGoalDist = Infinity;
   }
   function tickMusic(dt) {
     if (!actx || !musicId || S.settings.vol <= 0) return;
     const tune = TUNES[musicId];
     if (!tune) return;
-    musicTimer += dt / 1000;
+    const dtSec = dt / 1000;
+
+    // --- Goal proximity: approaching → major, retreating → minor ---
+    if (S.state === "map") {
+      const goal = MAP_GOALS[musicId];
+      if (goal) {
+        const dist = Math.hypot(S.px / T - goal.x, S.py / T - goal.y);
+        if (prevGoalDist !== Infinity) {
+          if (dist < prevGoalDist - 0.15) musicMode = "major";
+          else if (dist > prevGoalDist + 0.15) musicMode = "minor";
+        }
+        prevGoalDist = dist;
+      }
+      // Idle fade: > 2 s of no movement → lower to 10 % volume
+      if (S.moving) { idleTime = 0; }
+      else { idleTime += dtSec; }
+    }
+    const fadeTarget = idleTime > 2 ? 0.1 : 1.0;
+    musicFade += (fadeTarget - musicFade) * Math.min(1, dtSec * 2);
+
+    musicTimer += dtSec;
     if (musicTimer < tune.tempo) return;
     musicTimer = 0;
     const step = musicStep++;
     const t = actx.currentTime;
-    const semitone = tune.melody[step % tune.melody.length];
+    const melodyArr = (musicMode === "major" && tune.melodyMaj) ? tune.melodyMaj : tune.melody;
+    const semitone = melodyArr[step % melodyArr.length];
 
     // Melody note (skip if rest)
     if (semitone !== null) {
@@ -262,7 +308,7 @@
         lfo.start(t); lfo.stop(t + tune.tempo * 1.7);
       }
       o.connect(g); g.connect(master);
-      g.gain.setValueAtTime(0.04, t);
+      g.gain.setValueAtTime(0.04 * musicFade, t);
       g.gain.exponentialRampToValueAtTime(0.001, t + tune.tempo * 1.5);
       o.start(t); o.stop(t + tune.tempo * 1.7);
       // Disconnect vibrato nodes when the melody note ends to allow GC
@@ -277,7 +323,7 @@
       b.type = "sine";
       b.frequency.value = tune.base * tune.bassOct * Math.pow(2, bassNote / 12);
       b.connect(bg); bg.connect(master);
-      bg.gain.setValueAtTime(0.03, t);
+      bg.gain.setValueAtTime(0.03 * musicFade, t);
       bg.gain.exponentialRampToValueAtTime(0.001, t + tune.tempo * 1.9);
       b.start(t); b.stop(t + tune.tempo * 2);
     }
@@ -291,7 +337,7 @@
         c.type = tune.wave === "square" ? "sawtooth" : "sine";
         c.frequency.value = tune.base * Math.pow(2, cn / 12);
         c.connect(cg); cg.connect(master);
-        const vel = Math.max(0.001, 0.012 - i * 0.003);
+        const vel = Math.max(0.001, (0.012 - i * 0.003) * musicFade);
         cg.gain.setValueAtTime(vel, t + i * 0.018);
         cg.gain.exponentialRampToValueAtTime(0.001, t + tune.tempo * tune.chordEvery * 0.9);
         c.start(t + i * 0.018); c.stop(t + tune.tempo * tune.chordEvery);
