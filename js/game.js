@@ -153,7 +153,7 @@
   const TUNES = {
     // Temple of the Priestess — minor: pentatonic A minor; major: A major pentatonic
     temple: {
-      base: 220, wave: "sine", tempo: 0.48,
+      base: 220, wave: "sine", tempo: 1.4,
       melody:    [0, 4, 7, 12, 9, 7, 4, 0, 2, 4, 7, 9, 12, 9, 7, null,
                   0, 7, 12, 16, 14, 12, 7, 4, 2, 0, 4, 7, 9, 7, 4, null],
       melodyMaj: [0, 4, 7, 9, 12, 9, 7, 4, 2, 4, 9, 11, 12, 11, 9, null,
@@ -165,7 +165,7 @@
     },
     // Town — minor: Dorian; major: bright G major
     town: {
-      base: 196, wave: "triangle", tempo: 0.22,
+      base: 196, wave: "triangle", tempo: 0.65,
       melody:    [0, 2, 3, 5, 7, 5, 3, 2, 0, 3, 7, 10, 9, 7, 5, 3,
                   2, 3, 5, 7, 9, 10, 9, 7, 5, 3, 2, 0, null, 0, 2, null],
       melodyMaj: [0, 2, 4, 7, 9, 7, 4, 2, 0, 4, 7, 11, 9, 7, 4, 2,
@@ -177,7 +177,7 @@
     },
     // City — minor: Mixolydian; major: F major, confident and bright
     city: {
-      base: 174, wave: "triangle", tempo: 0.19,
+      base: 174, wave: "triangle", tempo: 0.57,
       melody:    [0, 4, 7, 10, 12, 10, 7, 4, 5, 9, 12, 10, 7, 5, 4, null,
                   3, 7, 10, 12, 14, 12, 10, 7, 5, 3, 0, 3, 5, 7, null, null],
       melodyMaj: [0, 4, 7, 11, 12, 11, 7, 4, 5, 9, 12, 11, 7, 5, 4, null,
@@ -189,7 +189,7 @@
     },
     // Forest — minor: Lydian (already bright); major: D major, open and hopeful
     forest: {
-      base: 146, wave: "sine", tempo: 0.58,
+      base: 146, wave: "sine", tempo: 1.7,
       melody:    [0, 2, 4, 6, 7, 9, 11, 12, 11, 9, 7, 6, 4, 2, 0, null,
                   7, 9, 11, 12, 14, 12, 11, 9, 7, 6, 4, 2, 4, 6, 7, null],
       melodyMaj: [0, 4, 7, 9, 11, 12, 11, 9, 7, 4, 2, 0, null, 4, 7, 9,
@@ -201,7 +201,7 @@
     },
     // Mountain Pass — minor: Phrygian (very dark); major: C major (lighter)
     pass: {
-      base: 130, wave: "sawtooth", tempo: 0.52,
+      base: 130, wave: "sawtooth", tempo: 1.55,
       melody:    [0, 1, 3, 5, 7, 8, 7, 5, 3, 1, 0, 3, 7, 10, 8, null,
                   0, 1, 3, 7, 8, 10, 8, 7, 5, 3, 1, 0, null, 0, 1, null],
       melodyMaj: [0, 2, 4, 7, 9, 7, 4, 2, 0, 4, 7, 9, 11, 9, 7, null,
@@ -213,7 +213,7 @@
     },
     // Ruins — minor: Locrian dread; major: A major sparse, eerie hope
     ruins: {
-      base: 110, wave: "triangle", tempo: 0.72,
+      base: 110, wave: "triangle", tempo: 2.2,
       melody:    [0, 1, 3, null, 6, null, 8, 6, null, 3, 1, 0, null, 8, 6, null,
                   0, null, 6, null, 8, 10, 8, 6, null, 3, null, 1, 0, null, null, null],
       melodyMaj: [0, 4, 7, null, 9, null, 11, 9, null, 7, 4, 0, null, 11, 9, null,
@@ -225,7 +225,7 @@
     },
     // Throne Room — minor: weighty G minor; major: triumphant G major
     throne: {
-      base: 98, wave: "sine", tempo: 0.78,
+      base: 98, wave: "sine", tempo: 2.3,
       melody:    [0, 3, 7, 10, 12, 15, 12, 10, 7, 3, 0, null, 5, 8, 12, null,
                   0, 7, 12, 15, 19, 15, 12, 7, 5, 3, 0, 3, 7, 10, null, null],
       melodyMaj: [0, 4, 7, 11, 12, 16, 12, 11, 7, 4, 0, null, 5, 9, 12, null,
@@ -237,7 +237,7 @@
     },
     // Battle — minor: diminished/octatonic; major: driving E major pentatonic
     battle: {
-      base: 164, wave: "square", tempo: 0.14,
+      base: 164, wave: "square", tempo: 0.42,
       melody:    [0, 3, 6, 9, 0, 6, 3, 9, 1, 4, 7, 10, 1, 7, 4, 10,
                   0, 1, 3, 6, 7, 9, 10, null, 0, 3, 6, 9, 7, 4, 1, null],
       melodyMaj: [0, 4, 7, 11, 0, 7, 4, 11, 2, 5, 9, 12, 2, 9, 5, 12,
@@ -249,14 +249,16 @@
     }
   };
   // "major" when moving closer to the map goal, "minor" when moving away
+  // modeBlend: 0 = fully minor, 1 = fully major; interpolates slowly
   let musicId = null, musicTimer = 0, musicStep = 0;
-  let musicMode = "minor", prevGoalDist = Infinity, idleTime = 0, musicFade = 1;
+  let musicMode = "minor", modeBlend = 0, prevGoalDist = Infinity, idleTime = 0, musicFade = 1;
   function playMusic(id) {
     if (musicId === id) return;
     musicId = id;
     musicStep = 0;
     musicTimer = 0;
     prevGoalDist = Infinity;
+    modeBlend = musicMode === "major" ? 1 : 0;
   }
   function tickMusic(dt) {
     if (!actx || !musicId || S.settings.vol <= 0) return;
@@ -275,19 +277,27 @@
         }
         prevGoalDist = dist;
       }
-      // Idle fade: > 2 s of no movement → lower to 10 % volume
+      // Idle fade: > 20 s of no movement → lower to 10 % volume
       if (S.moving) { idleTime = 0; }
       else { idleTime += dtSec; }
     }
-    const fadeTarget = idleTime > 2 ? 0.1 : 1.0;
-    musicFade += (fadeTarget - musicFade) * Math.min(1, dtSec * 2);
+    // Blend mode gradually: ~10 s to fully switch major↔minor
+    const modeTarget = musicMode === "major" ? 1 : 0;
+    modeBlend += (modeTarget - modeBlend) * Math.min(1, dtSec * 0.1);
+    // Fade volume slowly (~8 s ramp)
+    const fadeTarget = idleTime > 20 ? 0.1 : 1.0;
+    musicFade += (fadeTarget - musicFade) * Math.min(1, dtSec * 0.12);
 
     musicTimer += dtSec;
     if (musicTimer < tune.tempo) return;
     musicTimer = 0;
     const step = musicStep++;
     const t = actx.currentTime;
-    const melodyArr = (musicMode === "major" && tune.melodyMaj) ? tune.melodyMaj : tune.melody;
+    const minorArr = tune.melody;
+    const majorArr = tune.melodyMaj || tune.melody;
+    // Use modeBlend to probabilistically select major vs minor step
+    const useMajor = Math.random() < modeBlend;
+    const melodyArr = useMajor ? majorArr : minorArr;
     const semitone = melodyArr[step % melodyArr.length];
 
     // Melody note (skip if rest)
