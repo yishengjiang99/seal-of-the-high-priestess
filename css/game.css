@@ -501,6 +501,33 @@ button, select, input { font-family: inherit; }
 }
 .save-slot:hover { border-color: var(--gold); }
 .save-slot .when { color: var(--muted); font-size: 12px; }
+.tiny {
+  display: inline-block !important;
+  margin: 0 0 0 6px !important;
+  font-size: 12px !important;
+  padding: 2px 8px !important;
+  border: 1px solid rgba(212,180,106,0.5) !important;
+  color: var(--gold) !important;
+}
+.idle-actions { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 14px; }
+.idle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.idle-card {
+  border: 1px solid rgba(212,180,106,0.25);
+  background: rgba(14, 10, 24, 0.72);
+  padding: 8px;
+}
+.mutedline { color: var(--muted); font-size: 12px; margin: 4px 0 8px; }
+.chip {
+  display: inline-block;
+  margin: 0 6px 6px 0;
+  padding: 3px 8px;
+  border: 1px solid rgba(126,184,212,0.45);
+  color: var(--silver);
+  font-size: 12px;
+}
+body.reduced-motion * { animation: none !important; transition: none !important; }
+body.high-contrast-icons .chip,
+body.high-contrast-icons .idle-card .row span:first-child { color: #fff7ca; text-shadow: 0 0 6px rgba(255, 247, 202, 0.45); }
 
 #loader {
   position: absolute; inset: 0; z-index: 20;

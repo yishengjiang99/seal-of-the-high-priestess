@@ -15,6 +15,14 @@ python3 -m http.server 8080
 
 Then visit http://localhost:8080
 
+## Headless test suite
+
+```bash
+npm ci
+npx playwright install --with-deps chromium
+npm run test:ci
+```
+
 ### Keys
 
 | Key | Action |
