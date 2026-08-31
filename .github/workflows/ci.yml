@@ -30,6 +30,7 @@ jobs:
 
       - name: Install npm dependencies
         run: npm ci
+          node-version: 24
 
       - name: JavaScript syntax checks
         run: |
@@ -72,12 +73,12 @@ jobs:
             exit 1
           fi
 
-          "$CHROME_BIN" --headless --disable-gpu --disable-dev-shm-usage \
+          "$CHROME_BIN" --headless --no-sandbox --disable-gpu --disable-dev-shm-usage \
             --window-size=1366,768 \
             --screenshot=artifacts/homepage.png \
             http://127.0.0.1:8080/index.html
 
-          "$CHROME_BIN" --headless --disable-gpu --disable-dev-shm-usage \
+          "$CHROME_BIN" --headless --no-sandbox --disable-gpu --disable-dev-shm-usage \
             --dump-dom http://127.0.0.1:8080/index.html > artifacts/dom.html
 
           cp assets/screenshots/*.png artifacts/ 2>/dev/null || true
