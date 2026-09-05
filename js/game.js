@@ -35,8 +35,10 @@
     saveMode: "save",
     lastBattle: null,
     particles: [],
+    amb: [],            // ambient weather/mood motes, per scene
     dmgNums: [],
     shake: 0,
+    flash: 0,
     keys: {},
     just: {},
     mouse: { x: 0, y: 0, click: false },
@@ -439,6 +441,7 @@
       .replace(/[—–]/g, ", ")
       .replace(/\s+/g, " ")
       .replace(/[♪◈▾]/g, "")
+      .replace(/\*/g, "")
       .trim();
   }
   function stopSpeech() {
@@ -1237,7 +1240,13 @@
     S.state = "map";
     hideAllScreens();
     $("map-hud").classList.remove("hidden");
-    $("map-location").textContent = map().name;
+    const loc = $("map-location");
+    if (loc.textContent !== map().name) {
+      loc.textContent = map().name;
+      loc.classList.remove("enter");
+      void loc.offsetWidth;
+      loc.classList.add("enter");
+    }
     playMusic(map().music || "temple");
     S.camX = S.px - W / 2; S.camY = S.py - H / 2;
   }
@@ -1747,15 +1756,34 @@
     }
     drawChibi(S.px - ox, S.py - oy, party[0], S.dir, S.moving, S.chars.elara?.armor === "veil_first_oath" ? "gold" : null);
     // night veil
-    if (!m.indoors) {
-      const h = S.time;
-      let a = 0;
-      if (h < 6) a = 0.45;
-      else if (h < 8) a = 0.2;
-      else if (h >= 20) a = 0.4;
-      else if (h >= 18) a = 0.18;
-      if (a) { ctx.fillStyle = `rgba(8,10,28,${a})`; ctx.fillRect(0, 0, W, H); }
+    const dark = m.indoors ? 0 : nightAlpha();
+    if (dark) { ctx.fillStyle = `rgba(8,10,28,${dark})`; ctx.fillRect(0, 0, W, H); }
+    // Lamps bloom through the veil — the canal town should feel lit, not tinted.
+    const lampPow = 0.22 + dark * 1.5;
+    ctx.globalCompositeOperation = "lighter";
+    for (let y = y0; y < y1; y++) {
+      for (let x = x0; x < x1; x++) {
+        if (m.tiles[y][x] !== 12) continue;
+        const px = x * T - ox + 16, py = y * T - oy + 10;
+        const r = 46 + Math.sin(S.anim / 420 + x * 1.7 + y) * 4;
+        const g2 = ctx.createRadialGradient(px, py, 2, px, py, r);
+        g2.addColorStop(0, `rgba(255,214,150,${0.5 * lampPow})`);
+        g2.addColorStop(0.45, `rgba(240,180,90,${0.2 * lampPow})`);
+        g2.addColorStop(1, "rgba(240,180,90,0)");
+        ctx.fillStyle = g2;
+        ctx.beginPath(); ctx.arc(px, py, r, 0, 6.3); ctx.fill();
+      }
     }
+    ctx.globalCompositeOperation = "source-over";
+    drawAmbient();
+  }
+  function nightAlpha() {
+    const h = S.time;
+    if (h < 6) return 0.45;
+    if (h < 8) return 0.2;
+    if (h >= 20) return 0.4;
+    if (h >= 18) return 0.18;
+    return 0;
   }
 
   function talkSimple(name, text) {
@@ -1853,6 +1881,7 @@
       vn.speechDone = false;
       vn.line = line;
       renderVn(line);
+      if (line.fx) lineFx(line.fx);
       speakLine(line.s || "", line.t || "");
       return;
     }
@@ -1886,42 +1915,73 @@
     }
     endScene();
   }
+  // Soft keystroke tick for players who read with voices off.
+  let blipT = 0;
+  function typeBlip() {
+    if (!actx || S.settings.vol <= 0) return;
+    const t = actx.currentTime;
+    if (t - blipT < 0.035) return;
+    blipT = t;
+    const osc = actx.createOscillator(), g = actx.createGain();
+    osc.connect(g); g.connect(master);
+    osc.type = "square";
+    osc.frequency.setValueAtTime(1500 + Math.random() * 260, t);
+    g.gain.setValueAtTime(0.012, t);
+    g.gain.exponentialRampToValueAtTime(0.0005, t + 0.03);
+    osc.start(t); osc.stop(t + 0.04);
+  }
+  // Per-line staging directives from dialogue.js: { fx: "shake" | "flash" | ... }
+  function lineFx(kind) {
+    if (kind === "shake") { S.shake = 16; sfx("hit"); }
+    else if (kind === "quake") { S.shake = 26; sfx("unseal"); }
+    else if (kind === "flash") { S.flash = 320; }
+    else if (kind === "petal") { ambBurst("petal", 18); sfx("petal"); }
+    else if (kind === "ember") { ambBurst("ember", 22); sfx("flame"); }
+    else if (kind === "chime") sfx("save");
+  }
   function renderVn(line) {
     const vn = S.vn;
+    const scr = $("screen-vn");
     const left = $("vn-left"), right = $("vn-right");
     const sp = (line && line.s) || "";
-    $("vn-name").textContent = speakerName(sp);
-    left.classList.remove("show", "dim", "blush");
-    right.classList.remove("show", "dim", "blush");
-    left.style.transform = "";
     const talk = vn.def.mode === "talk";
-    $("screen-vn").classList.toggle("no-portrait", talk && sp !== "elara" && sp !== "kael" && sp !== "shade");
-    if (sp === "elara" && S.images.elara) {
-      left.src = DATA.PORTRAITS.elara.neutral;
-      left.classList.add("show");
-      if (line.e === "blush") left.classList.add("blush");
-      if (!talk && S.images.kael) { right.src = DATA.PORTRAITS.kael.smirk; right.classList.add("show", "dim"); }
-    } else if ((sp === "kael" || sp === "shade") && S.images.kael) {
-      if (talk) {
-        left.src = DATA.PORTRAITS.kael.smirk;
-        left.classList.add("show");
-        left.style.transform = "none";
-      } else {
-        right.src = DATA.PORTRAITS.kael.smirk;
-        right.classList.add("show");
-        if (S.images.elara) { left.src = DATA.PORTRAITS.elara.neutral; left.classList.add("show", "dim"); }
-      }
-    } else if (!talk) {
-      if (S.images.elara) {
-        left.src = DATA.PORTRAITS.elara.neutral; left.classList.add("show");
-        if (sp !== "elara") left.classList.add("dim");
-      }
-      if (S.images.kael) {
-        right.src = DATA.PORTRAITS.kael.smirk; right.classList.add("show");
-        if (sp !== "kael" && sp !== "shade") right.classList.add("dim");
-      }
+    const narration = !sp;
+
+    scr.style.setProperty("--sp", narration ? "#d4b46a" : speakerHue(sp));
+    scr.classList.toggle("narration", narration);
+    $("vn-name").textContent = speakerName(sp);
+
+    const expr = (line && line.e) || "neutral";
+    for (const el of [left, right]) {
+      el.className = "vn-portrait";
+      el.style.transform = "";
     }
-    renderVnText();
+    scr.classList.toggle("no-portrait", talk && sp !== "elara" && sp !== "kael" && sp !== "shade");
+
+    // Who is on screen, and who is speaking. In full VN both leads hold the
+    // frame; the listener steps back instead of vanishing.
+    const stage = (el, who, focused) => {
+      const art = DATA.PORTRAITS[who];
+      if (!art) return;
+      el.src = art[expr] || art[Object.keys(art)[0]];
+      el.classList.add("show", focused ? "focus" : "away", "e-" + expr);
+      if (focused && vn.lastSpeaker !== sp) {
+        el.classList.remove("pop");
+        void el.offsetWidth;
+        el.classList.add("pop");
+      }
+    };
+
+    if (talk) {
+      if (sp === "elara" && S.images.elara) stage(left, "elara", true);
+      else if ((sp === "kael" || sp === "shade") && S.images.kael) stage(left, "kael", true);
+    } else {
+      if (S.images.elara) stage(left, "elara", sp === "elara");
+      if (S.images.kael) stage(right, "kael", sp === "kael" || sp === "shade");
+    }
+    vn.lastSpeaker = sp;
+
+    buildVnText(line);
     const box = $("vn-choices");
     box.innerHTML = "";
     if (vn.choices) {
@@ -1934,13 +1994,53 @@
       });
       $("vn-next").style.display = "none";
       $("vn-skip").classList.add("hidden");
-      $("screen-vn").classList.add("choosing");
+      scr.classList.add("choosing");
     } else {
       $("vn-next").style.display = "";
       $("vn-skip").classList.remove("hidden");
-      $("screen-vn").classList.remove("choosing");
+      scr.classList.remove("choosing");
     }
   }
+  // Dialogue markup: *word* is emphasis. Each glyph becomes a span so the
+  // typewriter can fade characters in individually.
+  function buildVnText(line) {
+    const vn = S.vn;
+    const raw = (line && line.t) || "";
+    const host = $("vn-text");
+    let plain = "", em = false;
+    const frag = document.createDocumentFragment();
+    const spans = [];
+    for (let i = 0; i < raw.length; i++) {
+      const c = raw[i];
+      if (c === "*") { em = !em; continue; }
+      const el = document.createElement("span");
+      el.className = em ? "ch em" : "ch";
+      el.textContent = c;
+      frag.appendChild(el);
+      spans.push(el);
+      plain += c;
+    }
+    host.innerHTML = "";
+    host.appendChild(frag);
+    vn.full = plain;
+    vn.spans = spans;
+    vn.revealed = 0;
+    vn.hold = 0;
+    if (vn.shown >= plain.length) vn.shown = plain.length;
+    renderVnText();
+  }
+  // Each speaker owns an accent colour; the VN box, nameplate and glyph reveal
+  // all tint from it so who is talking reads before the name does.
+  const SPEAKER_HUE = {
+    elara: "#a8c6f0", kael: "#e8807c", lyra: "#e2c07a", thorn: "#9dbb8e",
+    suyin: "#d6c6f0", shen: "#8fd8c0", shade: "#e070a8", korin: "#e8a870",
+    sera: "#f0aec0", bard: "#c4a8e8", keeper: "#a6e0d8", jori: "#f0d490",
+    mira: "#e8c0d0", hana: "#f0d0b0", wen: "#c0b8a8", ren: "#cfe0f8",
+    echo: "#b090c8", captain: "#9ab0c8", granny: "#d8c0a0", monk: "#a8b8e0",
+    pilgrim: "#c8c0a8", baker: "#e8c890", florist: "#e8a8c0", boatman: "#8fc0c8",
+    kid2: "#f0dca0", guard: "#a0b0c0", fisherman: "#88b8c8"
+  };
+  function speakerHue(sp) { return SPEAKER_HUE[sp] || "#d4b46a"; }
   function speakerName(sp) {
     if (!sp) return "";
     if (sp === "shade") return "The Unbetrayed";
@@ -1955,7 +2055,11 @@
   }
   function renderVnText() {
     const vn = S.vn;
-    $("vn-text").textContent = (vn.full || "").slice(0, vn.shown);
+    if (!vn) return;
+    if (!vn.spans) { $("vn-text").textContent = (vn.full || "").slice(0, vn.shown); return; }
+    const n = Math.min(vn.spans.length, Math.floor(vn.shown));
+    for (let i = vn.revealed; i < n; i++) vn.spans[i].classList.add("on");
+    vn.revealed = Math.max(vn.revealed, n);
   }
   function pickChoice() {
     const vn = S.vn;
@@ -1979,7 +2083,21 @@
       return;
     }
     const spd = S.settings.textSpeed === 9 ? 999 : S.settings.textSpeed * 0.055;
-    vn.shown = Math.min(vn.full.length, vn.shown + dt * spd);
+    if (vn.hold > 0) {
+      vn.hold -= dt;
+    } else if (vn.shown < vn.full.length) {
+      const before = Math.floor(vn.shown);
+      vn.shown = Math.min(vn.full.length, vn.shown + dt * spd);
+      const after = Math.floor(vn.shown);
+      if (after > before && S.settings.textSpeed !== 9 && after < vn.full.length) {
+        // Let punctuation land. Dialogue reads as speech, not as a ticker.
+        const c = vn.full[after - 1];
+        if (c === "," || c === ";" || c === ":") vn.hold = 80;
+        else if (c === "." || c === "!" || c === "?") vn.hold = 170;
+        else if (c === "\u2014" || c === "\u2013") vn.hold = 130;
+        else if (!S.settings.voice && (after % 3 === 0) && c !== " ") typeBlip();
+      }
+    }
     renderVnText();
     if (S.settings.auto && vn.shown >= vn.full.length) {
       const voiceHold = S.settings.voice && speechOk() && !vn.speechDone && !!vn.full;
@@ -2075,7 +2193,13 @@
   function blog(s) {
     S.battle.log.unshift(s);
     S.battle.log = S.battle.log.slice(0, 4);
-    $("battle-log").innerHTML = S.battle.log.map((l, i) => `<div style="opacity:${1 - i * 0.22}">${l}</div>`).join("");
+    const el = $("battle-log");
+    el.innerHTML = S.battle.log
+      .map((l, i) => `<div style="opacity:${(1 - i * 0.26).toFixed(2)};font-size:${(15 - i).toFixed(0)}px">${l}</div>`)
+      .join("");
+    el.classList.remove("beat");
+    void el.offsetWidth;
+    el.classList.add("beat");
   }
   function rebuildBattleQueue() {
     const b = S.battle;
@@ -2204,7 +2328,8 @@
       if (!p.alive) tags.push("DOWN");
       const rk = p.resKey || "res";
       const isActive = b.actor && b.actor.id === p.id;
-      return `<div class="battler-card${isActive ? " active-hero" : ""}">
+      const cls = "battler-card" + (isActive ? " active-hero acting" : "") + (p.alive ? "" : " down");
+      return `<div class="${cls}">
         <div class="nm">${p.name} <span class="tag">${tags.join(" · ")}</span></div>
         <div class="bar-label"><span>HP</span><span>${Math.max(0, p.hp|0)}/${p.maxHp}</span></div>
         <div class="bar hp"><i style="width:${hp}%"></i></div>
@@ -2470,7 +2595,8 @@
     if (sk.mark && !sk.power) { target.marked = 3; blog(`${target.name} is marked.`); return; }
     if (sk.taunt) { user.taunt = sk.taunt; user.defUp = Math.max(user.defUp, sk.defUp || 0); blog(`${user.name} becomes the door.`); return; }
     if (sk.evade) { aliveP().forEach((p) => p.evade = Math.max(p.evade, sk.evade)); blog("Smoke. The party is rumor."); return; }
-    // damage
+    // damage — the actor lunges so the hit reads as a hit
+    user.lunge = 22;
     for (const t of targets) {
       let pow = sk.power || 10;
       let atk = user.atk;
@@ -2502,12 +2628,15 @@
     }
   }
   function posOf(b) {
+    const dirSign = b.side === "p" ? 1 : -1;
+    const lunge = (b.lunge || 0) * dirSign;
+    const hit = b.flash > 0 ? Math.sin(b.flash / 18) * (b.flash / 60) : 0;
     if (b.side === "p") {
       const i = S.battle.pals.indexOf(b);
-      return { x: 220 + (i % 2) * 90, y: 300 + Math.floor(i / 2) * 90 };
+      return { x: 236 + i * 62 + lunge + hit, y: 322 + i * 62 };   // FF-style diagonal line
     }
     const i = S.battle.foes.indexOf(b);
-    return { x: 860 + (i % 2) * 110, y: 240 + Math.floor(i / 2) * 110 };
+    return { x: 900 + (i % 2) * 132 - Math.floor(i / 2) * 70 + lunge + hit, y: 296 + i * 74 };
   }
   function damage(t, n, why) {
     if (t.shield > 0) {
@@ -2516,17 +2645,20 @@
       if (n <= 0) { blog(`The Ward absorbs the blow.`); floatTxt(t, "ward", "#7eb8d4"); return; }
     }
     t.hp -= n;
-    floatTxt(t, "−" + n, why === "heal" ? "#7bc47b" : "#e07080");
-    S.shake = Math.min(12, S.shake + (n > 40 ? 8 : 4));
+    const heavy = n >= 45;
+    t.flash = 240;
+    floatTxt(t, "−" + n, why === "heal" ? "#7bc47b" : heavy ? "#ffd27a" : "#ff9aa4", heavy);
+    S.shake = Math.min(14, S.shake + (heavy ? 9 : 4));
+    if (heavy) S.flash = 140;
     if (t.hp <= 0) {
       t.hp = 0; t.alive = false;
       blog(`${t.name} falls.`);
       sfx("hurt");
     }
   }
-  function floatTxt(t, text, color) {
+  function floatTxt(t, text, color, big) {
     const p = posOf(t);
-    S.dmgNums.push({ x: p.x, y: p.y - 20, text, color, life: 800 });
+    S.dmgNums.push({ x: p.x + rnd(-10, 10), y: p.y - 24, text, color, life: 900, big: !!big });
   }
   function emit(kind, x, y, n) {
     for (let i = 0; i < n; i++) {
@@ -2549,6 +2681,12 @@
       if (elara && (elara.meditating || elara.charging || elara.gassed || elara.vulnerable)) return elara;
       return tank || pals[0];
     };
+    if (e.flash > 0) {
+      ctx.globalAlpha = Math.min(0.65, e.flash / 320);
+      ctx.fillStyle = "#fff";
+      ctx.beginPath(); ctx.ellipse(0, 0, e.boss ? 60 : 32, e.boss ? 72 : 40, 0, 0, 6.3); ctx.fill();
+      ctx.globalAlpha = 1;
+    }
     if (e.telegraph) {
       const tg = e.telegraph;
       e.telegraph = null;
@@ -2612,6 +2750,10 @@
 
   function updateBattle(dt) {
     const b = S.battle;
+    for (const x of b.pals.concat(b.foes)) {
+      if (x.lunge > 0) x.lunge = Math.max(0, x.lunge - dt * 0.12);
+      if (x.flash > 0) x.flash -= dt;
+    }
     if (b.phase === "tutorial") {
       if (pressed("ok") || pressed("cancel")) { $("battle-tutorial").classList.add("hidden"); b.phase = "wait"; b.wait = 300; }
       return;
@@ -2671,9 +2813,22 @@
     const col = grads[bg] || grads.forest;
     g.addColorStop(0, col[0]); g.addColorStop(1, col[1]);
     ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
-    // floor
-    ctx.fillStyle = "rgba(255,255,255,0.04)";
-    ctx.beginPath(); ctx.ellipse(640, 520, 420, 70, 0, 0, 6.3); ctx.fill();
+    // Drifting haze bands read as distance behind the combatants.
+    for (let i = 0; i < 4; i++) {
+      const y = 180 + i * 90;
+      const x = ((S.anim / (60 + i * 22)) % (W + 700)) - 350;
+      ctx.fillStyle = `rgba(255,255,255,${0.014 + i * 0.004})`;
+      ctx.beginPath(); ctx.ellipse(x, y, 420, 46 - i * 6, 0, 0, 6.3); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x - 720, y, 420, 46 - i * 6, 0, 0, 6.3); ctx.fill();
+    }
+    drawBattleSkyline(bg);
+    // ground plate
+    const fg = ctx.createRadialGradient(640, 520, 40, 640, 520, 480);
+    fg.addColorStop(0, "rgba(255,255,255,0.075)");
+    fg.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = fg;
+    ctx.beginPath(); ctx.ellipse(640, 520, 460, 84, 0, 0, 6.3); ctx.fill();
+    drawAmbient();
     b.foes.forEach((e, i) => {
       if (!e.alive) return;
       const p = posOf(e);
@@ -2682,7 +2837,22 @@
     b.pals.forEach((p) => {
       if (!p.alive) { ctx.globalAlpha = 0.3; }
       const pos = posOf(p);
-      drawChibi(pos.x, pos.y, p.id, "right", p.charging > 0, null, 2.4);
+      ctx.fillStyle = "rgba(0,0,0,0.32)";
+      ctx.beginPath(); ctx.ellipse(pos.x, pos.y + 40, 32, 9, 0, 0, 6.3); ctx.fill();
+      if (p.charging > 0) {
+        // Charging characters sit inside a tightening ring of light.
+        const r = 62 - (S.anim / 12 % 22);
+        ctx.strokeStyle = `rgba(212,180,106,${0.15 + (22 - (S.anim / 12 % 22)) / 60})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(pos.x, pos.y, r, 0, 6.3); ctx.stroke(); ctx.lineWidth = 1;
+      }
+      drawChibi(pos.x, pos.y, p.id, "right", p.charging > 0, null, 3.1);
+      if (p.flash > 0) {
+        ctx.globalAlpha = Math.min(0.7, p.flash / 300);
+        ctx.fillStyle = "#fff";
+        ctx.beginPath(); ctx.ellipse(pos.x, pos.y - 6, 32, 46, 0, 0, 6.3); ctx.fill();
+        ctx.globalAlpha = 1;
+      }
       ctx.globalAlpha = 1;
       if (p.shield) {
         ctx.strokeStyle = "rgba(160,210,255,0.7)"; ctx.lineWidth = 2;
@@ -2693,15 +2863,69 @@
         ctx.beginPath(); ctx.arc(pos.x, pos.y, 44, 0, 6.3); ctx.stroke(); ctx.lineWidth = 1;
       }
       if (S.battle.actor === p) {
-        ctx.fillStyle = "#d4b46a";
-        ctx.beginPath(); ctx.moveTo(pos.x, pos.y - 58); ctx.lineTo(pos.x - 7, pos.y - 46); ctx.lineTo(pos.x + 7, pos.y - 46); ctx.fill();
+        const bob = Math.sin(S.anim / 220) * 5;
+        ctx.fillStyle = "rgba(212,180,106,0.16)";
+        ctx.beginPath(); ctx.ellipse(pos.x, pos.y + 40, 40, 12, 0, 0, 6.3); ctx.fill();
+        ctx.fillStyle = "#f0dca8";
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y - 66 + bob);
+        ctx.lineTo(pos.x - 8, pos.y - 80 + bob);
+        ctx.lineTo(pos.x + 8, pos.y - 80 + bob);
+        ctx.fill();
       }
     });
   }
+  // Parallax silhouettes so each arena reads as a place, not a gradient.
+  function drawBattleSkyline(bg) {
+    const drift = Math.sin(S.anim / 6000) * 8;
+    ctx.save();
+    ctx.translate(drift, 0);
+    if (bg === "canal") {
+      ctx.fillStyle = "rgba(6,18,26,0.55)";
+      for (let i = 0; i < 5; i++) {
+        const x = 60 + i * 280;
+        ctx.fillRect(x, 250, 150, 300);
+        ctx.beginPath(); ctx.moveTo(x - 14, 250); ctx.lineTo(x + 75, 196); ctx.lineTo(x + 164, 250); ctx.fill();
+      }
+      ctx.fillStyle = "rgba(120,200,220,0.06)";
+      ctx.fillRect(0, 470, W, 120);
+    } else if (bg === "pass") {
+      ctx.fillStyle = "rgba(10,8,10,0.5)";
+      for (let i = 0; i < 6; i++) {
+        const x = i * 260 - 80;
+        ctx.beginPath(); ctx.moveTo(x, 520); ctx.lineTo(x + 150, 190 + (i % 3) * 60); ctx.lineTo(x + 300, 520); ctx.fill();
+      }
+    } else if (bg === "ruins") {
+      ctx.fillStyle = "rgba(12,6,14,0.55)";
+      for (let i = 0; i < 7; i++) {
+        const x = 40 + i * 190, h = 210 + (i % 3) * 70;
+        ctx.fillRect(x, 520 - h, 44, h);
+        ctx.fillRect(x - 10, 520 - h - 14, 64, 14);
+      }
+    } else {
+      ctx.fillStyle = "rgba(4,14,8,0.5)";
+      for (let i = 0; i < 9; i++) {
+        const x = i * 155 - 40, h = 220 + (i % 4) * 60;
+        ctx.fillRect(x + 26, 520 - h * 0.35, 14, h * 0.35);
+        ctx.beginPath(); ctx.arc(x + 33, 520 - h * 0.35, 58, 0, 6.3); ctx.fill();
+      }
+    }
+    ctx.restore();
+    // horizon haze
+    const hz = ctx.createLinearGradient(0, 430, 0, 560);
+    hz.addColorStop(0, "rgba(255,255,255,0)");
+    hz.addColorStop(1, "rgba(255,255,255,0.05)");
+    ctx.fillStyle = hz; ctx.fillRect(0, 430, W, 130);
+  }
   function drawFoe(x, y, e) {
+    const k = e.boss ? 2.2 : 1.5;                 // enemies read at party scale
+    const float = Math.sin(S.anim / 700 + x) * (e.boss ? 3 : 5);
     ctx.save(); ctx.translate(x, y);
     ctx.fillStyle = "rgba(0,0,0,0.35)";
-    ctx.beginPath(); ctx.ellipse(0, 40, e.boss ? 48 : 18, 10, 0, 0, 6.3); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(0, 44 * (e.boss ? 1.6 : 1.2), (e.boss ? 62 : 26), 12, 0, 0, 6.3); ctx.fill();
+    ctx.save();
+    ctx.translate(0, float);
+    ctx.scale(k, k);
     const tid = e.tid || e.id;
     if (tid === "hollow_oak") {
       ctx.fillStyle = "#4a3020"; ctx.fillRect(-14, -10, 28, 50);
@@ -2744,16 +2968,43 @@
       ctx.fillStyle = "#1a1020";
       ctx.fillRect(-8 * s, -10 * s, 5 * s, 5 * s); ctx.fillRect(4 * s, -10 * s, 5 * s, 5 * s);
     }
-    if (e.telegraph) {
-      ctx.strokeStyle = "#e8c070"; ctx.setLineDash([4, 4]); ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.arc(0, 0, 56, 0, 6.3); ctx.stroke(); ctx.setLineDash([]); ctx.lineWidth = 1;
+    if (e.flash > 0) {
+      ctx.globalAlpha = Math.min(0.65, e.flash / 320);
+      ctx.fillStyle = "#fff";
+      ctx.beginPath(); ctx.ellipse(0, 0, e.boss ? 46 : 26, e.boss ? 56 : 32, 0, 0, 6.3); ctx.fill();
+      ctx.globalAlpha = 1;
     }
-    ctx.fillStyle = "#f4ead4";
-    ctx.font = "15px serif"; ctx.textAlign = "center";
-    ctx.fillText(e.name, 0, e.boss ? -78 : -44);
-    const bw = e.boss ? 80 : 52;
-    ctx.fillStyle = "#1c1826"; ctx.fillRect(-bw / 2, 48, bw, 8);
-    ctx.fillStyle = "#d45a6a"; ctx.fillRect(-bw / 2, 48, bw * Math.max(0, e.hp / e.maxHp), 8);
+    ctx.restore();                                 // end scaled art
+    if (e.telegraph) {
+      // Wind-up ring: the tell the whole fight is built around.
+      const r = (e.boss ? 132 : 74) + Math.sin(S.anim / 160) * 5;
+      ctx.strokeStyle = "rgba(232,192,112,0.95)";
+      ctx.setLineDash([6, 6]); ctx.lineWidth = 2.5;
+      ctx.lineDashOffset = -S.anim / 40;
+      ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.3); ctx.stroke();
+      ctx.setLineDash([]); ctx.lineDashOffset = 0; ctx.lineWidth = 1;
+      const gg = ctx.createRadialGradient(0, 0, r * 0.5, 0, 0, r);
+      gg.addColorStop(0, "rgba(232,192,112,0)");
+      gg.addColorStop(1, "rgba(232,192,112,0.16)");
+      ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(0, 0, r, 0, 6.3); ctx.fill();
+    }
+    const ny = e.boss ? -128 : -70;
+    ctx.textAlign = "center";
+    ctx.font = `${e.boss ? 17 : 14}px Iowan Old Style, Palatino, serif`;
+    ctx.lineWidth = 4; ctx.strokeStyle = "rgba(6,4,12,0.85)";
+    ctx.strokeText(e.name, 0, ny);
+    ctx.fillStyle = e.boss ? "#f0d8a0" : "#e8e0cc";
+    ctx.fillText(e.name, 0, ny);
+    ctx.lineWidth = 1;
+    const bw = e.boss ? 150 : 70, by = e.boss ? 86 : 60;
+    const frac = Math.max(0, e.hp / e.maxHp);
+    ctx.fillStyle = "rgba(6,6,12,0.85)"; ctx.fillRect(-bw / 2 - 1, by - 1, bw + 2, 9);
+    const hg = ctx.createLinearGradient(-bw / 2, 0, bw / 2, 0);
+    hg.addColorStop(0, frac < 0.3 ? "#7a1e28" : "#6d2b38");
+    hg.addColorStop(1, frac < 0.3 ? "#e04a5a" : "#d45a6a");
+    ctx.fillStyle = hg; ctx.fillRect(-bw / 2, by, bw * frac, 7);
+    ctx.fillStyle = "rgba(255,255,255,0.25)"; ctx.fillRect(-bw / 2, by, bw * frac, 2);
+    ctx.strokeStyle = "rgba(212,180,106,0.5)"; ctx.strokeRect(-bw / 2 - 1.5, by - 1.5, bw + 3, 10);
     ctx.restore();
   }
 
@@ -2986,16 +3237,138 @@
   // ---------------------------------------------------------------------------
   // Particles / numbers
   // ---------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // Ambient mood layer — petals, motes, fireflies, ash. Cheap, scene-aware.
+  // ---------------------------------------------------------------------------
+  const AMB_MAPS = {
+    temple: { petal: 20, mote: 10 },
+    village: { petal: 16, mote: 8 },
+    forest: { mote: 18, petal: 4 },
+    meridia: { petal: 12, mote: 10 },
+    ashen: { ash: 22 },
+    ruins: { ash: 18, mote: 6 },
+    throne: { ash: 26, ember: 6 }
+  };
+  function ambTarget() {
+    if (S.state === "title") return { petal: 22, mote: 12 };
+    if (S.state === "battle") {
+      const bg = S.battle?.def.bg;
+      if (bg === "canal") return { mote: 14 };
+      if (bg === "pass") return { ash: 16 };
+      if (bg === "ruins") return { ash: 14, ember: 6 };
+      return { mote: 10, petal: 6 };
+    }
+    if (S.state === "map" || (S.state === "vn" && S.vn?.def.mode === "talk")) {
+      const m = MAPS[S.mapId];
+      if (m?.indoors) return { mote: 6 };
+      const base = AMB_MAPS[S.mapId] || { mote: 8 };
+      if (nightAlpha() > 0.3 && (S.mapId === "forest" || S.mapId === "village")) {
+        return Object.assign({}, base, { firefly: 12 });
+      }
+      return base;
+    }
+    if (S.state === "vn") {
+      const bg = S.vn?.def.bg;
+      if (bg === "forest") return { mote: 14 };
+      if (bg === "pass" || bg === "ruins") return { ash: 16 };
+      if (bg === "throne") return { ash: 20, ember: 5 };
+      if (bg === "forge") return { ember: 14 };
+      return { petal: 14, mote: 8 };
+    }
+    return {};
+  }
+  function mkAmb(kind, seeded) {
+    const y = seeded ? rnd(-40, H) : (kind === "ember" ? H + 10 : -20);
+    const a = { kind, x: rnd(-40, W + 40), y, t: rnd(0, 6.3), sz: 3, vx: 0, vy: 0, sway: 0, a: 1 };
+    if (kind === "petal") { a.vx = rnd(-0.055, -0.012); a.vy = rnd(0.022, 0.055); a.sz = rnd(3, 6.5); a.sway = rnd(0.4, 1.2); a.a = rnd(0.5, 0.9); }
+    else if (kind === "mote") { a.vx = rnd(-0.012, 0.012); a.vy = rnd(-0.02, -0.005); a.y = seeded ? rnd(0, H) : H + 10; a.sz = rnd(1, 2.4); a.a = rnd(0.25, 0.65); }
+    else if (kind === "firefly") { a.vx = rnd(-0.02, 0.02); a.vy = rnd(-0.012, 0.012); a.y = rnd(80, H - 60); a.sz = rnd(1.6, 2.8); a.sway = rnd(0.8, 2); a.a = 1; }
+    else if (kind === "ash") { a.vx = rnd(-0.03, 0.03); a.vy = rnd(0.012, 0.04); a.sz = rnd(1.5, 3.5); a.sway = rnd(0.3, 0.9); a.a = rnd(0.2, 0.5); }
+    else if (kind === "ember") { a.vx = rnd(-0.02, 0.02); a.vy = rnd(-0.09, -0.04); a.sz = rnd(1.4, 2.6); a.a = rnd(0.5, 1); }
+    return a;
+  }
+  function ambBurst(kind, n) {
+    for (let i = 0; i < n; i++) {
+      const a = mkAmb(kind, true);
+      a.y = rnd(H * 0.15, H * 0.75);
+      S.amb.push(a);
+    }
+  }
+  function updateAmbient(dt) {
+    const want = ambTarget();
+    const have = {};
+    for (const a of S.amb) have[a.kind] = (have[a.kind] || 0) + 1;
+    // Drop motes that no longer belong to this scene, then top up the rest.
+    if (S.amb.length && !S._ambState) S._ambState = "";
+    const key = S.state + ":" + (S.mapId || "") + ":" + (S.vn?.def.bg || "") + ":" + (S.battle?.def.bg || "");
+    if (key !== S._ambKey) {
+      S._ambKey = key;
+      S.amb = S.amb.filter((a) => want[a.kind]);
+      for (const [kind, n] of Object.entries(want)) {
+        for (let i = (have[kind] || 0); i < n; i++) S.amb.push(mkAmb(kind, true));
+      }
+    }
+    for (const [kind, n] of Object.entries(want)) {
+      if ((have[kind] || 0) < n && Math.random() < dt / 260) S.amb.push(mkAmb(kind, false));
+    }
+    S.amb = S.amb.filter((a) => {
+      a.t += dt / 520;
+      a.x += (a.vx + Math.sin(a.t) * a.sway * 0.02) * dt;
+      a.y += a.vy * dt;
+      if (a.kind === "firefly") {
+        a.x += Math.cos(a.t * 0.7) * 0.02 * dt;
+        a.y += Math.sin(a.t * 1.1) * 0.014 * dt;
+        return a.x > -60 && a.x < W + 60 && a.y > -60 && a.y < H + 60;
+      }
+      if (a.kind === "ember") { a.a -= dt / 2600; return a.y > -30 && a.a > 0.05; }
+      return a.y < H + 30 && a.y > -60 && a.x > -80 && a.x < W + 80;
+    });
+  }
+  function drawAmbient() {
+    for (const a of S.amb) {
+      if (a.kind === "petal") {
+        ctx.globalAlpha = a.a;
+        ctx.fillStyle = "#f2d2e2";
+        ctx.beginPath();
+        ctx.ellipse(a.x, a.y, a.sz, a.sz * 0.5, a.t, 0, 6.3);
+        ctx.fill();
+      } else if (a.kind === "mote") {
+        ctx.globalAlpha = a.a * (0.6 + Math.sin(a.t * 1.6) * 0.4);
+        ctx.fillStyle = "#ffe9b8";
+        ctx.beginPath(); ctx.arc(a.x, a.y, a.sz, 0, 6.3); ctx.fill();
+      } else if (a.kind === "firefly") {
+        const pulse = 0.35 + Math.abs(Math.sin(a.t * 1.3)) * 0.65;
+        ctx.globalAlpha = pulse;
+        const g = ctx.createRadialGradient(a.x, a.y, 0, a.x, a.y, a.sz * 5);
+        g.addColorStop(0, "rgba(210,255,150,0.95)");
+        g.addColorStop(1, "rgba(180,240,120,0)");
+        ctx.fillStyle = g;
+        ctx.beginPath(); ctx.arc(a.x, a.y, a.sz * 5, 0, 6.3); ctx.fill();
+      } else if (a.kind === "ash") {
+        ctx.globalAlpha = a.a;
+        ctx.fillStyle = "#b8b0a8";
+        ctx.fillRect(a.x, a.y, a.sz, a.sz);
+      } else if (a.kind === "ember") {
+        ctx.globalAlpha = a.a;
+        ctx.fillStyle = "#ff9a50";
+        ctx.beginPath(); ctx.arc(a.x, a.y, a.sz, 0, 6.3); ctx.fill();
+      }
+    }
+    ctx.globalAlpha = 1;
+  }
+
   function updateFx(dt) {
     S.tileFx += dt;
     S.anim += dt;
     if (S.shake > 0) S.shake *= 0.86;
+    if (S.flash > 0) S.flash -= dt;
+    updateAmbient(dt);
     if (toastT > 0) toastT -= dt;
     S.particles = S.particles.filter((p) => {
       p.t += dt; p.x += p.vx * dt * 0.06; p.y += p.vy * dt * 0.06; p.life -= dt;
       return p.life > 0;
     });
-    S.dmgNums = S.dmgNums.filter((d) => { d.life -= dt; d.y -= dt * 0.03; return d.life > 0; });
+    S.dmgNums = S.dmgNums.filter((d) => { d.life -= dt; d.y -= dt * 0.038 * (d.life / 900); return d.life > 0; });
   }
   function drawFx() {
     for (const p of S.particles) {
@@ -3007,18 +3380,36 @@
       else { ctx.fillStyle = "#f4ead4"; ctx.fillRect(p.x, p.y, 2, 2); }
     }
     ctx.globalAlpha = 1;
-    ctx.font = "18px serif"; ctx.textAlign = "center";
+    ctx.textAlign = "center";
     for (const d of S.dmgNums) {
-      ctx.globalAlpha = Math.max(0, d.life / 800);
-      ctx.fillStyle = d.color; ctx.fillText(d.text, d.x, d.y);
+      const k = 1 - d.life / 900;                     // 0 at spawn, 1 at death
+      const pop = k < 0.18 ? 1.45 - k * 2.2 : 1;      // punchy scale-in
+      const size = (d.big ? 34 : 24) * pop;
+      ctx.globalAlpha = Math.max(0, Math.min(1, d.life / 500));
+      ctx.font = `600 ${size.toFixed(1)}px ${d.big ? "Iowan Old Style, Palatino, serif" : "Avenir Next, Segoe UI, sans-serif"}`;
+      ctx.lineWidth = 4; ctx.strokeStyle = "rgba(6,4,12,0.9)";
+      ctx.strokeText(d.text, d.x, d.y);
+      ctx.fillStyle = d.color;
+      ctx.fillText(d.text, d.x, d.y);
     }
-    ctx.globalAlpha = 1;
+    ctx.globalAlpha = 1; ctx.lineWidth = 1;
     if (toastT > 0) {
-      ctx.fillStyle = "rgba(10,8,18,0.85)";
-      ctx.fillRect(W / 2 - 260, 24, 520, 36);
-      ctx.strokeStyle = "#d4b46a"; ctx.strokeRect(W / 2 - 260, 24, 520, 36);
-      ctx.fillStyle = "#f4ead4"; ctx.font = "16px serif";
-      ctx.fillText(toastMsg, W / 2, 48);
+      const a = Math.min(1, toastT / 400);
+      ctx.globalAlpha = a;
+      const g = ctx.createLinearGradient(0, 24, 0, 66);
+      g.addColorStop(0, "rgba(28,22,44,0.94)"); g.addColorStop(1, "rgba(10,8,18,0.94)");
+      ctx.fillStyle = g;
+      ctx.fillRect(W / 2 - 270, 24, 540, 42);
+      ctx.strokeStyle = "rgba(212,180,106,0.85)"; ctx.strokeRect(W / 2 - 270, 24, 540, 42);
+      ctx.fillStyle = "rgba(212,180,106,0.35)";
+      ctx.fillRect(W / 2 - 270, 24, 540, 1);
+      ctx.fillStyle = "#f4ead4"; ctx.font = "17px Iowan Old Style, Palatino, serif";
+      ctx.fillText(toastMsg, W / 2, 51);
+      ctx.globalAlpha = 1;
+    }
+    if (S.flash > 0) {
+      ctx.fillStyle = `rgba(255,248,230,${Math.min(0.85, S.flash / 420)})`;
+      ctx.fillRect(0, 0, W, H);
     }
   }
 
@@ -3047,9 +3438,15 @@
     ctx.save();
     if (S.shake > 0.4) ctx.translate((Math.random() - 0.5) * S.shake, (Math.random() - 0.5) * S.shake);
     if (S.state === "title" || S.state === "credits" || S.state === "options" || S.state === "saves") {
-      // painted backdrop
-      if (S.images.title) ctx.drawImage(S.images.title, 0, 0, W, H);
-      else { ctx.fillStyle = "#0c0914"; ctx.fillRect(0, 0, W, H); }
+      // Painted backdrop with a slow Ken Burns drift so the title breathes.
+      if (S.images.title) {
+        const k = 1.07 + Math.sin(S.anim / 11000) * 0.025;
+        const dw = W * k, dh = H * k;
+        const px = (W - dw) / 2 + Math.sin(S.anim / 15000) * 16;
+        const py = (H - dh) / 2 + Math.cos(S.anim / 19000) * 10;
+        ctx.drawImage(S.images.title, px, py, dw, dh);
+      } else { ctx.fillStyle = "#0c0914"; ctx.fillRect(0, 0, W, H); }
+      drawAmbient();
       if (S.state === "title") updateTitle();
       if (S.state === "credits" && pressed("cancel")) showTitle();
       if (S.state === "options" && pressed("cancel")) {
@@ -3059,9 +3456,14 @@
       updateMap(dt); drawMap();
     } else if (S.state === "vn") {
       if (S.vn?.def.mode === "talk") drawMap();
-      else if (S.images.title && S.vn?.def.bg === "temple") ctx.drawImage(S.images.title, 0, 0, W, H);
       else {
-        ctx.fillStyle = "#100c18"; ctx.fillRect(0, 0, W, H);
+        if (S.images.title && S.vn?.def.bg === "temple") {
+          const k = 1.05 + Math.sin(S.anim / 14000) * 0.015;
+          ctx.drawImage(S.images.title, (W - W * k) / 2, (H - H * k) / 2, W * k, H * k);
+        } else {
+          ctx.fillStyle = "#100c18"; ctx.fillRect(0, 0, W, H);
+        }
+        drawAmbient();
       }
       updateVn(dt);
     } else if (S.state === "battle") {
