@@ -33,6 +33,33 @@ window.MAPS = (() => {
     let s = seed >>> 0;
     return () => { s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; };
   }
+  // Simple value noise: deterministic, cheap, repeatable for any (x,y).
+  function noise2(rnd, freq) {
+    const perm = [];
+    for (let i = 0; i < 256; i++) perm[i] = i;
+    for (let i = 255; i > 0; i--) {
+      const j = (rnd() * (i + 1)) | 0;
+      [perm[i], perm[j]] = [perm[j], perm[i]];
+    }
+    function fade(t) { return t * t * t * (t * (t * 6 - 15) + 10); }
+    function lerp(a, b, t) { return a + (b - a) * t; }
+    function grad(h, x, y) {
+      const u = (h & 1) ? x : -x, v = (h & 2) ? y : -y;
+      return u + v;
+    }
+    return (x, y) => {
+      x *= freq; y *= freq;
+      const X = Math.floor(x) & 255, Y = Math.floor(y) & 255;
+      const xf = x - Math.floor(x), yf = y - Math.floor(y);
+      const u = fade(xf), v = fade(yf);
+      const A = perm[X] + Y, B = perm[X + 1] + Y;
+      return lerp(
+        lerp(grad(perm[A], xf, yf), grad(perm[B], xf - 1, yf), u),
+        lerp(grad(perm[A + 1], xf, yf - 1), grad(perm[B + 1], xf - 1, yf - 1), u),
+        v
+      );
+    };
+  }
   function make(w, h, fill) {
     return { w, h, tiles: Array.from({ length: h }, () => Array(w).fill(fill)) };
   }
