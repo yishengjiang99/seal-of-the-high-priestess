@@ -117,6 +117,37 @@ window.MAPS = (() => {
   function lamps(m, x, y0, y1, step) {
     for (let y = y0; y <= y1; y += step) set(m, x, y, t.LAMP);
   }
+  // Bresenham path that prefers existing open-ish terrain.
+  function carvePath(m, x0, y0, x1, y1, v, rnd, width) {
+    const w = Math.max(1, width || 1);
+    const r = (w - 1) >> 1;
+    let x = x0, y = y0;
+    let dx = Math.abs(x1 - x0), sx = x0 < x1 ? 1 : -1;
+    let dy = -Math.abs(y1 - y0), sy = y0 < y1 ? 1 : -1;
+    let err = dx + dy;
+    while (true) {
+      for (let j = -r; j <= r; j++) for (let i = -r; i <= r; i++) set(m, x + i, y + j, v);
+      if (x === x1 && y === y1) break;
+      // Slight meander: if random and still moving, wiggle perpendicular.
+      if (rnd() < 0.12) {
+        if (rnd() < 0.5 && x !== x1) { const wy = y + (sy || (rnd() < 0.5 ? -1 : 1)); for (let i = -r; i <= r; i++) set(m, x + i, wy, v); }
+        else if (y !== y1) { const wx = x + (sx || (rnd() < 0.5 ? -1 : 1)); for (let j = -r; j <= r; j++) set(m, wx, y + j, v); }
+      }
+      const e2 = 2 * err;
+      if (e2 >= dy) { err += dy; x += sx; }
+      if (e2 <= dx) { err += dx; y += sy; }
+    }
+  }
+  // Flood-fill a small clearing around a point.
+  function clearing(m, cx, cy, rad, v, keep) {
+    for (let y = -rad; y <= rad; y++) {
+      for (let x = -rad; x <= rad; x++) {
+        if (x * x + y * y <= rad * rad + (Math.abs(x) + Math.abs(y)) / 2) {
+          if (!keep || keep(get(m, cx + x, cy + y))) set(m, cx + x, cy + y, v);
+        }
+      }
+    }
+  }
   function house(m, x, y, w, h, door) {
     door = door || "s";
     const rh = Math.max(2, Math.min(3, (h / 2) | 0));
@@ -371,6 +402,192 @@ window.MAPS = (() => {
         { type: "warp", x: 51, y: 85, map: "meridia", tx: 50, ty: 6, dir: "down", needFlag: "hollow_oak_dead" },
         { type: "block", x: 50, y: 85, needFlagOff: "hollow_oak_dead", text: "The heartwood still bars the west." }
       ]
+    });
+  })();
+
+  // ----- VAST WILDERNESS: procedural overworld 240x180 -----
+  // Replaces the old compact forest/meridia/ashen transition maps with one
+  // much larger generated region: east forest, central grassland with canals,
+  // west ash approaches, plus mountains on the far edges.
+  (function () {
+    const seed = 20260906;
+    const rnd = rng(seed);
+    const elev = noise2(rng(seed + 1), 0.035);
+    const moist = noise2(rng(seed + 2), 0.025);
+    const rough = noise2(rng(seed + 3), 0.08);
+    const W = 240, H = 180;
+    const m = make(W, H, t.VOID);
+
+    // Biome pass.
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const e = elev(x, y) * 0.7 + rough(x, y) * 0.3;
+        const mo = moist(x, y);
+        // Mountain borders, especially west and north.
+        const edge = Math.min(x, W - 1 - x, y, H - 1 - y) / 12;
+        const ashBias = (W - 1 - x) / W; // western side is ashier
+        if (e > 0.35 - edge * 0.3 || edge < 0.4) {
+          m.tiles[y][x] = t.MTN;
+        } else if (mo > 0.25 && e < -0.1) {
+          m.tiles[y][x] = t.WATER;
+        } else if (ashBias > 0.65 && e > -0.05) {
+          m.tiles[y][x] = t.ASH;
+        } else if (mo < -0.15 || ashBias > 0.5) {
+          m.tiles[y][x] = t.DIRT;
+        } else if (mo > 0.15) {
+          m.tiles[y][x] = t.GRASS;
+        } else {
+          m.tiles[y][x] = t.GRASS;
+        }
+      }
+    }
+
+    // Use TREE tile for forested noise pockets.
+    for (let y = 2; y < H - 2; y++) {
+      for (let x = 2; x < W - 2; x++) {
+        if (m.tiles[y][x] !== t.GRASS) continue;
+        const f = rough(x, y);
+        if (f > 0.2 && (x < W * 0.55)) m.tiles[y][x] = t.TREE;
+      }
+    }
+
+    // Stamp hard mountain ring and two diagonal ridges.
+    rect(m, 0, 0, W, 2, t.MTN); rect(m, 0, H - 2, W, 2, t.MTN);
+    rect(m, 0, 0, 2, H, t.MTN); rect(m, W - 2, 0, 2, H, t.MTN);
+
+    // Key transition points (tile coords).
+    const eastGate = { x: 200, y: 90 };   // from village
+    const forestHeart = { x: 140, y: 100 };
+    const meridiaGate = { x: 90, y: 90 }; // central canal city
+    const westPass = { x: 30, y: 90 };    // toward ashen
+
+    // Primary road network.
+    carvePath(m, eastGate.x, eastGate.y, forestHeart.x, forestHeart.y, t.PATH, rnd, 2);
+    carvePath(m, forestHeart.x, forestHeart.y, meridiaGate.x, meridiaGate.y, t.PATH, rnd, 2);
+    carvePath(m, meridiaGate.x, meridiaGate.y, westPass.x, westPass.y, t.PATH, rnd, 2);
+    // North/south branches.
+    carvePath(m, forestHeart.x, forestHeart.y, forestHeart.x, 40, t.PATH, rnd, 1);
+    carvePath(m, meridiaGate.x, meridiaGate.y, meridiaGate.x, 150, t.PATH, rnd, 1);
+
+    // Clearings at hubs.
+    clearing(m, eastGate.x, eastGate.y, 5, t.GRASS, (c) => c === t.TREE || c === t.PATH);
+    clearing(m, forestHeart.x, forestHeart.y, 7, t.GRASS, () => true);
+    clearing(m, meridiaGate.x, meridiaGate.y, 9, t.GRASS, () => true);
+    clearing(m, westPass.x, westPass.y, 6, t.ASH, () => true);
+
+    // Canals and a lake around Meridia.
+    canalV(m, meridiaGate.x - 12, meridiaGate.y - 24, meridiaGate.y + 24, 3);
+    canalV(m, meridiaGate.x + 12, meridiaGate.y - 24, meridiaGate.y + 24, 3);
+    canalH(m, meridiaGate.y - 10, meridiaGate.x - 24, meridiaGate.x + 24, 3);
+    // Bridges.
+    bridgeH(m, meridiaGate.x - 18, meridiaGate.y, 5);
+    bridgeH(m, meridiaGate.x + 8, meridiaGate.y, 5);
+    bridgeV(m, meridiaGate.x, meridiaGate.y - 14, 3);
+
+    // Lake in the moist north-east.
+    for (let y = 25; y < 55; y++) {
+      for (let x = 150; x < 190; x++) {
+        const dx = x - 170, dy = y - 40;
+        if (dx * dx + dy * dy < 280 + rough(x, y) * 80) m.tiles[y][x] = t.WATER;
+      }
+    }
+
+    // Forest clumps.
+    scatter(m, 10, 10, W - 20, H - 20, t.TREE, 2800, (c) => c === t.GRASS, rnd);
+    scatter(m, 10, 10, W - 20, H - 20, t.HEDGE, 300, (c) => c === t.GRASS, rnd);
+    scatter(m, 10, 10, W - 20, H - 20, t.FLOWER, 900, (c) => c === t.GRASS, rnd);
+    scatter(m, 10, 10, W - 20, H - 20, t.DEAD, 220, (c) => c === t.TREE || c === t.DIRT || c === t.ASH, rnd);
+
+    // Ash corruption pockets in the west.
+    for (let i = 0; i < 16; i++) {
+      const cx = 10 + (rnd() * 70 | 0), cy = 10 + (rnd() * 160 | 0);
+      clearing(m, cx, cy, 4 + (rnd() * 5 | 0), t.CORRUPT, (c) => c === t.ASH || c === t.DIRT);
+      scatter(m, cx - 4, cy - 4, 9, 9, t.DEAD, 8, () => true, rnd);
+    }
+
+    // Ruined watchtowers.
+    for (let i = 0; i < 5; i++) {
+      const tx = 40 + (rnd() * 140 | 0), ty = 20 + (rnd() * 140 | 0);
+      if (m.tiles[ty][tx] === t.MTN || m.tiles[ty][tx] === t.WATER) continue;
+      frame(m, tx - 2, ty - 2, 5, 5, t.RUBBLE);
+      set(m, tx, ty, t.STATUE);
+    }
+
+    // Lamps along the main road.
+    for (let x = 30; x < 200; x += 10) {
+      const y = 90 + Math.sin(x / 30) * 6;
+      if (m.tiles[y | 0][x] === t.PATH) set(m, x, y | 0, t.LAMP);
+    }
+
+    // Locate open spots for events, avoiding roads/water/mountains.
+    function findOpen(nearX, nearY, radius) {
+      for (let t = 0; t < 400; t++) {
+        const x = clamp(nearX + ((rnd() * radius * 2) | 0) - radius, 4, W - 5);
+        const y = clamp(nearY + ((rnd() * radius * 2) | 0) - radius, 4, H - 5);
+        if ([t.GRASS, t.ASH, t.DIRT].includes(m.tiles[y][x])) return { x, y };
+      }
+      return { x: nearX, y: nearY };
+    }
+
+    // Hub: small settlement at Meridia gate.
+    const plaza = findOpen(meridiaGate.x, meridiaGate.y, 6);
+    rect(m, plaza.x - 5, plaza.y - 4, 11, 9, t.PATH);
+    set(m, plaza.x, plaza.y, t.FOUNT);
+    set(m, plaza.x - 3, plaza.y, t.LAMP); set(m, plaza.x + 3, plaza.y, t.LAMP);
+
+    const events = [];
+    // Village entry warp (east).
+    events.push({ type: "warp", x: eastGate.x, y: eastGate.y - 1, map: "village", tx: 48, ty: 68, dir: "up" });
+    events.push({ type: "warp", x: eastGate.x - 1, y: eastGate.y - 1, map: "village", tx: 48, ty: 68, dir: "up" });
+    events.push({ type: "warp", x: eastGate.x + 1, y: eastGate.y - 1, map: "village", tx: 48, ty: 68, dir: "up" });
+
+    // Meridia city entry.
+    const meridEnter = findOpen(meridiaGate.x, meridiaGate.y + 12, 4);
+    events.push({ type: "warp", x: meridEnter.x, y: meridEnter.y, map: "meridia", tx: 54, ty: 6, dir: "down" });
+
+    // Ashen pass entry (west).
+    events.push({ type: "warp", x: westPass.x - 1, y: westPass.y, map: "ashen", tx: 20, ty: 4, dir: "down", needFlag: "warden_dead" });
+    events.push({ type: "warp", x: westPass.x - 1, y: westPass.y - 1, map: "ashen", tx: 20, ty: 4, dir: "down", needFlag: "warden_dead" });
+    events.push({ type: "block", x: westPass.x - 1, y: westPass.y, needFlagOff: "warden_dead", text: "The ash pass is sealed until the gate warden falls." });
+
+    // Story encounters.
+    const hollow = findOpen(forestHeart.x + 8, forestHeart.y + 8, 10);
+    events.push({ type: "encounter", x: hollow.x, y: hollow.y, battle: "hollow_oak", once: "hollow_oak_dead", appearIfOff: "hollow_oak_dead", name: "Heartwood Hollow" });
+    const warden = findOpen(westPass.x + 25, westPass.y + 12, 14);
+    events.push({ type: "encounter", x: warden.x, y: warden.y, battle: "gate_warden", once: "warden_dead", appearIfOff: "warden_dead", name: "Ashen Gate Warden" });
+
+    // Save altars and signs.
+    const save1 = findOpen(forestHeart.x - 8, forestHeart.y - 6, 8);
+    const save2 = findOpen(meridiaGate.x - 8, meridiaGate.y + 8, 8);
+    const save3 = findOpen(westPass.x + 18, westPass.y - 10, 10);
+    events.push({ type: "save", x: save1.x, y: save1.y });
+    events.push({ type: "save", x: save2.x, y: save2.y });
+    events.push({ type: "save", x: save3.x, y: save3.y });
+
+    // NPCs and chests.
+    const shen = findOpen(forestHeart.x - 12, forestHeart.y, 8);
+    events.push({ type: "npc", x: shen.x, y: shen.y, id: "shen", name: "Master Shen", hue: "#c0c4a0", scene: "quest_shen", appearIfOff: "quest_shen" });
+    const hermit = findOpen(westPass.x + 40, westPass.y - 20, 14);
+    events.push({ type: "npc", x: hermit.x, y: hermit.y, id: "hermit", name: "Ash Hermit", hue: "#a89080", talk: "hermit" });
+
+    const chests = [
+      { id: "chest_wild_bow", item: "whisperwood_bow" },
+      { id: "chest_wild_petal", item: "lotus_petal" },
+      { id: "chest_wild_salve", item: "sealing_salve" },
+      { id: "chest_wild_charm", item: "climber_charm" }
+    ];
+    for (const ch of chests) {
+      const p = findOpen(30 + (rnd() * 180 | 0), 30 + (rnd() * 120 | 0), 40);
+      events.push({ type: "chest", x: p.x, y: p.y, id: ch.id, item: ch.item });
+    }
+
+    events.push({ type: "sign", x: eastGate.x, y: eastGate.y + 3, text: "The wilderness reclaims roads faster than cartographers can weep." });
+    events.push({ type: "sign", x: meridiaGate.x, y: meridiaGate.y + 4, text: "Meridia — last city before the ash." });
+    events.push({ type: "sign", x: westPass.x + 6, y: westPass.y, text: "Beyond here, even the mountains hold their breath." });
+
+    M.wilderness = done("wilderness", "Western Wilderness", "forest", m, {
+      spawn: { x: eastGate.x, y: eastGate.y + 2 },
+      events
     });
   })();
 
