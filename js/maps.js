@@ -423,19 +423,16 @@ window.MAPS = (() => {
       for (let x = 0; x < W; x++) {
         const e = elev(x, y) * 0.7 + rough(x, y) * 0.3;
         const mo = moist(x, y);
-        // Mountain borders, especially west and north.
-        const edge = Math.min(x, W - 1 - x, y, H - 1 - y) / 12;
+        const edge = Math.min(x, W - 1 - x, y, H - 1 - y);
         const ashBias = (W - 1 - x) / W; // western side is ashier
-        if (e > 0.35 - edge * 0.3 || edge < 0.4) {
+        if (edge < 3 || (edge < 10 && e > 0.25)) {
           m.tiles[y][x] = t.MTN;
-        } else if (mo > 0.25 && e < -0.1) {
+        } else if (mo > 0.35 && e < -0.05) {
           m.tiles[y][x] = t.WATER;
-        } else if (ashBias > 0.65 && e > -0.05) {
+        } else if (ashBias > 0.7 && e > 0.05) {
           m.tiles[y][x] = t.ASH;
-        } else if (mo < -0.15 || ashBias > 0.5) {
+        } else if (mo < -0.25 || (ashBias > 0.55 && mo < 0)) {
           m.tiles[y][x] = t.DIRT;
-        } else if (mo > 0.15) {
-          m.tiles[y][x] = t.GRASS;
         } else {
           m.tiles[y][x] = t.GRASS;
         }
