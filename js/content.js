@@ -502,6 +502,13 @@ window.DATA = (() => {
       { s: "kael", e: "soft", t: "..." },
       { s: "elara", e: "blush", t: "I will not ask." },
       { s: "kael", e: "smirk", t: "Good." }
+    ],
+    hermit: [
+      { s: "hermit", t: "I was a cartographer. Then the ash added districts faster than I could draw them." },
+      { s: "elara", e: "neutral", t: "Do you still know the safe roads?" },
+      { s: "hermit", t: "Safe is a word for people who have not met the road. I know the interesting ones." },
+      { s: "kael", e: "smirk", t: "He means dangerous." },
+      { s: "hermit", t: "I mean memorable. The west remembers everyone who walks it." }
     ]
   };
 
