@@ -323,10 +323,10 @@ window.MAPS = (() => {
         { type: "chest", x: 91, y: 62, id: "chest_village_petal", item: "lotus_petal" },
         { type: "sign", x: 46, y: 12, text: "Lotus-Step Village — last kind light before the trees begin to speak." },
         { type: "trigger", x: 42, y: 72, w: 10, h: 1, flagNeed: "intro_done", flagNeedOff: "camp1_done", scene: "first_camp" },
-        { type: "warp", x: 44, y: 76, map: "forest", tx: 50, ty: 4, dir: "down" },
-        { type: "warp", x: 45, y: 76, map: "forest", tx: 50, ty: 4, dir: "down" },
-        { type: "warp", x: 46, y: 76, map: "forest", tx: 50, ty: 4, dir: "down" },
-        { type: "warp", x: 47, y: 76, map: "forest", tx: 50, ty: 4, dir: "down" }
+        { type: "warp", x: 44, y: 76, map: "wilderness", tx: 200, ty: 92, dir: "down" },
+        { type: "warp", x: 45, y: 76, map: "wilderness", tx: 200, ty: 92, dir: "down" },
+        { type: "warp", x: 46, y: 76, map: "wilderness", tx: 200, ty: 92, dir: "down" },
+        { type: "warp", x: 47, y: 76, map: "wilderness", tx: 200, ty: 92, dir: "down" }
       ]
     });
   })();
@@ -397,9 +397,9 @@ window.MAPS = (() => {
         { type: "encounter", x: 52, y: 74, battle: "hollow_oak", once: "hollow_oak_dead", appearIfOff: "hollow_oak_dead", name: "Heartwood Hollow" },
         { type: "sign", x: 50, y: 8, text: "The trees whisper. Do not answer unless you can afford the reply." },
         { type: "sign", x: 76, y: 34, text: "A stone with no name. Someone loved a scout here." },
-        { type: "warp", x: 49, y: 85, map: "meridia", tx: 50, ty: 6, dir: "down", needFlag: "hollow_oak_dead" },
-        { type: "warp", x: 50, y: 85, map: "meridia", tx: 50, ty: 6, dir: "down", needFlag: "hollow_oak_dead" },
-        { type: "warp", x: 51, y: 85, map: "meridia", tx: 50, ty: 6, dir: "down", needFlag: "hollow_oak_dead" },
+        { type: "warp", x: 49, y: 85, map: "wilderness", tx: 90, ty: 102, dir: "down", needFlag: "hollow_oak_dead" },
+        { type: "warp", x: 50, y: 85, map: "wilderness", tx: 90, ty: 102, dir: "down", needFlag: "hollow_oak_dead" },
+        { type: "warp", x: 51, y: 85, map: "wilderness", tx: 90, ty: 102, dir: "down", needFlag: "hollow_oak_dead" },
         { type: "block", x: 50, y: 85, needFlagOff: "hollow_oak_dead", text: "The heartwood still bars the west." }
       ]
     });
@@ -648,9 +648,9 @@ window.MAPS = (() => {
     M.meridia = done("meridia", "Kingdom of Meridia", "city", m, {
       spawn: { x: 54, y: 8 },
       events: [
-        { type: "warp", x: 53, y: 5, map: "forest", tx: 50, ty: 83, dir: "up" },
-        { type: "warp", x: 54, y: 5, map: "forest", tx: 50, ty: 83, dir: "up" },
-        { type: "warp", x: 55, y: 5, map: "forest", tx: 50, ty: 83, dir: "up" },
+        { type: "warp", x: 53, y: 5, map: "wilderness", tx: 88, ty: 90, dir: "up" },
+        { type: "warp", x: 54, y: 5, map: "wilderness", tx: 88, ty: 90, dir: "up" },
+        { type: "warp", x: 55, y: 5, map: "wilderness", tx: 88, ty: 90, dir: "up" },
         { type: "warp", x: tavern.dx, y: tavern.dy, map: "tavern", tx: 8, ty: 12, dir: "up", door: true },
         { type: "warp", x: smith.dx, y: smith.dy, map: "blacksmith", tx: 7, ty: 10, dir: "up", door: true },
         { type: "warp", x: keep.dx, y: keep.dy, map: "keeper_house", tx: 6, ty: 8, dir: "up", door: true },
@@ -667,9 +667,9 @@ window.MAPS = (() => {
         { type: "chest", x: 96, y: 68, id: "chest_meridia_salve", item: "sealing_salve" },
         { type: "sign", x: 54, y: 16, text: "MERIDIA — By canal and lantern, we keep the west at a polite distance." },
         { type: "encounter", x: 54, y: 72, battle: "canal_specter", once: "quest_canal", appearIf: "canal_ready", appearIfOff: "quest_canal", name: "The Canal's Mouth" },
-        { type: "warp", x: 53, y: 78, map: "ashen", tx: 18, ty: 4, dir: "down", needFlag: "lyra_joined" },
-        { type: "warp", x: 54, y: 78, map: "ashen", tx: 18, ty: 4, dir: "down", needFlag: "lyra_joined" },
-        { type: "warp", x: 55, y: 78, map: "ashen", tx: 18, ty: 4, dir: "down", needFlag: "lyra_joined" },
+        { type: "warp", x: 53, y: 78, map: "wilderness", tx: 32, ty: 90, dir: "down", needFlag: "lyra_joined" },
+        { type: "warp", x: 54, y: 78, map: "wilderness", tx: 32, ty: 90, dir: "down", needFlag: "lyra_joined" },
+        { type: "warp", x: 55, y: 78, map: "wilderness", tx: 32, ty: 90, dir: "down", needFlag: "lyra_joined" },
         { type: "block", x: 54, y: 78, needFlagOff: "lyra_joined", text: "The western gate stays shut without a scout's word. Find Lyra in the plaza." }
       ]
     });
@@ -712,9 +712,9 @@ window.MAPS = (() => {
     M.ashen = done("ashen", "Ashen Pass", "pass", m, {
       spawn: { x: 18, y: 4 },
       events: [
-        { type: "warp", x: 17, y: 2, map: "meridia", tx: 54, ty: 76, dir: "up" },
-        { type: "warp", x: 18, y: 2, map: "meridia", tx: 54, ty: 76, dir: "up" },
-        { type: "warp", x: 19, y: 2, map: "meridia", tx: 54, ty: 76, dir: "up" },
+        { type: "warp", x: 17, y: 2, map: "wilderness", tx: 32, ty: 92, dir: "up" },
+        { type: "warp", x: 18, y: 2, map: "wilderness", tx: 32, ty: 92, dir: "up" },
+        { type: "warp", x: 19, y: 2, map: "wilderness", tx: 32, ty: 92, dir: "up" },
         { type: "save", x: 18, y: 20 },
         { type: "save", x: 8, y: 44 },
         { type: "save", x: 28, y: 68 },
@@ -773,9 +773,9 @@ window.MAPS = (() => {
     M.ruins = done("ruins", "Ruins of the Betrayed Court", "ruins", m, {
       spawn: { x: 44, y: 5 },
       events: [
-        { type: "warp", x: 43, y: 3, map: "ashen", tx: 20, ty: 105, dir: "up" },
-        { type: "warp", x: 44, y: 3, map: "ashen", tx: 20, ty: 105, dir: "up" },
-        { type: "warp", x: 45, y: 3, map: "ashen", tx: 20, ty: 105, dir: "up" },
+        { type: "warp", x: 43, y: 3, map: "wilderness", tx: 30, ty: 90, dir: "up" },
+        { type: "warp", x: 44, y: 3, map: "wilderness", tx: 30, ty: 90, dir: "up" },
+        { type: "warp", x: 45, y: 3, map: "wilderness", tx: 30, ty: 90, dir: "up" },
         { type: "save", x: 16, y: 16 },
         { type: "save", x: 44, y: 38 },
         { type: "npc", x: 44, y: 28, id: "echo", name: "Court Echo", hue: "#8a4a6a", talk: "echo" },
