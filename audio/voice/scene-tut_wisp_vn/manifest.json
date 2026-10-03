@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "bundle": "scene-tut_wisp_vn",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|Wisps. Do not spend the Seal on them.": {
+      "file": "2254b6ee6fa68c3b6671bd53.mp3",
+      "hash": "2254b6ee6fa68c3b6671bd53",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Wisps. Do not spend the Seal on them."
+    },
+    "kael|I spent a glance. You're welcome.": {
+      "file": "198180073cbf551ac6279570.mp3",
+      "hash": "198180073cbf551ac6279570",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "I spent a glance. You're welcome."
+    }
+  }
+}

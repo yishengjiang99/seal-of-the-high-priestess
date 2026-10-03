@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "bundle": "scene-dawn_banter",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|Good morning.": {
+      "file": "b36b0b8e532bea269d558c5c.mp3",
+      "hash": "b36b0b8e532bea269d558c5c",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Good morning."
+    },
+    "elara|I did not hear anything.": {
+      "file": "8e26af73a34594425fff20b9.mp3",
+      "hash": "8e26af73a34594425fff20b9",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I did not hear anything."
+    },
+    "elara|The tea is ready. No one is going to mention what they heard in exchange for hot tea. That is the deal.": {
+      "file": "77a9ca9d664cc4c3b26c4fc7.mp3",
+      "hash": "77a9ca9d664cc4c3b26c4fc7",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "The tea is ready. No one is going to mention what they heard in exchange for hot tea. That is the deal."
+    },
+    "kael|Because she is polite.": {
+      "file": "cc4f6be616edc136921a761f.mp3",
+      "hash": "cc4f6be616edc136921a761f",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Because she is polite."
+    },
+    "kael|I do not snore.": {
+      "file": "4724ffccf2cd85a0c523b394.mp3",
+      "hash": "4724ffccf2cd85a0c523b394",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "I do not snore."
+    },
+    "kael|The deal is insulting. I accept.": {
+      "file": "8b3a887be1f196d4e83b731a.mp3",
+      "hash": "8b3a887be1f196d4e83b731a",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "The deal is insulting. I accept."
+    },
+    "lyra|Deal.": {
+      "file": "bdf28003f089855222fb353d.mp3",
+      "hash": "bdf28003f089855222fb353d",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "Deal."
+    },
+    "lyra|I timed it. Twelve seconds, pause, seven seconds, a sound like someone losing an argument.": {
+      "file": "77001dd4a2293265db798bab.mp3",
+      "hash": "77001dd4a2293265db798bab",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "I timed it. Twelve seconds, pause, seven seconds, a sound like someone losing an argument."
+    },
+    "lyra|The prince snores.": {
+      "file": "ad2490220772036e4f0ec32b.mp3",
+      "hash": "ad2490220772036e4f0ec32b",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "The prince snores."
+    },
+    "thorn|Deal.": {
+      "file": "3f363ddc86b91663d522be28.mp3",
+      "hash": "3f363ddc86b91663d522be28",
+      "speaker": "thorn",
+      "voice": "thorn",
+      "text": "Deal."
+    },
+    "thorn|I heard it.": {
+      "file": "9f87a237c5e69435f8339b85.mp3",
+      "hash": "9f87a237c5e69435f8339b85",
+      "speaker": "thorn",
+      "voice": "thorn",
+      "text": "I heard it."
+    },
+    "|Dawn. Wrong side of the pass. Everyone awake before they wanted to be.": {
+      "file": "2e8ea88cbe34e3beb369faa0.mp3",
+      "hash": "2e8ea88cbe34e3beb369faa0",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "Dawn. Wrong side of the pass. Everyone awake before they wanted to be."
+    },
+    "|The morning is good. It holds its breath and stays that way.": {
+      "file": "c3a0c3c692c07b45d467a1ec.mp3",
+      "hash": "c3a0c3c692c07b45d467a1ec",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "The morning is good. It holds its breath and stays that way."
+    }
+  }
+}

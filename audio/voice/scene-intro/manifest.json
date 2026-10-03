@@ -1,0 +1,148 @@
+{
+  "version": 1,
+  "bundle": "scene-intro",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|A nod, then.": {
+      "file": "e825aec34d455753fa22c5d1.mp3",
+      "hash": "e825aec34d455753fa22c5d1",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "A nod, then."
+    },
+    "elara|Do not speak until the binding is set.": {
+      "file": "2b5a8de44f63fb6956b94f21.mp3",
+      "hash": "2b5a8de44f63fb6956b94f21",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Do not speak until the binding is set."
+    },
+    "elara|Logged. Badly phrased.": {
+      "file": "c8e0239c36bbb3b5203f26a2.mp3",
+      "hash": "c8e0239c36bbb3b5203f26a2",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Logged. Badly phrased."
+    },
+    "elara|The scriptures say patience is a virtue. They do not say I have to like you.": {
+      "file": "3a1553e28198b12c991b6822.mp3",
+      "hash": "3a1553e28198b12c991b6822",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "The scriptures say patience is a virtue. They do not say I have to like you."
+    },
+    "elara|Then survive me west.": {
+      "file": "969f39d47b6e1af358486d5e.mp3",
+      "hash": "969f39d47b6e1af358486d5e",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Then survive me west."
+    },
+    "elara|You are eighteen and unemployed. Bind him. Now.": {
+      "file": "85bdee734f4d484b53356b85.mp3",
+      "hash": "85bdee734f4d484b53356b85",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "You are eighteen and unemployed. Bind him. Now."
+    },
+    "elara|You will not.": {
+      "file": "f43740e176a6b4d3e6d100c3.mp3",
+      "hash": "f43740e176a6b4d3e6d100c3",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "You will not."
+    },
+    "kael|Ask louder. I like it when the Church pretends I am weather.": {
+      "file": "725916f0d5c281670c3d7bf9.mp3",
+      "hash": "725916f0d5c281670c3d7bf9",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Ask louder. I like it when the Church pretends I am weather."
+    },
+    "kael|I will drink the tea.": {
+      "file": "43bdab3dcc246e5ba7fcd205.mp3",
+      "hash": "43bdab3dcc246e5ba7fcd205",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "I will drink the tea."
+    },
+    "kael|If you die, the seal breaks and I am free. Somehow that displeases me. Try not to be useless.": {
+      "file": "aa0e2c45ae8d40179a5751a4.mp3",
+      "hash": "aa0e2c45ae8d40179a5751a4",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "If you die, the seal breaks and I am free. Somehow that displeases me. Try not to be useless."
+    },
+    "kael|Little saint. Your sermons are as dull as your fashion sense.": {
+      "file": "3045624aa2fb8435ca69f233.mp3",
+      "hash": "3045624aa2fb8435ca69f233",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Little saint. Your sermons are as dull as your fashion sense."
+    },
+    "kael|My court voted me into a grave. I do not escort priestesses. I survive them.": {
+      "file": "e3694dee9e97ddc7218d7695.mp3",
+      "hash": "e3694dee9e97ddc7218d7695",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "My court voted me into a grave. I do not escort priestesses. I survive them."
+    },
+    "kael|Please is a human word. I will consider a nod.": {
+      "file": "1fd3eb0111e2ef6aa5dd920c.mp3",
+      "hash": "1fd3eb0111e2ef6aa5dd920c",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Please is a human word. I will consider a nod."
+    },
+    "kael|You are seventeen. The continent is full of intended girls.": {
+      "file": "7f17445403763bbc5012f2ce.mp3",
+      "hash": "7f17445403763bbc5012f2ce",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "You are seventeen. The continent is full of intended girls."
+    },
+    "suyin|If he runs, the seal takes you first. If you die, it takes him. Mutual hostage. Better lighting.": {
+      "file": "c818d54cb7765b9b4332655a.mp3",
+      "hash": "c818d54cb7765b9b4332655a",
+      "speaker": "suyin",
+      "voice": "suyin",
+      "text": "If he runs, the seal takes you first. If you die, it takes him. Mutual hostage. Better lighting."
+    },
+    "suyin|Village, then forest. Do not answer the trees. Elara, you may be seventeen on the days the world is not ending. I packed four teas. Use them in order.": {
+      "file": "a7794ce7b8b2fa90dbf9aa7b.mp3",
+      "hash": "a7794ce7b8b2fa90dbf9aa7b",
+      "speaker": "suyin",
+      "voice": "suyin",
+      "text": "Village, then forest. Do not answer the trees. Elara, you may be seventeen on the days the world is not ending. I packed four teas. Use them in order."
+    },
+    "suyin|Westward. Take the prince. Finish what we postponed.": {
+      "file": "f72f5a2fdf9e2e58a29d1ab7.mp3",
+      "hash": "f72f5a2fdf9e2e58a29d1ab7",
+      "speaker": "suyin",
+      "voice": "suyin",
+      "text": "Westward. Take the prince. Finish what we postponed."
+    },
+    "|Gold climbs his throat. He does not bow. Her ears go pink.": {
+      "file": "b1c514353ac4b4372fd8658a.mp3",
+      "hash": "b1c514353ac4b4372fd8658a",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "Gold climbs his throat. He does not bow. Her ears go pink."
+    },
+    "|Silver Lotus Temple. Twilight. Kael kneels in gold chains. Elara holds a staff she is not allowed to shake.": {
+      "file": "43eb558674ac3f4ce2369e5e.mp3",
+      "hash": "43eb558674ac3f4ce2369e5e",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "Silver Lotus Temple. Twilight. Kael kneels in gold chains. Elara holds a staff she is not allowed to shake."
+    },
+    "|The road west has no period. They walk anyway.": {
+      "file": "300a990f3688bf96d5d7c9d0.mp3",
+      "hash": "300a990f3688bf96d5d7c9d0",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "The road west has no period. They walk anyway."
+    }
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "bundle": "talk-suyin",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|I have the rite. I do not have your blessing to be afraid.": {
+      "file": "31538e66d9d1b56a505579aa.mp3",
+      "hash": "31538e66d9d1b56a505579aa",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I have the rite. I do not have your blessing to be afraid."
+    },
+    "elara|I know.": {
+      "file": "159b9ee18ca581bdc0dea2a0.mp3",
+      "hash": "159b9ee18ca581bdc0dea2a0",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I know."
+    },
+    "suyin|Take my fear instead. Do not become a seal yourself.": {
+      "file": "df78e9dcae2f1934b2823c71.mp3",
+      "hash": "df78e9dcae2f1934b2823c71",
+      "speaker": "suyin",
+      "voice": "suyin",
+      "text": "Take my fear instead. Do not become a seal yourself."
+    },
+    "suyin|The Demon Prince is a wound the court left open. Do not heal him too fast. Let him do some of it.": {
+      "file": "4d4e61e4c8e0de4feba49d1d.mp3",
+      "hash": "4d4e61e4c8e0de4feba49d1d",
+      "speaker": "suyin",
+      "voice": "suyin",
+      "text": "The Demon Prince is a wound the court left open. Do not heal him too fast. Let him do some of it."
+    },
+    "suyin|The west does not want you. That is why you go.": {
+      "file": "88edf5888bf1313e0d93e74a.mp3",
+      "hash": "88edf5888bf1313e0d93e74a",
+      "speaker": "suyin",
+      "voice": "suyin",
+      "text": "The west does not want you. That is why you go."
+    },
+    "suyin|You don't. But you will.": {
+      "file": "ea614906c633478702ff4f27.mp3",
+      "hash": "ea614906c633478702ff4f27",
+      "speaker": "suyin",
+      "voice": "suyin",
+      "text": "You don't. But you will."
+    }
+  }
+}

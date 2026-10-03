@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "bundle": "scene-kael_letter_alone",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|That was the right amount.": {
+      "file": "d02e0f020e41f04068ded5c4.mp3",
+      "hash": "d02e0f020e41f04068ded5c4",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "That was the right amount."
+    },
+    "elara|What does the letter say?": {
+      "file": "138969c4d98318575846e641.mp3",
+      "hash": "138969c4d98318575846e641",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "What does the letter say?"
+    },
+    "elara|You don't have to read it now.": {
+      "file": "41886eb0fc1e6f1de87b669b.mp3",
+      "hash": "41886eb0fc1e6f1de87b669b",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "You don't have to read it now."
+    },
+    "elara|You saved the poison for them.": {
+      "file": "1f6ed07afeeb928f769ea520.mp3",
+      "hash": "1f6ed07afeeb928f769ea520",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "You saved the poison for them."
+    },
+    "kael|\"I'm sorry. I was afraid. I was wrong. I hope you became something I couldn't ruin.\"": {
+      "file": "03c6d07a2e2075ced6bbc06c.mp3",
+      "hash": "03c6d07a2e2075ced6bbc06c",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "\"I'm sorry. I was afraid. I was wrong. I hope you became something I couldn't ruin.\""
+    },
+    "kael|...yes.": {
+      "file": "5b9e801b543a1f858d6cfb9d.mp3",
+      "hash": "5b9e801b543a1f858d6cfb9d",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "...yes."
+    },
+    "kael|And they used it first. On me. That's,": {
+      "file": "bb5c3119becf3db7243b490c.mp3",
+      "hash": "bb5c3119becf3db7243b490c",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "And they used it first. On me. That's,"
+    },
+    "kael|He always wrote too much.": {
+      "file": "b5a0dec839e9435c9aea9ffd.mp3",
+      "hash": "b5a0dec839e9435c9aea9ffd",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "He always wrote too much."
+    },
+    "kael|I know their handwriting. My brother. Eldest. He was last.": {
+      "file": "ff4f841f1f337c1257ad263d.mp3",
+      "hash": "ff4f841f1f337c1257ad263d",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "I know their handwriting. My brother. Eldest. He was last."
+    },
+    "kael|That's a very old joke.": {
+      "file": "bd0c1297c8d3e9e886904c6f.mp3",
+      "hash": "bd0c1297c8d3e9e886904c6f",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "That's a very old joke."
+    },
+    "|After the bard. The letter is in Kael's hand. He has not opened it.": {
+      "file": "dd972be344fd1585aede9b98.mp3",
+      "hash": "dd972be344fd1585aede9b98",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "After the bard. The letter is in Kael's hand. He has not opened it."
+    },
+    "|He folds the letter. Keeps it.": {
+      "file": "a040b4bbdf908bdf52102903.mp3",
+      "hash": "a040b4bbdf908bdf52102903",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "He folds the letter. Keeps it."
+    },
+    "|Silence that has weight. She does not fill it.": {
+      "file": "36dfcb3f2bf7cf0ee2c9544d.mp3",
+      "hash": "36dfcb3f2bf7cf0ee2c9544d",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "Silence that has weight. She does not fill it."
+    }
+  }
+}

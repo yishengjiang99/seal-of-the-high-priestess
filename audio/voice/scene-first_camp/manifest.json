@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "bundle": "scene-first_camp",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|Both. That is the job.": {
+      "file": "c37b113910e21ff9600be17a.mp3",
+      "hash": "c37b113910e21ff9600be17a",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Both. That is the job."
+    },
+    "elara|I argued a clause. They refused. I am sorry.": {
+      "file": "a607dcb9d9448528696a2616.mp3",
+      "hash": "a607dcb9d9448528696a2616",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I argued a clause. They refused. I am sorry."
+    },
+    "elara|Sleep. If the dark calls your name, it is not your name. Do not answer.": {
+      "file": "21918360d5f7ded6b0046edc.mp3",
+      "hash": "21918360d5f7ded6b0046edc",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Sleep. If the dark calls your name, it is not your name. Do not answer."
+    },
+    "elara|Sleep. If the trees ask, I will say you are busy.": {
+      "file": "834e87d1da884fc188128d34.mp3",
+      "hash": "834e87d1da884fc188128d34",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Sleep. If the trees ask, I will say you are busy."
+    },
+    "elara|That was almost concern.": {
+      "file": "dff25414e12d86a02d4fcb58.mp3",
+      "hash": "dff25414e12d86a02d4fcb58",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "That was almost concern."
+    },
+    "elara|You will not carry me.": {
+      "file": "1bcbcec80034def9527797fe.mp3",
+      "hash": "1bcbcec80034def9527797fe",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "You will not carry me."
+    },
+    "kael|Don't. I was a prince. I am still a prince.": {
+      "file": "006b2fcb75ea555624e88696.mp3",
+      "hash": "006b2fcb75ea555624e88696",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Don't. I was a prince. I am still a prince."
+    },
+    "kael|First watch is mine. Rites leave holes.": {
+      "file": "54981060b2c0feee0350871c.mp3",
+      "hash": "54981060b2c0feee0350871c",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "First watch is mine. Rites leave holes."
+    },
+    "kael|If you faint I will carry you. Then I will complain for a decade.": {
+      "file": "0ab27f08b38f8e926efb10a3.mp3",
+      "hash": "0ab27f08b38f8e926efb10a3",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "If you faint I will carry you. Then I will complain for a decade."
+    },
+    "kael|Tactical. I refuse to drag a sermon-corpse. Sleep.": {
+      "file": "c6ae5469b27db6a95c6bc983.mp3",
+      "hash": "c6ae5469b27db6a95c6bc983",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Tactical. I refuse to drag a sermon-corpse. Sleep."
+    },
+    "kael|Tastes like wet flowers. Fine. Don't look at me like you won.": {
+      "file": "5a61c5deb454e63830954b11.mp3",
+      "hash": "5a61c5deb454e63830954b11",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Tastes like wet flowers. Fine. Don't look at me like you won."
+    },
+    "kael|Tea and a lecture. Which one is the performance, little saint, the wisdom, or the flush?": {
+      "file": "5b296015113b3a6a07aba34e.mp3",
+      "hash": "5b296015113b3a6a07aba34e",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Tea and a lecture. Which one is the performance, little saint, the wisdom, or the flush?"
+    },
+    "kael|Then do not faint. Simple contract. Your Church understood the one on my bones.": {
+      "file": "f2dcc84c64f975871c69e90e.mp3",
+      "hash": "f2dcc84c64f975871c69e90e",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Then do not faint. Simple contract. Your Church understood the one on my bones."
+    },
+    "|Forest edge. A fire that is too neat. Kael sits too close.": {
+      "file": "8b22fc4c1d5b89dbc32b6df7.mp3",
+      "hash": "8b22fc4c1d5b89dbc32b6df7",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "Forest edge. A fire that is too neat. Kael sits too close."
+    },
+    "|The fire ticks. West, something old inhales.": {
+      "file": "a5c5d326c1c3b36021b71c3a.mp3",
+      "hash": "a5c5d326c1c3b36021b71c3a",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "The fire ticks. West, something old inhales."
+    }
+  }
+}

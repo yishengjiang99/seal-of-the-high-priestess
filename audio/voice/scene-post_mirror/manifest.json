@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "bundle": "scene-post_mirror",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|Call it correct.": {
+      "file": "b71a2f8dacdf4545ce4185f0.mp3",
+      "hash": "b71a2f8dacdf4545ce4185f0",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Call it correct."
+    },
+    "elara|I watched the door. It was you coming back.": {
+      "file": "2d943fcb806224939a64d7a1.mp3",
+      "hash": "2d943fcb806224939a64d7a1",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I watched the door. It was you coming back."
+    },
+    "elara|Then we go.": {
+      "file": "729b6c1e85dd2004edab5dd9.mp3",
+      "hash": "729b6c1e85dd2004edab5dd9",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Then we go."
+    },
+    "kael|After you. Don't bless the ash.": {
+      "file": "417a77279a5c02539e675cd8.mp3",
+      "hash": "417a77279a5c02539e675cd8",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "After you. Don't bless the ash."
+    },
+    "kael|The long way. Attractive. Tactically.": {
+      "file": "e2d629877d549363621f3617.mp3",
+      "hash": "e2d629877d549363621f3617",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "The long way. Attractive. Tactically."
+    },
+    "kael|You hit the floor. I hated it. I also ended him.": {
+      "file": "e540b3b16d743e7d8066da11.mp3",
+      "hash": "e540b3b16d743e7d8066da11",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "You hit the floor. I hated it. I also ended him."
+    },
+    "lyra|Throne gates from here. Paper said I was done. Paper can drown.": {
+      "file": "561ed5d483725e80ef573984.mp3",
+      "hash": "561ed5d483725e80ef573984",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "Throne gates from here. Paper said I was done. Paper can drown."
+    },
+    "thorn|I'll be the door.": {
+      "file": "e7b730eb6366f24aeff1ccae.mp3",
+      "hash": "e7b730eb6366f24aeff1ccae",
+      "speaker": "thorn",
+      "voice": "thorn",
+      "text": "I'll be the door."
+    }
+  }
+}

@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "bundle": "scene-meridia_arrival",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|And the child by the water. We are not a shopping list.": {
+      "file": "739e4e32bdba7dd0722874b6.mp3",
+      "hash": "739e4e32bdba7dd0722874b6",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "And the child by the water. We are not a shopping list."
+    },
+    "elara|Temple cat. There are protocols.": {
+      "file": "8132ae6ab0da81db19b1e6c8.mp3",
+      "hash": "8132ae6ab0da81db19b1e6c8",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Temple cat. There are protocols."
+    },
+    "kael|My coat has never been on fire. Adjacent to glory.": {
+      "file": "4ac8c2e17147a948fea2e292.mp3",
+      "hash": "4ac8c2e17147a948fea2e292",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "My coat has never been on fire. Adjacent to glory."
+    },
+    "kael|The letter.": {
+      "file": "0e6e70e6739dad0dd56daba9.mp3",
+      "hash": "0e6e70e6739dad0dd56daba9",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "The letter."
+    },
+    "lyra|Late, little saint. Forest is eating people. You blessed a cat.": {
+      "file": "63de7fbf7c3109d1f8b9adc1.mp3",
+      "hash": "63de7fbf7c3109d1f8b9adc1",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "Late, little saint. Forest is eating people. You blessed a cat."
+    },
+    "lyra|Lyra. I used to guard your doors. I'm coming. Someone has to count arrows.": {
+      "file": "82240be536f291c54d0462d1.mp3",
+      "hash": "82240be536f291c54d0462d1",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "Lyra. I used to guard your doors. I'm coming. Someone has to count arrows."
+    },
+    "lyra|Same thing, done right. Don't bleed on the mosaic.": {
+      "file": "f2cff1bb4e9aa4cbf419ea0e.mp3",
+      "hash": "f2cff1bb4e9aa4cbf419ea0e",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "Same thing, done right. Don't bleed on the mosaic."
+    },
+    "lyra|Smith who won't sell legends. Bard with a dead prince's letter. Canal with teeth. Pick your tragedy.": {
+      "file": "a059d0ff021199b520c405e9.mp3",
+      "hash": "a059d0ff021199b520c405e9",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "Smith who won't sell legends. Bard with a dead prince's letter. Canal with teeth. Pick your tragedy."
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "bundle": "scene-post_warden",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|Man, then job, then door. I would like, once, a monster that stayed a monster.": {
+      "file": "48d681d97ab6ac51e04a77b5.mp3",
+      "hash": "48d681d97ab6ac51e04a77b5",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Man, then job, then door. I would like, once, a monster that stayed a monster."
+    },
+    "kael|Welcome to my old house. Don't touch the mirrors. One of them is me.": {
+      "file": "0e2b5db789afb21490be9e8f.mp3",
+      "hash": "0e2b5db789afb21490be9e8f",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Welcome to my old house. Don't touch the mirrors. One of them is me."
+    },
+    "lyra|If he gets quiet, that's the danger.": {
+      "file": "ea1850ebc6d7e2f60cdafc4b.mp3",
+      "hash": "ea1850ebc6d7e2f60cdafc4b",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "If he gets quiet, that's the danger."
+    },
+    "thorn|I was quiet for a mountain. Don't recommend it.": {
+      "file": "9c01338bc522cd447088abf9.mp3",
+      "hash": "9c01338bc522cd447088abf9",
+      "speaker": "thorn",
+      "voice": "thorn",
+      "text": "I was quiet for a mountain. Don't recommend it."
+    }
+  }
+}

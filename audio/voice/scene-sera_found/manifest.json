@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "bundle": "scene-sera_found",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|I know the difference between a quest and a kidnapping.": {
+      "file": "ac7c4f1316c00c8ed4528a1f.mp3",
+      "hash": "ac7c4f1316c00c8ed4528a1f",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I know the difference between a quest and a kidnapping."
+    },
+    "kael|The Church is historically foggy on that.": {
+      "file": "650ee31f313389addac8def3.mp3",
+      "hash": "650ee31f313389addac8def3",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "The Church is historically foggy on that."
+    },
+    "sera|The story was stupid. I followed it. Tell father I'm walking home. Don't 'collect' me.": {
+      "file": "e5d636b002c4860dcca8869b.mp3",
+      "hash": "e5d636b002c4860dcca8869b",
+      "speaker": "sera",
+      "voice": "sera",
+      "text": "The story was stupid. I followed it. Tell father I'm walking home. Don't 'collect' me."
+    }
+  }
+}

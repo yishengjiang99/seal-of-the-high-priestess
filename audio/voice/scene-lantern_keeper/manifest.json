@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "bundle": "scene-lantern_keeper",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|I will try to deserve it.": {
+      "file": "2b1d4202af6d3e6f8654b584.mp3",
+      "hash": "2b1d4202af6d3e6f8654b584",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I will try to deserve it."
+    },
+    "kael|I will stand next to it.": {
+      "file": "6c2b35241e6ebb027b9ca4b9.mp3",
+      "hash": "6c2b35241e6ebb027b9ca4b9",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "I will stand next to it."
+    },
+    "keeper|This lantern dies when someone lies. Take it. Including you.": {
+      "file": "cd235355f8fccfa5380c1106.mp3",
+      "hash": "cd235355f8fccfa5380c1106",
+      "speaker": "keeper",
+      "voice": "keeper",
+      "text": "This lantern dies when someone lies. Take it. Including you."
+    }
+  }
+}

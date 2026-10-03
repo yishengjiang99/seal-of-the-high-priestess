@@ -1,0 +1,287 @@
+{
+  "version": 1,
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "bundles": {
+    "scene-ashen_camp": {
+      "manifest": "scene-ashen_camp/manifest.json",
+      "clips": 6,
+      "missing": 0
+    },
+    "scene-betrayed_court": {
+      "manifest": "scene-betrayed_court/manifest.json",
+      "clips": 15,
+      "missing": 0
+    },
+    "scene-blacksmith": {
+      "manifest": "scene-blacksmith/manifest.json",
+      "clips": 3,
+      "missing": 0
+    },
+    "scene-canal_quest_start": {
+      "manifest": "scene-canal_quest_start/manifest.json",
+      "clips": 2,
+      "missing": 0
+    },
+    "scene-courtyard_tablet": {
+      "manifest": "scene-courtyard_tablet/manifest.json",
+      "clips": 3,
+      "missing": 0
+    },
+    "scene-dawn_banter": {
+      "manifest": "scene-dawn_banter/manifest.json",
+      "clips": 13,
+      "missing": 0
+    },
+    "scene-elara_doubt": {
+      "manifest": "scene-elara_doubt/manifest.json",
+      "clips": 13,
+      "missing": 0
+    },
+    "scene-first_camp": {
+      "manifest": "scene-first_camp/manifest.json",
+      "clips": 15,
+      "missing": 0
+    },
+    "scene-intro": {
+      "manifest": "scene-intro/manifest.json",
+      "clips": 20,
+      "missing": 0
+    },
+    "scene-kael_letter_alone": {
+      "manifest": "scene-kael_letter_alone/manifest.json",
+      "clips": 13,
+      "missing": 0
+    },
+    "scene-lantern_keeper": {
+      "manifest": "scene-lantern_keeper/manifest.json",
+      "clips": 3,
+      "missing": 0
+    },
+    "scene-leaving_temple": {
+      "manifest": "scene-leaving_temple/manifest.json",
+      "clips": 4,
+      "missing": 0
+    },
+    "scene-lyra_backstory": {
+      "manifest": "scene-lyra_backstory/manifest.json",
+      "clips": 12,
+      "missing": 0
+    },
+    "scene-meridia_arrival": {
+      "manifest": "scene-meridia_arrival/manifest.json",
+      "clips": 8,
+      "missing": 0
+    },
+    "scene-midnight_watch": {
+      "manifest": "scene-midnight_watch/manifest.json",
+      "clips": 16,
+      "missing": 0
+    },
+    "scene-post_canal": {
+      "manifest": "scene-post_canal/manifest.json",
+      "clips": 5,
+      "missing": 0
+    },
+    "scene-post_hollow": {
+      "manifest": "scene-post_hollow/manifest.json",
+      "clips": 7,
+      "missing": 0
+    },
+    "scene-post_hound": {
+      "manifest": "scene-post_hound/manifest.json",
+      "clips": 4,
+      "missing": 0
+    },
+    "scene-post_meridia_skirmish": {
+      "manifest": "scene-post_meridia_skirmish/manifest.json",
+      "clips": 8,
+      "missing": 0
+    },
+    "scene-post_mirror": {
+      "manifest": "scene-post_mirror/manifest.json",
+      "clips": 8,
+      "missing": 0
+    },
+    "scene-post_warden": {
+      "manifest": "scene-post_warden/manifest.json",
+      "clips": 4,
+      "missing": 0
+    },
+    "scene-quest_herbalist": {
+      "manifest": "scene-quest_herbalist/manifest.json",
+      "clips": 9,
+      "missing": 0
+    },
+    "scene-quest_shen": {
+      "manifest": "scene-quest_shen/manifest.json",
+      "clips": 5,
+      "missing": 0
+    },
+    "scene-sealed_letter": {
+      "manifest": "scene-sealed_letter/manifest.json",
+      "clips": 6,
+      "missing": 0
+    },
+    "scene-sera_found": {
+      "manifest": "scene-sera_found/manifest.json",
+      "clips": 3,
+      "missing": 0
+    },
+    "scene-slice_ending": {
+      "manifest": "scene-slice_ending/manifest.json",
+      "clips": 9,
+      "missing": 0
+    },
+    "scene-sparring_scene": {
+      "manifest": "scene-sparring_scene/manifest.json",
+      "clips": 17,
+      "missing": 0
+    },
+    "scene-thorn_confession": {
+      "manifest": "scene-thorn_confession/manifest.json",
+      "clips": 12,
+      "missing": 0
+    },
+    "scene-tut_wisp_vn": {
+      "manifest": "scene-tut_wisp_vn/manifest.json",
+      "clips": 2,
+      "missing": 0
+    },
+    "signs": {
+      "manifest": "signs/manifest.json",
+      "clips": 18,
+      "missing": 0
+    },
+    "talk-baker": {
+      "manifest": "talk-baker/manifest.json",
+      "clips": 3,
+      "missing": 0
+    },
+    "talk-bard": {
+      "manifest": "talk-bard/manifest.json",
+      "clips": 4,
+      "missing": 0
+    },
+    "talk-boatman": {
+      "manifest": "talk-boatman/manifest.json",
+      "clips": 2,
+      "missing": 0
+    },
+    "talk-captain": {
+      "manifest": "talk-captain/manifest.json",
+      "clips": 4,
+      "missing": 0
+    },
+    "talk-echo": {
+      "manifest": "talk-echo/manifest.json",
+      "clips": 5,
+      "missing": 0
+    },
+    "talk-fisherman": {
+      "manifest": "talk-fisherman/manifest.json",
+      "clips": 3,
+      "missing": 0
+    },
+    "talk-florist": {
+      "manifest": "talk-florist/manifest.json",
+      "clips": 3,
+      "missing": 0
+    },
+    "talk-granny": {
+      "manifest": "talk-granny/manifest.json",
+      "clips": 3,
+      "missing": 0
+    },
+    "talk-guard": {
+      "manifest": "talk-guard/manifest.json",
+      "clips": 3,
+      "missing": 0
+    },
+    "talk-hana": {
+      "manifest": "talk-hana/manifest.json",
+      "clips": 5,
+      "missing": 0
+    },
+    "talk-herbalist": {
+      "manifest": "talk-herbalist/manifest.json",
+      "clips": 5,
+      "missing": 0
+    },
+    "talk-hermit": {
+      "manifest": "talk-hermit/manifest.json",
+      "clips": 5,
+      "missing": 0
+    },
+    "talk-jori": {
+      "manifest": "talk-jori/manifest.json",
+      "clips": 3,
+      "missing": 0
+    },
+    "talk-keeper": {
+      "manifest": "talk-keeper/manifest.json",
+      "clips": 5,
+      "missing": 0
+    },
+    "talk-kid2": {
+      "manifest": "talk-kid2/manifest.json",
+      "clips": 4,
+      "missing": 0
+    },
+    "talk-korin": {
+      "manifest": "talk-korin/manifest.json",
+      "clips": 3,
+      "missing": 0
+    },
+    "talk-lyra_meet": {
+      "manifest": "talk-lyra_meet/manifest.json",
+      "clips": 6,
+      "missing": 0
+    },
+    "talk-mira": {
+      "manifest": "talk-mira/manifest.json",
+      "clips": 5,
+      "missing": 0
+    },
+    "talk-monk": {
+      "manifest": "talk-monk/manifest.json",
+      "clips": 5,
+      "missing": 0
+    },
+    "talk-pilgrim": {
+      "manifest": "talk-pilgrim/manifest.json",
+      "clips": 3,
+      "missing": 0
+    },
+    "talk-ren": {
+      "manifest": "talk-ren/manifest.json",
+      "clips": 3,
+      "missing": 0
+    },
+    "talk-sera": {
+      "manifest": "talk-sera/manifest.json",
+      "clips": 3,
+      "missing": 0
+    },
+    "talk-spirit_shrine": {
+      "manifest": "talk-spirit_shrine/manifest.json",
+      "clips": 6,
+      "missing": 0
+    },
+    "talk-suyin": {
+      "manifest": "talk-suyin/manifest.json",
+      "clips": 6,
+      "missing": 0
+    },
+    "talk-wen": {
+      "manifest": "talk-wen/manifest.json",
+      "clips": 5,
+      "missing": 0
+    },
+    "ui": {
+      "manifest": "ui/manifest.json",
+      "clips": 2,
+      "missing": 0
+    }
+  }
+}

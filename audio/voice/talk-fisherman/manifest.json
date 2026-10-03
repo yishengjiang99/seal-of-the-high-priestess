@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "bundle": "talk-fisherman",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|What happens after the lanterns blink twice?": {
+      "file": "f8dfa7cb7c27ebc16707881c.mp3",
+      "hash": "f8dfa7cb7c27ebc16707881c",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "What happens after the lanterns blink twice?"
+    },
+    "fisherman|Don't fish after the lanterns blink twice.": {
+      "file": "d31cf26df15b700730c7526b.mp3",
+      "hash": "d31cf26df15b700730c7526b",
+      "speaker": "fisherman",
+      "voice": "fisherman",
+      "text": "Don't fish after the lanterns blink twice."
+    },
+    "fisherman|You stop fishing and start swimming.": {
+      "file": "54a7c4ea8df43bfd1ada2a3a.mp3",
+      "hash": "54a7c4ea8df43bfd1ada2a3a",
+      "speaker": "fisherman",
+      "voice": "fisherman",
+      "text": "You stop fishing and start swimming."
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "bundle": "talk-pilgrim",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|Does it fade?": {
+      "file": "d068cb29d5d214a5b2d82bd8.mp3",
+      "hash": "d068cb29d5d214a5b2d82bd8",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Does it fade?"
+    },
+    "pilgrim|I think you have to earn that. I don't know how yet.": {
+      "file": "3f3e1ab310a9cb5e5642fcd0.mp3",
+      "hash": "3f3e1ab310a9cb5e5642fcd0",
+      "speaker": "pilgrim",
+      "voice": "pilgrim",
+      "text": "I think you have to earn that. I don't know how yet."
+    },
+    "pilgrim|I walked from Meridia. The trees tried my name. I did not answer. I still hear it.": {
+      "file": "faf9fc46f01cac9a1b403f63.mp3",
+      "hash": "faf9fc46f01cac9a1b403f63",
+      "speaker": "pilgrim",
+      "voice": "pilgrim",
+      "text": "I walked from Meridia. The trees tried my name. I did not answer. I still hear it."
+    }
+  }
+}

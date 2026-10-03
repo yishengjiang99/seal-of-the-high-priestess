@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "bundle": "scene-quest_shen",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|One cup. Today is not a tea day, but I will pour.": {
+      "file": "ef215509ae247a373d5b8764.mp3",
+      "hash": "ef215509ae247a373d5b8764",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "One cup. Today is not a tea day, but I will pour."
+    },
+    "kael|A technique from a man who lost to bark.": {
+      "file": "798eb6ca0c02891842855ef0.mp3",
+      "hash": "798eb6ca0c02891842855ef0",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "A technique from a man who lost to bark."
+    },
+    "shen|I came to scold a tree. It scolded me back. Nine days. Tea?": {
+      "file": "5c87a0289f526483d9724a74.mp3",
+      "hash": "5c87a0289f526483d9724a74",
+      "speaker": "shen",
+      "voice": "shen",
+      "text": "I came to scold a tree. It scolded me back. Nine days. Tea?"
+    },
+    "shen|Lotus Palm. Not a stronger slap. A slap that remembers the body. Try not to disappoint me.": {
+      "file": "bcc15b66b2d328c6c95da6ee.mp3",
+      "hash": "bcc15b66b2d328c6c95da6ee",
+      "speaker": "shen",
+      "voice": "shen",
+      "text": "Lotus Palm. Not a stronger slap. A slap that remembers the body. Try not to disappoint me."
+    },
+    "shen|When she unseals you, hit the thing I could not talk out of being a door.": {
+      "file": "5374c63a033d64850a0d3299.mp3",
+      "hash": "5374c63a033d64850a0d3299",
+      "speaker": "shen",
+      "voice": "shen",
+      "text": "When she unseals you, hit the thing I could not talk out of being a door."
+    }
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "bundle": "talk-lyra_meet",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|Temple cat. Protocols.": {
+      "file": "1ea87bb2240d9e8952fb9262.mp3",
+      "hash": "1ea87bb2240d9e8952fb9262",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Temple cat. Protocols."
+    },
+    "kael|Sound judgment.": {
+      "file": "ab064796d1293b1694016edf.mp3",
+      "hash": "ab064796d1293b1694016edf",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Sound judgment."
+    },
+    "kael|Temple guardian. You're the one who locked the south corridor every full moon.": {
+      "file": "9de897a0a6f9c458cf323945.mp3",
+      "hash": "9de897a0a6f9c458cf323945",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Temple guardian. You're the one who locked the south corridor every full moon."
+    },
+    "lyra|I'm coming. Someone has to count arrows.": {
+      "file": "20556037fb99c4100e9253b1.mp3",
+      "hash": "20556037fb99c4100e9253b1",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "I'm coming. Someone has to count arrows."
+    },
+    "lyra|I'm the one who locked it because of you.": {
+      "file": "a197d128fcf2d6117125abd5.mp3",
+      "hash": "a197d128fcf2d6117125abd5",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "I'm the one who locked it because of you."
+    },
+    "lyra|Late. You blessed a cat.": {
+      "file": "fb59b9bd245be57496e9986d.mp3",
+      "hash": "fb59b9bd245be57496e9986d",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "Late. You blessed a cat."
+    }
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "bundle": "scene-thorn_confession",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|The chain wasn't punishment.": {
+      "file": "9d7224c4b9e20007cd6196ba.mp3",
+      "hash": "9d7224c4b9e20007cd6196ba",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "The chain wasn't punishment."
+    },
+    "elara|The road toward it.": {
+      "file": "be6e372ae9a1e21db13053ec.mp3",
+      "hash": "be6e372ae9a1e21db13053ec",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "The road toward it."
+    },
+    "elara|You both stayed in the old shape because the new one hadn't arrived yet.": {
+      "file": "d920a1a49cb1f0a3dc8140e9.mp3",
+      "hash": "d920a1a49cb1f0a3dc8140e9",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "You both stayed in the old shape because the new one hadn't arrived yet."
+    },
+    "elara|You knew them.": {
+      "file": "835802216a77145f7ecd509b.mp3",
+      "hash": "835802216a77145f7ecd509b",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "You knew them."
+    },
+    "kael|I kneeled for the same reason.": {
+      "file": "286e73303112c72efe67a8af.mp3",
+      "hash": "286e73303112c72efe67a8af",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "I kneeled for the same reason."
+    },
+    "kael|I remember. Veth kept a list. Of names to say at the end.": {
+      "file": "618230909506f55df478075c.mp3",
+      "hash": "618230909506f55df478075c",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "I remember. Veth kept a list. Of names to say at the end."
+    },
+    "thorn|Is that what this is? The new one?": {
+      "file": "2b10dfee931ab061ef959b59.mp3",
+      "hash": "2b10dfee931ab061ef959b59",
+      "speaker": "thorn",
+      "voice": "thorn",
+      "text": "Is that what this is? The new one?"
+    },
+    "thorn|It was. I let myself get caught because I didn't know what else to do when the war stopped.": {
+      "file": "53bddd540125e86dbd750f4f.mp3",
+      "hash": "53bddd540125e86dbd750f4f",
+      "speaker": "thorn",
+      "voice": "thorn",
+      "text": "It was. I let myself get caught because I didn't know what else to do when the war stopped."
+    },
+    "thorn|Name was Veth. Outer Court. Good with walls. Better with people, when anyone looked.": {
+      "file": "3acb7ceb897c47870972049e.mp3",
+      "hash": "3acb7ceb897c47870972049e",
+      "speaker": "thorn",
+      "voice": "thorn",
+      "text": "Name was Veth. Outer Court. Good with walls. Better with people, when anyone looked."
+    },
+    "thorn|That's enough.": {
+      "file": "ef3f7e720f1e9df8d48ab849.mp3",
+      "hash": "ef3f7e720f1e9df8d48ab849",
+      "speaker": "thorn",
+      "voice": "thorn",
+      "text": "That's enough."
+    },
+    "thorn|Yeah.": {
+      "file": "cb1af8d328393b1b3733276f.mp3",
+      "hash": "cb1af8d328393b1b3733276f",
+      "speaker": "thorn",
+      "voice": "thorn",
+      "text": "Yeah."
+    },
+    "|After the hound. Thorn has not spoken. The mountain has.": {
+      "file": "ab4e8a28c9ed6028ed61b6d6.mp3",
+      "hash": "ab4e8a28c9ed6028ed61b6d6",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "After the hound. Thorn has not spoken. The mountain has."
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "bundle": "scene-leaving_temple",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|Vestments. They are supposed to be clean.": {
+      "file": "2163d8e1c137b5d9e61dde6d.mp3",
+      "hash": "2163d8e1c137b5d9e61dde6d",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Vestments. They are supposed to be clean."
+    },
+    "elara|Village first. Mock the acolytes and I add laundry to the seal.": {
+      "file": "494d814661950fb32bd6b968.mp3",
+      "hash": "494d814661950fb32bd6b968",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Village first. Mock the acolytes and I add laundry to the seal."
+    },
+    "kael|Then you are succeeding at the wrong thing.": {
+      "file": "fa40c23729aefea69a93ae3a.mp3",
+      "hash": "fa40c23729aefea69a93ae3a",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Then you are succeeding at the wrong thing."
+    },
+    "kael|White and blue. The palette of people who have never been interesting at a funeral.": {
+      "file": "bff3ef4888418c4ba705b2ae.mp3",
+      "hash": "bff3ef4888418c4ba705b2ae",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "White and blue. The palette of people who have never been interesting at a funeral."
+    }
+  }
+}

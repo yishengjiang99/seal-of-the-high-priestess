@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "bundle": "talk-sera",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "kael|Tell him yourself. Reasons should be able to walk.": {
+      "file": "7a19731d9fc2cd85be98c227.mp3",
+      "hash": "7a19731d9fc2cd85be98c227",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Tell him yourself. Reasons should be able to walk."
+    },
+    "sera|...the demon prince has a point.": {
+      "file": "520e22c6bd3f50a8093022da.mp3",
+      "hash": "520e22c6bd3f50a8093022da",
+      "speaker": "sera",
+      "voice": "sera",
+      "text": "...the demon prince has a point."
+    },
+    "sera|Tell father I'm tired of being a reason in his metal.": {
+      "file": "a0f40715634841768ccd79c6.mp3",
+      "hash": "a0f40715634841768ccd79c6",
+      "speaker": "sera",
+      "voice": "sera",
+      "text": "Tell father I'm tired of being a reason in his metal."
+    }
+  }
+}

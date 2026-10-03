@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "bundle": "talk-mira",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|I am going to tell her you fell in.": {
+      "file": "483aa6a501c93f753e765514.mp3",
+      "hash": "483aa6a501c93f753e765514",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I am going to tell her you fell in."
+    },
+    "elara|I will say it was a courageous plunge.": {
+      "file": "ef2e78ada90dfb686e1da76f.mp3",
+      "hash": "ef2e78ada90dfb686e1da76f",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I will say it was a courageous plunge."
+    },
+    "mira|Can you at least say I fell in bravely.": {
+      "file": "726e3ab4f5d6c41d6eff45b3.mp3",
+      "hash": "726e3ab4f5d6c41d6eff45b3",
+      "speaker": "mira",
+      "voice": "mira",
+      "text": "Can you at least say I fell in bravely."
+    },
+    "mira|I wasn't lost. I fell in. Please don't tell Mother Suyin.": {
+      "file": "f6ccd1b1f9cd3d6b20aed1dc.mp3",
+      "hash": "f6ccd1b1f9cd3d6b20aed1dc",
+      "speaker": "mira",
+      "voice": "mira",
+      "text": "I wasn't lost. I fell in. Please don't tell Mother Suyin."
+    },
+    "mira|Perfect.": {
+      "file": "c12f6576f88e9370497328c9.mp3",
+      "hash": "c12f6576f88e9370497328c9",
+      "speaker": "mira",
+      "voice": "mira",
+      "text": "Perfect."
+    }
+  }
+}

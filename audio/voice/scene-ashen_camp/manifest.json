@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "bundle": "scene-ashen_camp",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|Empower two people. Mark. Charge. If I drop, Lyra drags me. Not him.": {
+      "file": "2b10163a4e086e478fb8066c.mp3",
+      "hash": "2b10163a4e086e478fb8066c",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Empower two people. Mark. Charge. If I drop, Lyra drags me. Not him."
+    },
+    "elara|Something chained on this mountain. We look.": {
+      "file": "87b4482263f925926977ea1a.mp3",
+      "hash": "87b4482263f925926977ea1a",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Something chained on this mountain. We look."
+    },
+    "kael|Do not collect my species. We are not cats.": {
+      "file": "4ffe4ab53dea946d0f193ef4.mp3",
+      "hash": "4ffe4ab53dea946d0f193ef4",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Do not collect my species. We are not cats."
+    },
+    "kael|I complain in the original demonic.": {
+      "file": "8ee86f78c7652c857e078215.mp3",
+      "hash": "8ee86f78c7652c857e078215",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "I complain in the original demonic."
+    },
+    "lyra|Sleep. Tomorrow we teach a door manners.": {
+      "file": "45c7845d557297085587a3ca.mp3",
+      "hash": "45c7845d557297085587a3ca",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "Sleep. Tomorrow we teach a door manners."
+    },
+    "lyra|Warden ahead. Multi-phase. Spam and it eats her. We set up.": {
+      "file": "121e6f63e32101d41ac87748.mp3",
+      "hash": "121e6f63e32101d41ac87748",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "Warden ahead. Multi-phase. Spam and it eats her. We set up."
+    }
+  }
+}

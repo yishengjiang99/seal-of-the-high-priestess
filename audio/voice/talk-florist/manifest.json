@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "bundle": "talk-florist",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "florist|Deal.": {
+      "file": "3190af0f9ab2bc4a6a3a2e31.mp3",
+      "hash": "3190af0f9ab2bc4a6a3a2e31",
+      "speaker": "florist",
+      "voice": "florist",
+      "text": "Deal."
+    },
+    "florist|Lotus for the temple. Thorns for the prince. He can pay in scowls.": {
+      "file": "7e03a670ab0e622bdb9adcf2.mp3",
+      "hash": "7e03a670ab0e622bdb9adcf2",
+      "speaker": "florist",
+      "voice": "florist",
+      "text": "Lotus for the temple. Thorns for the prince. He can pay in scowls."
+    },
+    "kael|I'll give you two.": {
+      "file": "4e5f12ba16cac4ec511c2d24.mp3",
+      "hash": "4e5f12ba16cac4ec511c2d24",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "I'll give you two."
+    }
+  }
+}

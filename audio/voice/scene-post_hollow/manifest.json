@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "bundle": "scene-post_hollow",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|Guardian and victim. I hate that those keep being the same word.": {
+      "file": "68a7f616228d7b10a83eeeda.mp3",
+      "hash": "68a7f616228d7b10a83eeeda",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Guardian and victim. I hate that those keep being the same word."
+    },
+    "elara|If I unseal you, I hit the floor. I will not always refuse that math.": {
+      "file": "b85ee598dd7b87bdc99c37f6.mp3",
+      "hash": "b85ee598dd7b87bdc99c37f6",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "If I unseal you, I hit the floor. I will not always refuse that math."
+    },
+    "elara|Meridia next. Try not to declare yourself.": {
+      "file": "86da834c4518df721c7368a1.mp3",
+      "hash": "86da834c4518df721c7368a1",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Meridia next. Try not to declare yourself."
+    },
+    "kael|I never declare. I arrive.": {
+      "file": "905786d695e4ba74fe9746f6.mp3",
+      "hash": "905786d695e4ba74fe9746f6",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "I never declare. I arrive."
+    },
+    "kael|When you do, don't apologize in my teeth.": {
+      "file": "cdcc19c462e4993411db9e6f.mp3",
+      "hash": "cdcc19c462e4993411db9e6f",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "When you do, don't apologize in my teeth."
+    },
+    "kael|You meditated. I charged. File it under tactical.": {
+      "file": "c7c983bf1274239dd2f37da4.mp3",
+      "hash": "c7c983bf1274239dd2f37da4",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "You meditated. I charged. File it under tactical."
+    },
+    "|The heartwood falls. The west is a path now.": {
+      "file": "d71f6fb34cc80736a679f69b.mp3",
+      "hash": "d71f6fb34cc80736a679f69b",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "The heartwood falls. The west is a path now."
+    }
+  }
+}

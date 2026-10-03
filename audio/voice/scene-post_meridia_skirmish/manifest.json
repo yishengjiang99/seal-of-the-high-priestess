@@ -1,0 +1,64 @@
+{
+  "version": 1,
+  "bundle": "scene-post_meridia_skirmish",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|Does someone know we're coming?": {
+      "file": "b8994c2d18709d0fe3416efc.mp3",
+      "hash": "b8994c2d18709d0fe3416efc",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Does someone know we're coming?"
+    },
+    "elara|The pass, then. No detours.": {
+      "file": "5fe1a60edcb97fe23c2fd3d2.mp3",
+      "hash": "5fe1a60edcb97fe23c2fd3d2",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "The pass, then. No detours."
+    },
+    "kael|Court remnants. Someone is calling old armor with fresh orders.": {
+      "file": "aa14d0529d0ef978b8e3469f.mp3",
+      "hash": "aa14d0529d0ef978b8e3469f",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Court remnants. Someone is calling old armor with fresh orders."
+    },
+    "kael|No detours.": {
+      "file": "b13a7e68de9d8f50b8fbffb5.mp3",
+      "hash": "b13a7e68de9d8f50b8fbffb5",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "No detours."
+    },
+    "kael|Someone has always known. That's the point of the gate.": {
+      "file": "99d9b94f9df5e0ccf5faad34.mp3",
+      "hash": "99d9b94f9df5e0ccf5faad34",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Someone has always known. That's the point of the gate."
+    },
+    "lyra|Shadow knights. They weren't here last month.": {
+      "file": "191267de0a56145d4c124e94.mp3",
+      "hash": "191267de0a56145d4c124e94",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "Shadow knights. They weren't here last month."
+    },
+    "lyra|We were never subtle. We had a demon prince and a priestess walking a canal street.": {
+      "file": "3dde1a6ab1a2169859c9b00e.mp3",
+      "hash": "3dde1a6ab1a2169859c9b00e",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "We were never subtle. We had a demon prince and a priestess walking a canal street."
+    },
+    "thorn|Then we stop being subtle.": {
+      "file": "9e2f44ade441bb5b6e324d22.mp3",
+      "hash": "9e2f44ade441bb5b6e324d22",
+      "speaker": "thorn",
+      "voice": "thorn",
+      "text": "Then we stop being subtle."
+    }
+  }
+}

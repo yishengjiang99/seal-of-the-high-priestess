@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "bundle": "talk-boatman",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "boatman|I don't take the canals after second blink. That's when the water has teeth.": {
+      "file": "a6be88a22db45007944eea0c.mp3",
+      "hash": "a6be88a22db45007944eea0c",
+      "speaker": "boatman",
+      "voice": "boatman",
+      "text": "I don't take the canals after second blink. That's when the water has teeth."
+    },
+    "lyra|He means it. I asked him once. He showed me the dent in the hull.": {
+      "file": "2a512829be8bd0f91c1d9f0f.mp3",
+      "hash": "2a512829be8bd0f91c1d9f0f",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "He means it. I asked him once. He showed me the dent in the hull."
+    }
+  }
+}

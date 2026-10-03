@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "bundle": "talk-ren",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|I will look.": {
+      "file": "4b7c203055ddd2ee04f2411c.mp3",
+      "hash": "4b7c203055ddd2ee04f2411c",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I will look."
+    },
+    "ren|Mira went for lamp-oil. She is good at gossip. Bad at clocks.": {
+      "file": "91818518d7565e9417998822.mp3",
+      "hash": "91818518d7565e9417998822",
+      "speaker": "ren",
+      "voice": "ren",
+      "text": "Mira went for lamp-oil. She is good at gossip. Bad at clocks."
+    },
+    "ren|She might have stopped at the canal bridge. She always stops at the canal bridge.": {
+      "file": "2913363212e24783874bccf3.mp3",
+      "hash": "2913363212e24783874bccf3",
+      "speaker": "ren",
+      "voice": "ren",
+      "text": "She might have stopped at the canal bridge. She always stops at the canal bridge."
+    }
+  }
+}

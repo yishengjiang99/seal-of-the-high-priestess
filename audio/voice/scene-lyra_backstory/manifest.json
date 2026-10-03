@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "bundle": "scene-lyra_backstory",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|I'm glad you moved.": {
+      "file": "540e19531d6946263840b98b.mp3",
+      "hash": "540e19531d6946263840b98b",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I'm glad you moved."
+    },
+    "elara|Noted.": {
+      "file": "6b2a6799134129f41dcfbe85.mp3",
+      "hash": "6b2a6799134129f41dcfbe85",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Noted."
+    },
+    "elara|That is the opposite of a reason to leave.": {
+      "file": "571a5829f224cdbfead37c71.mp3",
+      "hash": "571a5829f224cdbfead37c71",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "That is the opposite of a reason to leave."
+    },
+    "elara|You guarded the temple for three years. Why did you leave?": {
+      "file": "a22313ce603c7322fea0f956.mp3",
+      "hash": "a22313ce603c7322fea0f956",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "You guarded the temple for three years. Why did you leave?"
+    },
+    "kael|And?": {
+      "file": "e1f6eef295487df9a96ca283.mp3",
+      "hash": "e1f6eef295487df9a96ca283",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "And?"
+    },
+    "lyra|...I'm glad you asked.": {
+      "file": "6405e63f2ac4f7a8892f1520.mp3",
+      "hash": "6405e63f2ac4f7a8892f1520",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "...I'm glad you asked."
+    },
+    "lyra|Because I was good at it.": {
+      "file": "7265fa06739a9f9aaea6d93b.mp3",
+      "hash": "7265fa06739a9f9aaea6d93b",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "Because I was good at it."
+    },
+    "lyra|Don't make it sentimental. I'm going the same direction. It was efficient.": {
+      "file": "6cbb6320a2bae956da1c65da.mp3",
+      "hash": "6cbb6320a2bae956da1c65da",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "Don't make it sentimental. I'm going the same direction. It was efficient."
+    },
+    "lyra|Forty-three. I counted the warden.": {
+      "file": "1245f14b266b98e800850347.mp3",
+      "hash": "1245f14b266b98e800850347",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "Forty-three. I counted the warden."
+    },
+    "lyra|I'm very good at moving.": {
+      "file": "c6c5a0e06f4fcfe0e9d93cd6.mp3",
+      "hash": "c6c5a0e06f4fcfe0e9d93cd6",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "I'm very good at moving."
+    },
+    "lyra|When you're good at standing still, you have to choose: stay still, or find out what you're good at when you move.": {
+      "file": "433a9d1d2761dcca1c02b066.mp3",
+      "hash": "433a9d1d2761dcca1c02b066",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "When you're good at standing still, you have to choose: stay still, or find out what you're good at when you move."
+    },
+    "thorn|She's good at counting, too. She counted forty-two of them before the prince went berserk.": {
+      "file": "e3c29da65b4b1bf3e9212db3.mp3",
+      "hash": "e3c29da65b4b1bf3e9212db3",
+      "speaker": "thorn",
+      "voice": "thorn",
+      "text": "She's good at counting, too. She counted forty-two of them before the prince went berserk."
+    }
+  }
+}

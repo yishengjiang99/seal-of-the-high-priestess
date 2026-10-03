@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "bundle": "scene-blacksmith",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|I will bring her. As a person. Not as metal.": {
+      "file": "79823c6c82e3f0d8f090624e.mp3",
+      "hash": "79823c6c82e3f0d8f090624e",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I will bring her. As a person. Not as metal."
+    },
+    "korin|I don't sell better. I make true. Bring Sera home and I'll put the First Oath back in your silk.": {
+      "file": "4e8d64fdadd18e0b98c1708a.mp3",
+      "hash": "4e8d64fdadd18e0b98c1708a",
+      "speaker": "korin",
+      "voice": "korin",
+      "text": "I don't sell better. I make true. Bring Sera home and I'll put the First Oath back in your silk."
+    },
+    "korin|You brought her. Hold still. This will look like gold.": {
+      "file": "eb587c7d750407c16263d891.mp3",
+      "hash": "eb587c7d750407c16263d891",
+      "speaker": "korin",
+      "voice": "korin",
+      "text": "You brought her. Hold still. This will look like gold."
+    }
+  }
+}

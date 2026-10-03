@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "bundle": "ui",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|The scriptures say patience is a virtue. But you are testing every one of them.": {
+      "file": "b3185abdf44e9c05a7037cde.mp3",
+      "hash": "b3185abdf44e9c05a7037cde",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "The scriptures say patience is a virtue. But you are testing every one of them."
+    },
+    "kael|Little saint. Your sermons are as dull as your fashion sense.": {
+      "file": "3045624aa2fb8435ca69f233.mp3",
+      "hash": "3045624aa2fb8435ca69f233",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Little saint. Your sermons are as dull as your fashion sense."
+    }
+  }
+}
