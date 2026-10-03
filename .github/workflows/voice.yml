@@ -1,0 +1,97 @@
+name: Generate voice clips
+
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Comma-separated bundle names to generate (blank = all)"
+        required: false
+        default: ""
+  push:
+    branches:
+      - main
+    paths:
+      - js/dialogue.js
+      - js/content.js
+      - js/maps.js
+      - js/voice-lines.js
+      - voice/config.json
+      - scripts/generate-voice.mjs
+      - scripts/voice-lib.mjs
+
+permissions:
+  contents: write
+  pages: write
+  actions: write
+
+concurrency:
+  group: voice-clips
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Generate missing clips
+        id: gen
+        continue-on-error: true
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          ONLY: ${{ github.event.inputs.only }}
+        run: |
+          if [ -z "$ELEVENLABS_API_KEY" ]; then
+            echo "::error::ELEVENLABS_API_KEY secret is not set"
+            exit 1
+          fi
+          if [ -n "$ONLY" ]; then
+            node scripts/generate-voice.mjs --only="$ONLY"
+          else
+            node scripts/generate-voice.mjs
+          fi
+
+      - name: Commit clips to main
+        id: commit
+        run: |
+          set -euo pipefail
+          git add -A audio/voice
+          if git diff --cached --quiet; then
+            echo "No clip changes."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          clips=$(git diff --cached --name-only --diff-filter=A -- 'audio/voice/*.mp3' | wc -l)
+          git commit -m "chore(voice): update ElevenLabs clips (+${clips} files) [skip ci]"
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push origin HEAD:main && break
+            sleep 5
+          done
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      # Pushes made with GITHUB_TOKEN do not start other workflows, so ask
+      # Pages (served from main) to rebuild and re-run the gh-pages deploy.
+      - name: Redeploy site
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api -X POST "repos/${{ github.repository }}/pages/builds" || echo "::warning::Pages build request failed"
+          gh workflow run deploy.yml --ref main || echo "::warning::Could not dispatch deploy workflow"
+
+      - name: Fail if generation was incomplete
+        if: steps.gen.outcome != 'success'
+        run: |
+          echo "::error::Voice generation did not finish cleanly; clips that were made have been committed. See the step summary."
+          exit 1

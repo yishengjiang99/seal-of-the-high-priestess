@@ -37,6 +37,12 @@ jobs:
           node --check js/dialogue.js
           node --check js/game.js
           node --check js/maps.js
+          node --check js/voice-lines.js
+          node --check scripts/generate-voice.mjs
+          node --check scripts/voice-lib.mjs
+
+      - name: Voice pipeline unit tests
+        run: npm run test:unit
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium

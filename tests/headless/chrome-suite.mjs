@@ -37,6 +37,8 @@ async function main() {
     await waitForServer(`${BASE}/index.html`);
     const browser = await chromium.launch({ headless: true });
     const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+    const pageErrors = [];
+    page.on("pageerror", (e) => pageErrors.push(e.message));
     await page.goto(`${BASE}/index.html`, { waitUntil: "networkidle" });
 
     await page.waitForSelector("#screen-title:not(.hidden)");
@@ -72,10 +74,46 @@ async function main() {
     const reducedMotion = await page.evaluate(() => document.body.classList.contains("reduced-motion"));
     assert.equal(reducedMotion, true);
 
+    // Game data must load (maps.js used to throw before MAPS was defined).
+    assert.equal(await page.evaluate(() => typeof window.MAPS === "object" && !!window.MAPS.wilderness), true);
+    assert.deepEqual(pageErrors, []);
+
+    await voiceChecks(browser);
+
     await browser.close();
   } finally {
     await cleanup();
   }
+}
+
+// Voice clips: the client looks up the line in its scene bundle, requests the
+// clip, and keeps going (text only) when the clip is missing or fails.
+async function voiceChecks(browser) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  const clipRequests = [];
+  let firstKey = null;
+  await page.route("**/audio/voice/index.json", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ version: 1, model_id: "test", bundles: { "scene-intro": { manifest: "scene-intro/manifest.json", clips: 1, missing: 0 } } })
+  }));
+  await page.route("**/audio/voice/scene-intro/manifest.json", (route) => route.fulfill({
+    contentType: "application/json",
+    body: JSON.stringify({ version: 1, bundle: "scene-intro", lines: { [firstKey]: { file: "deadbeef.mp3" } } })
+  }));
+  await page.route("**/audio/voice/**/*.mp3", (route) => { clipRequests.push(new URL(route.request().url()).pathname); route.fulfill({ status: 404, body: "" }); });
+  await page.goto(`${BASE}/index.html`, { waitUntil: "networkidle" });
+  firstKey = await page.evaluate(() => {
+    const l = window.SCENES.intro.script[0];
+    return window.VoiceLines.lineKey(l.s, l.t);
+  });
+  await page.evaluate(() => { window.SOTH.settings.voice = true; window.SOTH_SCENE("intro"); });
+  await page.waitForFunction(() => window.SOTH.vn && window.SOTH.vn.speechDone === true, null, { timeout: 5000 });
+  assert.deepEqual(clipRequests, ["/audio/voice/scene-intro/deadbeef.mp3"]);
+  assert.deepEqual(errors, []);
+  assert.match(await page.locator("#vn-text").innerText(), /\S/);
+  await page.close();
 }
 
 main().catch((err) => {

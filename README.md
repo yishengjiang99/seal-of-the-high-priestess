@@ -34,7 +34,28 @@ npm run test:ci
 | Esc | Menu |
 | C | Rest at a lotus altar |
 
-Spoken dialogue uses the browser **Web Speech API**. Toggle it under Options (default on). Elara, Kael, and the rest of the cast use different pitch/rate (and different system voices when the browser provides them). Advance a line to cut the current utterance. Auto-advance waits until speech finishes.
+Spoken dialogue uses pre-generated **ElevenLabs** clips, one voice per character (see `voice/config.json`). Toggle it under Options (default on). Advance a line to cut the current clip; auto-advance waits until the clip finishes. Lines without a clip (or if audio fails to load) just stay text-only. The browser never calls ElevenLabs.
+
+## Voice clips
+
+`scripts/generate-voice.mjs` reads every spoken line from `js/dialogue.js`, `js/content.js` (NPC talk) and `js/maps.js` (signs), and writes static bundles:
+
+```
+audio/voice/
+  index.json                  # bundle -> manifest path, clip/missing counts
+  scene-intro/manifest.json   # "speaker|text" -> { file, hash, voice, ... }
+  scene-intro/<hash>.mp3
+  talk-wen/...  signs/...  ui/...
+```
+
+A clip's file name is the first 24 hex chars of a SHA-256 over its text, voice id, model, output format, seed and voice settings, so a run only calls the API for new or changed lines and prunes clips nothing references any more.
+
+```bash
+npm run voice:plan                                  # dry run: what would be generated
+ELEVENLABS_API_KEY=... npm run voice:generate       # generate missing clips locally
+```
+
+In CI, the **Generate voice clips** workflow (`.github/workflows/voice.yml`) runs on `workflow_dispatch` and on pushes to `main` that touch dialogue or voice config. It uses the `ELEVENLABS_API_KEY` repo secret, commits new clips back to `main` with `[skip ci]`, and asks GitHub Pages to rebuild.
 
 ## Host on GitHub Pages
 

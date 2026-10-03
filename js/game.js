@@ -389,157 +389,129 @@
   }
 
   // ---------------------------------------------------------------------------
-  // Web Speech API — per-speaker dialogue
+  // Voiced dialogue — pre-generated ElevenLabs clips (scripts/generate-voice.mjs)
+  // served as static bundles: audio/voice/index.json lists bundles, and each
+  // audio/voice/<bundle>/manifest.json maps "speaker|text" to a clip file.
+  // Nothing here talks to ElevenLabs. A missing index, manifest or clip just
+  // means that line stays text-only.
   // ---------------------------------------------------------------------------
-  const VOICE_PROFILE = {
-    elara: { gender: "f", pitch: 1.28, rate: 0.98, vol: 1, prefer: /samantha|victoria|karen|moira|tessa|zira|fiona|siri|female|google uk english female/i },
-    kael: { gender: "m", pitch: 0.68, rate: 0.9, vol: 1, prefer: /daniel|alex|fred|david|gordon|tom|male|google uk english male/i },
-    shade: { gender: "m", pitch: 0.5, rate: 0.82, vol: 0.95, prefer: /daniel|alex|male/i },
-    lyra: { gender: "f", pitch: 1.08, rate: 1.08, vol: 1, prefer: /karen|moira|female/i },
-    thorn: { gender: "m", pitch: 0.55, rate: 0.8, vol: 1, prefer: /fred|daniel|male/i },
-    suyin: { gender: "f", pitch: 0.88, rate: 0.86, vol: 1, prefer: /moira|fiona|victoria|female/i },
-    shen: { gender: "m", pitch: 0.7, rate: 0.84, vol: 1 },
-    lyra_npc: { gender: "f", pitch: 1.08, rate: 1.08, vol: 1 },
-    bard: { gender: "m", pitch: 1.05, rate: 1.05, vol: 1 },
-    korin: { gender: "m", pitch: 0.62, rate: 0.88, vol: 1 },
-    sera: { gender: "f", pitch: 1.2, rate: 1.05, vol: 1 },
-    keeper: { gender: "m", pitch: 0.78, rate: 0.9, vol: 1 },
-    jori: { gender: "m", pitch: 1.35, rate: 1.12, vol: 0.95 },
-    mira: { gender: "f", pitch: 1.32, rate: 1.1, vol: 1 },
-    hana: { gender: "f", pitch: 1.12, rate: 1.0, vol: 1 },
-    wen: { gender: "m", pitch: 0.58, rate: 0.82, vol: 1 },
-    ren: { gender: "m", pitch: 1.1, rate: 1.05, vol: 1 },
-    echo: { gender: "m", pitch: 0.55, rate: 0.78, vol: 0.85 },
-    fisherman: { gender: "m", pitch: 0.7, rate: 0.9, vol: 1 },
-    captain: { gender: "m", pitch: 0.72, rate: 0.95, vol: 1 },
-    granny: { gender: "f", pitch: 0.8, rate: 0.88, vol: 1 },
-    "": { gender: "n", pitch: 0.82, rate: 0.88, vol: 0.62 }
-  };
-  const FEM_RE = /female|woman|girl|samantha|victoria|karen|moira|tessa|fiona|zira|susan|siri|kathy|princess|grandma/i;
-  const MALE_RE = /male|man|boy|daniel|alex|fred|david|tom|gordon|ralph|jorge|bruce|fred|grandpa|aaron|nicky/i;
-  let voices = [];
-  let voiceBySpeaker = {};
-  let speakTimer = 0;
+  const VOICE_ROOT = "audio/voice/";
+  const VL = window.VoiceLines || null;
+  let voiceIndex = null;          // parsed index.json, or false when unavailable
+  let voiceIndexP = null;
+  const voiceBundles = {};        // bundle -> Promise<manifest | null>
+  let voiceAudio = null;
+  let voiceSeq = 0;
   let speaking = false;
 
   function speechOk() {
-    return typeof window !== "undefined" && "speechSynthesis" in window && typeof SpeechSynthesisUtterance !== "undefined";
+    return !!VL && typeof Audio !== "undefined" && typeof fetch === "function";
   }
-  function harvestVoices() {
-    if (!speechOk()) return;
-    voices = window.speechSynthesis.getVoices() || [];
-    voiceBySpeaker = {};
-    refreshVoiceStatus();
+  function fetchJson(url) {
+    return fetch(url, { cache: "no-cache" })
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
   }
+  function loadVoiceIndex() {
+    if (!speechOk()) return Promise.resolve(null);
+    if (!voiceIndexP) {
+      voiceIndexP = fetchJson(VOICE_ROOT + "index.json").then((j) => {
+        voiceIndex = j && j.bundles ? j : false;
+        refreshVoiceStatus();
+        return voiceIndex || null;
+      });
+    }
+    return voiceIndexP;
+  }
+  function loadVoiceBundle(name) {
+    if (!voiceBundles[name]) {
+      voiceBundles[name] = loadVoiceIndex().then((idx) => {
+        const meta = idx && idx.bundles[name];
+        if (!meta) return null;
+        return fetchJson(VOICE_ROOT + meta.manifest).then((m) => (m && m.lines ? m : null));
+      });
+    }
+    return voiceBundles[name];
+  }
+  function harvestVoices() { loadVoiceIndex(); }
   function refreshVoiceStatus() {
     const el = $("opt-voice-status");
     if (!el) return;
-    if (!speechOk()) {
-      el.textContent = "This browser has no Web Speech API — dialogue will stay silent.";
-      return;
-    }
-    const n = voices.filter((v) => /^en/i.test(v.lang) || /english/i.test(v.name)).length || voices.length;
-    el.textContent = n ? n + " English voice" + (n === 1 ? "" : "s") + " available. Elara and Kael use different pitches even on a single voice." : "Waiting for system voices…";
+    if (!speechOk()) { el.textContent = "This browser cannot play voice clips — dialogue stays text-only."; return; }
+    if (voiceIndex === null) { el.textContent = "Loading voice clips…"; return; }
+    if (!voiceIndex) { el.textContent = "Voice clips are not available — dialogue stays text-only."; return; }
+    const b = Object.values(voiceIndex.bundles);
+    const clips = b.reduce((n, x) => n + (x.clips || 0), 0);
+    const missing = b.reduce((n, x) => n + (x.missing || 0), 0);
+    el.textContent = clips + " voiced lines (ElevenLabs" + (voiceIndex.model_id ? ", " + voiceIndex.model_id : "") + ")" +
+      (missing ? "; " + missing + " lines not voiced yet stay text-only." : ".");
   }
-  function genderOfVoice(v) {
-    if (FEM_RE.test(v.name) || FEM_RE.test(v.voiceURI || "")) return "f";
-    if (MALE_RE.test(v.name) || MALE_RE.test(v.voiceURI || "")) return "m";
-    return "n";
+  function setSpeakingName(on) {
+    const name = $("vn-name");
+    if (name) name.classList.toggle("speaking", !!on && !!name.textContent);
   }
-  function pickVoice(sp) {
-    if (voiceBySpeaker[sp]) return voiceBySpeaker[sp];
-    const p = VOICE_PROFILE[sp] || VOICE_PROFILE[""];
-    const en = voices.filter((v) => /^en/i.test(v.lang) || /english/i.test(v.name));
-    const pool = en.length ? en : voices.slice();
-    if (!pool.length) return null;
-    let chosen = null;
-    if (p.prefer) chosen = pool.find((v) => p.prefer.test(v.name) || p.prefer.test(v.voiceURI || ""));
-    if (!chosen && p.gender === "f") chosen = pool.find((v) => genderOfVoice(v) === "f");
-    if (!chosen && p.gender === "m") chosen = pool.find((v) => genderOfVoice(v) === "m");
-    if (!chosen) {
-      const idx = Math.abs([...sp].reduce((a, c) => a + c.charCodeAt(0), 0)) % pool.length;
-      chosen = pool[idx];
-    }
-    // Keep Elara/Kael on different voices when possible
-    if (sp === "kael" && voiceBySpeaker.elara && chosen === voiceBySpeaker.elara && pool.length > 1) {
-      chosen = pool.find((v) => v !== voiceBySpeaker.elara) || chosen;
-    }
-    voiceBySpeaker[sp] = chosen;
-    return chosen;
-  }
-  function cleanSpeech(text) {
-    return String(text || "")
-      .replace(/[—–]/g, ", ")
-      .replace(/\s+/g, " ")
-      .replace(/[♪◈▾]/g, "")
-      .replace(/\*/g, "")
-      .trim();
+  function speechFinished(seq) {
+    if (seq !== voiceSeq) return;
+    speaking = false;
+    setSpeakingName(false);
+    if (S.vn) S.vn.speechDone = true;
   }
   function stopSpeech() {
+    voiceSeq++;
     speaking = false;
-    const name = $("vn-name");
-    if (name) name.classList.remove("speaking");
-    if (!speechOk()) return;
-    try { window.speechSynthesis.cancel(); } catch (e) {}
-    S._utter = null;
-    if (speakTimer) { clearTimeout(speakTimer); speakTimer = 0; }
+    setSpeakingName(false);
+    if (voiceAudio) {
+      const a = voiceAudio;
+      voiceAudio = null;
+      a.onended = a.onerror = a.onplaying = null;
+      try { a.pause(); a.removeAttribute("src"); a.load(); } catch (e) {}
+    }
+    S._voiceDone = null;
   }
-  function speakLine(sp, text) {
+  // Plays the clip for a line; calls onDone once when it ends, fails or is absent.
+  function speakLine(sp, text, bundle, onDone) {
     stopSpeech();
-    if (!S.settings.voice || !speechOk()) return;
-    const t = cleanSpeech(text);
-    if (!t) return;
-    const p = VOICE_PROFILE[sp] || VOICE_PROFILE[""] || { pitch: 1, rate: 1, vol: 1 };
-    const u = new SpeechSynthesisUtterance(t);
-    const v = pickVoice(sp);
-    if (v) u.voice = v;
-    u.lang = (v && v.lang) || "en-US";
-    u.rate = clamp(p.rate || 1, 0.6, 1.4);
-    u.pitch = clamp(p.pitch || 1, 0.4, 1.8);
-    u.volume = clamp((S.settings.voiceVol || 0) * (p.vol == null ? 1 : p.vol), 0, 1);
-    if (u.volume <= 0.01) return;
-    u.onstart = () => {
-      speaking = true;
-      const name = $("vn-name");
-      if (name && name.textContent) name.classList.add("speaking");
+    const seq = voiceSeq;
+    const done = () => {
+      const wasCurrent = seq === voiceSeq;
+      speechFinished(seq);
+      if (wasCurrent && onDone) onDone();
     };
-    u.onend = () => {
-      speaking = false;
-      const name = $("vn-name");
-      if (name) name.classList.remove("speaking");
-      if (S.vn) S.vn.speechDone = true;
-    };
-    u.onerror = () => { speaking = false; };
-    S._utter = u;
-    S.vn && (S.vn.speechDone = false);
-    // Chrome drops speak() if it follows cancel() in the same turn
-    speakTimer = setTimeout(() => {
-      speakTimer = 0;
-      try { window.speechSynthesis.speak(u); } catch (e) {}
-    }, 40);
+    if (S.vn) S.vn.speechDone = false;
+    if (!S.settings.voice || !speechOk() || !VL.isSpeakable(text)) return done();
+    const vol = clamp(S.settings.voiceVol == null ? 0.85 : S.settings.voiceVol, 0, 1);
+    if (vol <= 0.01) return done();
+    const key = VL.lineKey(sp, text);
+    loadVoiceBundle(bundle || "").then((m) => {
+      if (seq !== voiceSeq) return;
+      const entry = m && m.lines[key];
+      if (!entry) return done();
+      const a = new Audio();
+      a.preload = "auto";
+      a.volume = vol;
+      a.onplaying = () => { if (seq === voiceSeq) { speaking = true; setSpeakingName(true); } };
+      a.onended = done;
+      a.onerror = done;
+      a.src = VOICE_ROOT + m.bundle + "/" + entry.file;
+      voiceAudio = a;
+      const p = a.play();
+      if (p && p.catch) p.catch(done);
+    }, done);
   }
   function previewVoices() {
     if (!speechOk()) return;
     S.settings.voice = true;
-    const lines = [
-      ["elara", "The scriptures say patience is a virtue. But you are testing every one of them."],
-      ["kael", "Little saint. Your sermons are as dull as your fashion sense."]
-    ];
-    let i = 0;
+    const lines = VL.PREVIEW_LINES.slice();
     const next = () => {
-      if (i >= lines.length) return;
-      const [sp, t] = lines[i++];
-      stopSpeech();
-      speakLine(sp, t);
-      const u = S._utter;
-      if (u) u.onend = () => { speaking = false; setTimeout(next, 280); };
+      const l = lines.shift();
+      if (l) speakLine(l[0], l[1], "ui", () => setTimeout(next, 280));
     };
     next();
   }
-  if (speechOk()) {
-    harvestVoices();
-    window.speechSynthesis.addEventListener("voiceschanged", harvestVoices);
+  function voiceBundleFor(sc) {
+    return VL ? VL.bundleForScene(sc && sc.id) : "";
   }
+  harvestVoices();
 
   // ---------------------------------------------------------------------------
   // Images / resize
@@ -1835,6 +1807,7 @@
   function startScene(idOrObj) {
     const sc = typeof idOrObj === "string" ? SCENES[idOrObj] : idOrObj;
     if (!sc) return;
+    if (S.settings.voice) loadVoiceBundle(voiceBundleFor(sc));
     S.vn = {
       def: sc, i: 0, shown: 0, full: "", waiting: false, choices: null, choiceIdx: 0, done: false, autoT: 0
     };
@@ -1913,7 +1886,7 @@
       vn.line = line;
       renderVn(line);
       if (line.fx) lineFx(line.fx);
-      speakLine(line.s || "", line.t || "");
+      speakLine(line.s || "", line.t || "", voiceBundleFor(vn.def));
       return;
     }
     endScene();

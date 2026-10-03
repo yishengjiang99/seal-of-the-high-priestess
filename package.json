@@ -5,9 +5,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check:syntax": "node --check js/content.js && node --check js/game.js && node --check js/dialogue.js && node --check js/maps.js",
+    "check:syntax": "node --check js/content.js && node --check js/game.js && node --check js/dialogue.js && node --check js/maps.js && node --check js/voice-lines.js && node --check scripts/generate-voice.mjs && node --check scripts/voice-lib.mjs",
+    "test:unit": "node --test tests/voice.test.mjs",
     "test:headless": "node tests/headless/chrome-suite.mjs",
-    "test:ci": "npm run check:syntax && npm run test:headless"
+    "test:ci": "npm run check:syntax && npm run test:unit && npm run test:headless",
+    "voice:generate": "node scripts/generate-voice.mjs",
+    "voice:plan": "node scripts/generate-voice.mjs --dry-run"
   },
   "repository": {
     "type": "git",
