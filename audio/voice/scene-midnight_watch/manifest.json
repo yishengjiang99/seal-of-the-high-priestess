@@ -1,0 +1,120 @@
+{
+  "version": 1,
+  "bundle": "scene-midnight_watch",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|And yet.": {
+      "file": "eb9f8e79b4dc64fc0d656f32.mp3",
+      "hash": "eb9f8e79b4dc64fc0d656f32",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "And yet."
+    },
+    "elara|I am looking at the fire.": {
+      "file": "1de4cd2e849e5e2ab4012301.mp3",
+      "hash": "1de4cd2e849e5e2ab4012301",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I am looking at the fire."
+    },
+    "elara|She said not to let you drink them.": {
+      "file": "7750ac8df19ac94bf3a39456.mp3",
+      "hash": "7750ac8df19ac94bf3a39456",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "She said not to let you drink them."
+    },
+    "elara|That is,": {
+      "file": "d622052378381c62f5c4fdeb.mp3",
+      "hash": "d622052378381c62f5c4fdeb",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "That is,"
+    },
+    "elara|The court taught you to be afraid of sleep.": {
+      "file": "7f953a1dff8761271961ef1e.mp3",
+      "hash": "7f953a1dff8761271961ef1e",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "The court taught you to be afraid of sleep."
+    },
+    "elara|You were supposed to sleep.": {
+      "file": "297f7f740152f494ecfa5db8.mp3",
+      "hash": "297f7f740152f494ecfa5db8",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "You were supposed to sleep."
+    },
+    "elara|You would have to cooperate by sleeping.": {
+      "file": "a96d95868c532683bfe1b7ae.mp3",
+      "hash": "a96d95868c532683bfe1b7ae",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "You would have to cooperate by sleeping."
+    },
+    "kael|...Fine. One hour.": {
+      "file": "1f9699addce9e3a56e68fe45.mp3",
+      "hash": "1f9699addce9e3a56e68fe45",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "...Fine. One hour."
+    },
+    "kael|And yet.": {
+      "file": "ecdf302bf50a5082d01ceb76.mp3",
+      "hash": "ecdf302bf50a5082d01ceb76",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "And yet."
+    },
+    "kael|Don't make promises that only require my cooperation.": {
+      "file": "0e49ee6c824ae59bc74477a6.mp3",
+      "hash": "0e49ee6c824ae59bc74477a6",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Don't make promises that only require my cooperation."
+    },
+    "kael|Normal, in my house. Don't look at me like that.": {
+      "file": "1d8728a807225a0c68c4d97e.mp3",
+      "hash": "1d8728a807225a0c68c4d97e",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Normal, in my house. Don't look at me like that."
+    },
+    "kael|Princes learn to stay awake at table. Habit.": {
+      "file": "fecef049c5faa8a2adbc1998.mp3",
+      "hash": "fecef049c5faa8a2adbc1998",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Princes learn to stay awake at table. Habit."
+    },
+    "kael|The court taught me to be afraid of my siblings. Sleep was their best opportunity.": {
+      "file": "4da81e0cb1417f69d70038b2.mp3",
+      "hash": "4da81e0cb1417f69d70038b2",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "The court taught me to be afraid of my siblings. Sleep was their best opportunity."
+    },
+    "kael|The fourth tea. Suyin said to use them in order.": {
+      "file": "e8fa59aa4268808036a00b54.mp3",
+      "hash": "e8fa59aa4268808036a00b54",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "The fourth tea. Suyin said to use them in order."
+    },
+    "|He sleeps before the cup is empty. She watches the west and says nothing that costs her.": {
+      "file": "dc728760824d75f920f79d87.mp3",
+      "hash": "dc728760824d75f920f79d87",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "He sleeps before the cup is empty. She watches the west and says nothing that costs her."
+    },
+    "|The third watch. The fire has gone to embers. Kael is awake. He did not plan to be.": {
+      "file": "d53abe2b46445a5c0a481981.mp3",
+      "hash": "d53abe2b46445a5c0a481981",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "The third watch. The fire has gone to embers. Kael is awake. He did not plan to be."
+    }
+  }
+}

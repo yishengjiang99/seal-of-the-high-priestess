@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "bundle": "talk-hana",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|I do not need a view.": {
+      "file": "81869d72c4bf30bd7661a4f7.mp3",
+      "hash": "81869d72c4bf30bd7661a4f7",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I do not need a view."
+    },
+    "hana|Everyone needs a view, love. Have some tea.": {
+      "file": "4b5f71649f050411a47591f5.mp3",
+      "hash": "4b5f71649f050411a47591f5",
+      "speaker": "hana",
+      "voice": "hana",
+      "text": "Everyone needs a view, love. Have some tea."
+    },
+    "hana|Room's free for the priestess. The demon pays extra for scorch marks.": {
+      "file": "1fee26061d55ba275b0e2765.mp3",
+      "hash": "1fee26061d55ba275b0e2765",
+      "speaker": "hana",
+      "voice": "hana",
+      "text": "Room's free for the priestess. The demon pays extra for scorch marks."
+    },
+    "hana|The priestess gets the south room. Faces the canal. She'll need the view.": {
+      "file": "da8ac20e4b027306f7417457.mp3",
+      "hash": "da8ac20e4b027306f7417457",
+      "speaker": "hana",
+      "voice": "hana",
+      "text": "The priestess gets the south room. Faces the canal. She'll need the view."
+    },
+    "kael|Church's tab. They already billed me for a lifetime.": {
+      "file": "13cb7285fc790ad251f4cbe8.mp3",
+      "hash": "13cb7285fc790ad251f4cbe8",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Church's tab. They already billed me for a lifetime."
+    }
+  }
+}

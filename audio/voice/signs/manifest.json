@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "bundle": "signs",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "|A half-finished letter: 'Mother, the canal fox is real, ' the rest is wet.": {
+      "file": "601678e3f889a43643837e25.mp3",
+      "hash": "601678e3f889a43643837e25",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "A half-finished letter: 'Mother, the canal fox is real, ' the rest is wet."
+    },
+    "|A stone with no name. Someone loved a scout here.": {
+      "file": "2872db0ca79dcabb7ed5d0b3.mp3",
+      "hash": "2872db0ca79dcabb7ed5d0b3",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "A stone with no name. Someone loved a scout here."
+    },
+    "|ASHEN PASS , The mountain keeps what the war would not bury.": {
+      "file": "8a66b01e7eeca7093c2f43a9.mp3",
+      "hash": "8a66b01e7eeca7093c2f43a9",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "ASHEN PASS , The mountain keeps what the war would not bury."
+    },
+    "|BEYOND: the Demon King sleeps. Do not wake him kindly.": {
+      "file": "48dc71f818f90828aee4dea2.mp3",
+      "hash": "48dc71f818f90828aee4dea2",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "BEYOND: the Demon King sleeps. Do not wake him kindly."
+    },
+    "|Beyond here, even the mountains hold their breath.": {
+      "file": "507a0101c7827d1d482e2950.mp3",
+      "hash": "507a0101c7827d1d482e2950",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "Beyond here, even the mountains hold their breath."
+    },
+    "|Cloister of Quiet Water , do not skip stones. The pond remembers names.": {
+      "file": "39447fa83e334d677cbc6fbd.mp3",
+      "hash": "39447fa83e334d677cbc6fbd",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "Cloister of Quiet Water , do not skip stones. The pond remembers names."
+    },
+    "|Here the lotus opens toward the west.": {
+      "file": "100344042b8d7f740d19aaf5.mp3",
+      "hash": "100344042b8d7f740d19aaf5",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "Here the lotus opens toward the west."
+    },
+    "|Look down. Meridia is a rumor of lamps.": {
+      "file": "e8aa8a18fba40c1e7433a461.mp3",
+      "hash": "e8aa8a18fba40c1e7433a461",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "Look down. Meridia is a rumor of lamps."
+    },
+    "|Lotus-Step Village , last kind light before the trees begin to speak.": {
+      "file": "56b70f21d4f01eb78ac4ba94.mp3",
+      "hash": "56b70f21d4f01eb78ac4ba94",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "Lotus-Step Village , last kind light before the trees begin to speak."
+    },
+    "|MERIDIA , By canal and lantern, we keep the west at a polite distance.": {
+      "file": "8cb495597036f7fcef921389.mp3",
+      "hash": "8cb495597036f7fcef921389",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "MERIDIA , By canal and lantern, we keep the west at a polite distance."
+    },
+    "|Meridia , last city before the ash.": {
+      "file": "53c2c559c5b8b92922239784.mp3",
+      "hash": "53c2c559c5b8b92922239784",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "Meridia , last city before the ash."
+    },
+    "|Seed packets: LOTUS (do not let demon prince near), LOTUS (backup), BEANS.": {
+      "file": "24bfd59ffda35f8bc1bcb67d.mp3",
+      "hash": "24bfd59ffda35f8bc1bcb67d",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "Seed packets: LOTUS (do not let demon prince near), LOTUS (backup), BEANS."
+    },
+    "|THE BETRAYED COURT , Names were taken from the walls.": {
+      "file": "d0a116edf4b45c2d90fe99e3.mp3",
+      "hash": "d0a116edf4b45c2d90fe99e3",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "THE BETRAYED COURT , Names were taken from the walls."
+    },
+    "|The ash pass is sealed until the gate warden falls.": {
+      "file": "c69925bad2d9496245b4b254.mp3",
+      "hash": "c69925bad2d9496245b4b254",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "The ash pass is sealed until the gate warden falls."
+    },
+    "|The heartwood still bars the west.": {
+      "file": "bcdadc78cbe875a409c90400.mp3",
+      "hash": "bcdadc78cbe875a409c90400",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "The heartwood still bars the west."
+    },
+    "|The trees whisper. Do not answer unless you can afford the reply.": {
+      "file": "071bf20c81b5a3fc7eddc3b8.mp3",
+      "hash": "071bf20c81b5a3fc7eddc3b8",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "The trees whisper. Do not answer unless you can afford the reply."
+    },
+    "|The western gate stays shut without a scout's word. Find Lyra in the plaza.": {
+      "file": "4d4a107ef22c4af124b29049.mp3",
+      "hash": "4d4a107ef22c4af124b29049",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "The western gate stays shut without a scout's word. Find Lyra in the plaza."
+    },
+    "|The wilderness reclaims roads faster than cartographers can weep.": {
+      "file": "407578ac7951d5cd527b32da.mp3",
+      "hash": "407578ac7951d5cd527b32da",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "The wilderness reclaims roads faster than cartographers can weep."
+    }
+  }
+}

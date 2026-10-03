@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "bundle": "talk-hermit",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|Do you still know the safe roads?": {
+      "file": "94bc2c295581ca370fca9db4.mp3",
+      "hash": "94bc2c295581ca370fca9db4",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Do you still know the safe roads?"
+    },
+    "hermit|I mean memorable. The west remembers everyone who walks it.": {
+      "file": "74080b9ef0631701f3bac813.mp3",
+      "hash": "74080b9ef0631701f3bac813",
+      "speaker": "hermit",
+      "voice": "hermit",
+      "text": "I mean memorable. The west remembers everyone who walks it."
+    },
+    "hermit|I was a cartographer. Then the ash added districts faster than I could draw them.": {
+      "file": "16cb5df53506c0bf866dd111.mp3",
+      "hash": "16cb5df53506c0bf866dd111",
+      "speaker": "hermit",
+      "voice": "hermit",
+      "text": "I was a cartographer. Then the ash added districts faster than I could draw them."
+    },
+    "hermit|Safe is a word for people who have not met the road. I know the interesting ones.": {
+      "file": "4011756c4d1942a60fee3456.mp3",
+      "hash": "4011756c4d1942a60fee3456",
+      "speaker": "hermit",
+      "voice": "hermit",
+      "text": "Safe is a word for people who have not met the road. I know the interesting ones."
+    },
+    "kael|He means dangerous.": {
+      "file": "bad72fba663944ac3d7595ac.mp3",
+      "hash": "bad72fba663944ac3d7595ac",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "He means dangerous."
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "bundle": "talk-kid2",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|I have about forty. I break most of them.": {
+      "file": "7d62438ab05ac2d5caead96d.mp3",
+      "hash": "7d62438ab05ac2d5caead96d",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I have about forty. I break most of them."
+    },
+    "elara|That is a sound rule.": {
+      "file": "61b0e0f07385103b952ab900.mp3",
+      "hash": "61b0e0f07385103b952ab900",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "That is a sound rule."
+    },
+    "kid2|Do you have rules?": {
+      "file": "5f677224d730edaaa4c3354d.mp3",
+      "hash": "5f677224d730edaaa4c3354d",
+      "speaker": "kid2",
+      "voice": "kid2",
+      "text": "Do you have rules?"
+    },
+    "kid2|If I light every lamp, the fox can't come. That's the rule. I made the rule.": {
+      "file": "300952e3eec9e02db0fdfecc.mp3",
+      "hash": "300952e3eec9e02db0fdfecc",
+      "speaker": "kid2",
+      "voice": "kid2",
+      "text": "If I light every lamp, the fox can't come. That's the rule. I made the rule."
+    }
+  }
+}

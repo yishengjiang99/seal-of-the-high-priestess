@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "bundle": "scene-post_canal",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|It was wearing a shoe.": {
+      "file": "7d1d34f9933d728220475d32.mp3",
+      "hash": "7d1d34f9933d728220475d32",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "It was wearing a shoe."
+    },
+    "elara|That was almost kind.": {
+      "file": "50483e6c2152924e4efe3283.mp3",
+      "hash": "50483e6c2152924e4efe3283",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "That was almost kind."
+    },
+    "kael|Be angry. Anger holds the worse things in.": {
+      "file": "f807a14f32d24573d23ab4db.mp3",
+      "hash": "f807a14f32d24573d23ab4db",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Be angry. Anger holds the worse things in."
+    },
+    "kael|Misheard. I said steel.": {
+      "file": "20231e9479de1d80b19c6f11.mp3",
+      "hash": "20231e9479de1d80b19c6f11",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Misheard. I said steel."
+    },
+    "lyra|Scout's Mercy. Interrupt the telegraph, or the funeral.": {
+      "file": "ef01bea56911bfc4badea64f.mp3",
+      "hash": "ef01bea56911bfc4badea64f",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "Scout's Mercy. Interrupt the telegraph, or the funeral."
+    }
+  }
+}

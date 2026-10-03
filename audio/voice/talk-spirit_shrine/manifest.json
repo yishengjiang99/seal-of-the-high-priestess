@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "bundle": "talk-spirit_shrine",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|\"I kept your favorite lamp lit. The road is fine. Please be fine.\"": {
+      "file": "f6acabab67b6a7cb6d70642b.mp3",
+      "hash": "f6acabab67b6a7cb6d70642b",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "\"I kept your favorite lamp lit. The road is fine. Please be fine.\""
+    },
+    "elara|I will not ask.": {
+      "file": "5f73c524a2bb2e837daae250.mp3",
+      "hash": "5f73c524a2bb2e837daae250",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I will not ask."
+    },
+    "elara|They always leave notes to people who aren't here.": {
+      "file": "69ac32deb338deb4690f5da4.mp3",
+      "hash": "69ac32deb338deb4690f5da4",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "They always leave notes to people who aren't here."
+    },
+    "kael|Good.": {
+      "file": "016b6010d61393332dc91979.mp3",
+      "hash": "016b6010d61393332dc91979",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Good."
+    },
+    "kael|Read it.": {
+      "file": "d47a258acdbbb4df3e1293b0.mp3",
+      "hash": "d47a258acdbbb4df3e1293b0",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Read it."
+    },
+    "|A small shrine by the road. Someone left a silver coin and a folded note.": {
+      "file": "e03875be982f3507ca8ecbb5.mp3",
+      "hash": "e03875be982f3507ca8ecbb5",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "A small shrine by the road. Someone left a silver coin and a folded note."
+    }
+  }
+}

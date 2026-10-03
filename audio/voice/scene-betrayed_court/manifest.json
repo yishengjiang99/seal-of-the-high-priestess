@@ -1,0 +1,113 @@
+{
+  "version": 1,
+  "bundle": "scene-betrayed_court",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|Cover me. I will not be a jar.": {
+      "file": "bd3bce3adcfcc5e18735e644.mp3",
+      "hash": "bd3bce3adcfcc5e18735e644",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Cover me. I will not be a jar."
+    },
+    "elara|Go apeshit.": {
+      "file": "e6093d61bd285eb6a3d08b3e.mp3",
+      "hash": "e6093d61bd285eb6a3d08b3e",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Go apeshit."
+    },
+    "elara|I can break the Seal. You end him. I hit the floor. Or we do it the long way, and I keep my feet.": {
+      "file": "af091c52b6c67c3e1ae2ec96.mp3",
+      "hash": "af091c52b6c67c3e1ae2ec96",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I can break the Seal. You end him. I hit the floor. Or we do it the long way, and I keep my feet."
+    },
+    "elara|I will unseal you when the math says so. I will not apologize in your teeth.": {
+      "file": "86c1839f61572e32feed293d.mp3",
+      "hash": "86c1839f61572e32feed293d",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I will unseal you when the math says so. I will not apologize in your teeth."
+    },
+    "elara|Then spend the venom. I can hold it.": {
+      "file": "457a59201f9d39cbe723c826.mp3",
+      "hash": "457a59201f9d39cbe723c826",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Then spend the venom. I can hold it."
+    },
+    "kael|Boring. Correct.": {
+      "file": "d762f97615f44a27597e9072.mp3",
+      "hash": "d762f97615f44a27597e9072",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Boring. Correct."
+    },
+    "kael|Don't you dare be wise at my ruins.": {
+      "file": "fc7c463f04f344f5c499af46.mp3",
+      "hash": "fc7c463f04f344f5c499af46",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Don't you dare be wise at my ruins."
+    },
+    "kael|I left on purpose.": {
+      "file": "74c71bff2906ca0f04c7c32e.mp3",
+      "hash": "74c71bff2906ca0f04c7c32e",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "I left on purpose."
+    },
+    "kael|If you unseal me, watch the door. Not my face. Pick. Kindness that costs.": {
+      "file": "37317acb419e510725712591.mp3",
+      "hash": "37317acb419e510725712591",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "If you unseal me, watch the door. Not my face. Pick. Kindness that costs."
+    },
+    "kael|Logged.": {
+      "file": "5bebf56c0135c66d464c5365.mp3",
+      "hash": "5bebf56c0135c66d464c5365",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Logged."
+    },
+    "kael|They ate me with votes. I let humanity bind me. Pride is a suicide that walks.": {
+      "file": "985ebd1420ed3d79c30086f3.mp3",
+      "hash": "985ebd1420ed3d79c30086f3",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "They ate me with votes. I let humanity bind me. Pride is a suicide that walks."
+    },
+    "shade|She will crack you like a useful jar. That is liturgy, not love. Come home.": {
+      "file": "c4f9df213274ece387235d5b.mp3",
+      "hash": "c4f9df213274ece387235d5b",
+      "speaker": "shade",
+      "voice": "shade",
+      "text": "She will crack you like a useful jar. That is liturgy, not love. Come home."
+    },
+    "|The Unbetrayed steps out of the glass. Kael, if no one had ever hurt him.": {
+      "file": "d13611db35be220f4a227887.mp3",
+      "hash": "d13611db35be220f4a227887",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "The Unbetrayed steps out of the glass. Kael, if no one had ever hurt him."
+    },
+    "|The mirror draws a blade.": {
+      "file": "90bb955bd4c1358265116f3e.mp3",
+      "hash": "90bb955bd4c1358265116f3e",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "The mirror draws a blade."
+    },
+    "|The throne room still has a ceiling. The mirror is too clean.": {
+      "file": "a149ed8b5c6356a36b479e9a.mp3",
+      "hash": "a149ed8b5c6356a36b479e9a",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "The throne room still has a ceiling. The mirror is too clean."
+    }
+  }
+}

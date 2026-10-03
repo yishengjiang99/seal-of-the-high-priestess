@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "bundle": "scene-elara_doubt",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|...okay.": {
+      "file": "3e2c8f19e3d8c9669c3a1ac2.mp3",
+      "hash": "3e2c8f19e3d8c9669c3a1ac2",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "...okay."
+    },
+    "elara|Don't say it like that. Don't say it like it's simple.": {
+      "file": "985da99a083d16a9b8949fb4.mp3",
+      "hash": "985da99a083d16a9b8949fb4",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Don't say it like that. Don't say it like it's simple."
+    },
+    "elara|I don't know if I can do this.": {
+      "file": "65054c17de06de99d97909c9.mp3",
+      "hash": "65054c17de06de99d97909c9",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I don't know if I can do this."
+    },
+    "elara|I'm not, I'm the High Priestess.": {
+      "file": "2c8b70dfae9fe26a6a572a21.mp3",
+      "hash": "2c8b70dfae9fe26a6a572a21",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I'm not, I'm the High Priestess."
+    },
+    "kael|Completely.": {
+      "file": "58c19294390decf382f77726.mp3",
+      "hash": "58c19294390decf382f77726",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Completely."
+    },
+    "kael|Okay.": {
+      "file": "fe32741d7d8fd101998593ea.mp3",
+      "hash": "fe32741d7d8fd101998593ea",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Okay."
+    },
+    "kael|You are seventeen and you have carried a court, a seal, a demon, a scout, and a mountain since dawn. I'm not saying it's simple. I'm saying you can.": {
+      "file": "4210f540118584b7d7a34a0a.mp3",
+      "hash": "4210f540118584b7d7a34a0a",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "You are seventeen and you have carried a court, a seal, a demon, a scout, and a mountain since dawn. I'm not saying it's simple. I'm saying you can."
+    },
+    "kael|You can.": {
+      "file": "2823c883ad84f92cfa9eed60.mp3",
+      "hash": "2823c883ad84f92cfa9eed60",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "You can."
+    },
+    "lyra|He's right. And he hates being right. Look how much he hates it.": {
+      "file": "92f666f3620d933cbf5a6a5f.mp3",
+      "hash": "92f666f3620d933cbf5a6a5f",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "He's right. And he hates being right. Look how much he hates it."
+    },
+    "thorn|I've been the door for fifteen months. If the kid can do this, it's worth the door.": {
+      "file": "dfb76206cbd446a453de7b59.mp3",
+      "hash": "dfb76206cbd446a453de7b59",
+      "speaker": "thorn",
+      "voice": "thorn",
+      "text": "I've been the door for fifteen months. If the kid can do this, it's worth the door."
+    },
+    "thorn|That too.": {
+      "file": "541f8e97ab6258074a73f8a0.mp3",
+      "hash": "541f8e97ab6258074a73f8a0",
+      "speaker": "thorn",
+      "voice": "thorn",
+      "text": "That too."
+    },
+    "|Before the throne gates. The west smells like something that has been patient a long time.": {
+      "file": "9d626a480a74d92deb8e93d3.mp3",
+      "hash": "9d626a480a74d92deb8e93d3",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "Before the throne gates. The west smells like something that has been patient a long time."
+    },
+    "|She walks first. Because she always does.": {
+      "file": "bcc3221d71d432d3899d7136.mp3",
+      "hash": "bcc3221d71d432d3899d7136",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "She walks first. Because she always does."
+    }
+  }
+}

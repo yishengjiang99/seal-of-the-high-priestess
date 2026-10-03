@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "bundle": "talk-wen",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "kael|I can be trusted with a flower.": {
+      "file": "e84250f1b5834573927064d5.mp3",
+      "hash": "e84250f1b5834573927064d5",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "I can be trusted with a flower."
+    },
+    "kael|What happened to the last prince.": {
+      "file": "6a6a76bfa3f2b20db276a1ca.mp3",
+      "hash": "6a6a76bfa3f2b20db276a1ca",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "What happened to the last prince."
+    },
+    "wen|He stopped being a prince. Quietly.": {
+      "file": "2715b3fae8701f9f4756ae63.mp3",
+      "hash": "2715b3fae8701f9f4756ae63",
+      "speaker": "wen",
+      "voice": "wen",
+      "text": "He stopped being a prince. Quietly."
+    },
+    "wen|Keep the demon off the lotus beds. Princes are terrible for soil.": {
+      "file": "cd4729011356ed68b7134a97.mp3",
+      "hash": "cd4729011356ed68b7134a97",
+      "speaker": "wen",
+      "voice": "wen",
+      "text": "Keep the demon off the lotus beds. Princes are terrible for soil."
+    },
+    "wen|That's what the last prince said.": {
+      "file": "cc517a40b6db27188758f112.mp3",
+      "hash": "cc517a40b6db27188758f112",
+      "speaker": "wen",
+      "voice": "wen",
+      "text": "That's what the last prince said."
+    }
+  }
+}

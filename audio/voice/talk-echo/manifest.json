@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "bundle": "talk-echo",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "echo|And yet here you are. Walking west with someone warm.": {
+      "file": "0cf8c498ade360c1795c0f5b.mp3",
+      "hash": "0cf8c498ade360c1795c0f5b",
+      "speaker": "echo",
+      "voice": "echo",
+      "text": "And yet here you are. Walking west with someone warm."
+    },
+    "echo|Logged.": {
+      "file": "0c7ad422dd89e5c961513940.mp3",
+      "hash": "0c7ad422dd89e5c961513940",
+      "speaker": "echo",
+      "voice": "echo",
+      "text": "Logged."
+    },
+    "echo|Prince. Put your name back on.": {
+      "file": "e169bb35c5d44b785ac51f3c.mp3",
+      "hash": "e169bb35c5d44b785ac51f3c",
+      "speaker": "echo",
+      "voice": "echo",
+      "text": "Prince. Put your name back on."
+    },
+    "kael|I left it. Warmth is how you get betrayed.": {
+      "file": "e4e835eb442e28a23d0a8fe9.mp3",
+      "hash": "e4e835eb442e28a23d0a8fe9",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "I left it. Warmth is how you get betrayed."
+    },
+    "kael|Tactical.": {
+      "file": "d3f427534e267de15795c2f5.mp3",
+      "hash": "d3f427534e267de15795c2f5",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Tactical."
+    }
+  }
+}

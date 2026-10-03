@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "bundle": "talk-granny",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|I will do my best.": {
+      "file": "b693a301b583b56c802f4c6f.mp3",
+      "hash": "b693a301b583b56c802f4c6f",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I will do my best."
+    },
+    "granny|Priestesses used to be eighty and vinegar. Go on. Make the road ashamed.": {
+      "file": "4491b5dc41cdc84f1b5beb0f.mp3",
+      "hash": "4491b5dc41cdc84f1b5beb0f",
+      "speaker": "granny",
+      "voice": "granny",
+      "text": "Priestesses used to be eighty and vinegar. Go on. Make the road ashamed."
+    },
+    "granny|Your best is not a thing you should warn people about. Just do it.": {
+      "file": "33802fe147bcdb72a684ffaf.mp3",
+      "hash": "33802fe147bcdb72a684ffaf",
+      "speaker": "granny",
+      "voice": "granny",
+      "text": "Your best is not a thing you should warn people about. Just do it."
+    }
+  }
+}

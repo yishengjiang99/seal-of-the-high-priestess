@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "bundle": "talk-korin",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|I will bring her back. As a person, not a task.": {
+      "file": "44ba8b87e6e0992ea67a3d37.mp3",
+      "hash": "44ba8b87e6e0992ea67a3d37",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I will bring her back. As a person, not a task."
+    },
+    "korin|I don't sell better. I make true. Bring Sera home and I'll remember your sleeves.": {
+      "file": "881aea802bc18b5e5248c8f9.mp3",
+      "hash": "881aea802bc18b5e5248c8f9",
+      "speaker": "korin",
+      "voice": "korin",
+      "text": "I don't sell better. I make true. Bring Sera home and I'll remember your sleeves."
+    },
+    "korin|She'll give you trouble. She gets that from me. I'm sorry in advance.": {
+      "file": "0b6c3e11736b39990d80680d.mp3",
+      "hash": "0b6c3e11736b39990d80680d",
+      "speaker": "korin",
+      "voice": "korin",
+      "text": "She'll give you trouble. She gets that from me. I'm sorry in advance."
+    }
+  }
+}

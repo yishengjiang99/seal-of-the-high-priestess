@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "bundle": "talk-keeper",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|I'm watching.": {
+      "file": "a2478f52d7a155b5f09d42fd.mp3",
+      "hash": "a2478f52d7a155b5f09d42fd",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I'm watching."
+    },
+    "elara|What was the last one.": {
+      "file": "e38493ed3edd292fadf8c175.mp3",
+      "hash": "e38493ed3edd292fadf8c175",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "What was the last one."
+    },
+    "keeper|A child saying they were afraid.": {
+      "file": "f0a355cf93ae04362fb04dee.mp3",
+      "hash": "f0a355cf93ae04362fb04dee",
+      "speaker": "keeper",
+      "voice": "keeper",
+      "text": "A child saying they were afraid."
+    },
+    "keeper|That's the first true thing someone's said near this lamp in a month.": {
+      "file": "774130bf63d775b0616e9001.mp3",
+      "hash": "774130bf63d775b0616e9001",
+      "speaker": "keeper",
+      "voice": "keeper",
+      "text": "That's the first true thing someone's said near this lamp in a month."
+    },
+    "keeper|These lights die when someone lies. Stand here. Watch.": {
+      "file": "f55e0bc61c7d66b27aa9f388.mp3",
+      "hash": "f55e0bc61c7d66b27aa9f388",
+      "speaker": "keeper",
+      "voice": "keeper",
+      "text": "These lights die when someone lies. Stand here. Watch."
+    }
+  }
+}

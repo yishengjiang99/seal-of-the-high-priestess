@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "bundle": "scene-canal_quest_start",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "jori|The shoe-thief followed us. South canal. I am not lying.": {
+      "file": "4d81d02e1aab79f1b137839b.mp3",
+      "hash": "4d81d02e1aab79f1b137839b",
+      "speaker": "jori",
+      "voice": "jori",
+      "text": "The shoe-thief followed us. South canal. I am not lying."
+    },
+    "lyra|He's lying about the size. Not the teeth. Do not unseal the prince into city water.": {
+      "file": "608438d2d76e31c934244ca1.mp3",
+      "hash": "608438d2d76e31c934244ca1",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "He's lying about the size. Not the teeth. Do not unseal the prince into city water."
+    }
+  }
+}

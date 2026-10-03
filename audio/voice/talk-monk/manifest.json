@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "bundle": "talk-monk",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|I know.": {
+      "file": "159b9ee18ca581bdc0dea2a0.mp3",
+      "hash": "159b9ee18ca581bdc0dea2a0",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I know."
+    },
+    "kael|I was not going to skip stones.": {
+      "file": "1bb693154aaf2de30fbcb906.mp3",
+      "hash": "1bb693154aaf2de30fbcb906",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "I was not going to skip stones."
+    },
+    "monk|Not you. Him.": {
+      "file": "5eff9d8b19143a28229e3cae.mp3",
+      "hash": "5eff9d8b19143a28229e3cae",
+      "speaker": "monk",
+      "voice": "monk",
+      "text": "Not you. Him."
+    },
+    "monk|The pond keeps the names we are too proud to say. Do not skip stones.": {
+      "file": "df93c0e66106165f631537f5.mp3",
+      "hash": "df93c0e66106165f631537f5",
+      "speaker": "monk",
+      "voice": "monk",
+      "text": "The pond keeps the names we are too proud to say. Do not skip stones."
+    },
+    "monk|You were thinking about it.": {
+      "file": "a3932cdc27fcc2d4afa5218f.mp3",
+      "hash": "a3932cdc27fcc2d4afa5218f",
+      "speaker": "monk",
+      "voice": "monk",
+      "text": "You were thinking about it."
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "bundle": "talk-guard",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "guard|Scout's word opens the west. Until then, the mountain can keep its opinions.": {
+      "file": "baee8a33ac6c2953d8f6cd38.mp3",
+      "hash": "baee8a33ac6c2953d8f6cd38",
+      "speaker": "guard",
+      "voice": "guard",
+      "text": "Scout's word opens the west. Until then, the mountain can keep its opinions."
+    },
+    "guard|That's how passes get opened, ma'am.": {
+      "file": "e9c0a78020b478e0049a5a57.mp3",
+      "hash": "e9c0a78020b478e0049a5a57",
+      "speaker": "guard",
+      "voice": "guard",
+      "text": "That's how passes get opened, ma'am."
+    },
+    "lyra|Scout's word. Fine. They've been working twice as hard.": {
+      "file": "65ea673d9c92f8419b83f06b.mp3",
+      "hash": "65ea673d9c92f8419b83f06b",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "Scout's word. Fine. They've been working twice as hard."
+    }
+  }
+}

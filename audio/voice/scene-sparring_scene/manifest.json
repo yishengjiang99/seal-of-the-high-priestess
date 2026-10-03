@@ -1,0 +1,127 @@
+{
+  "version": 1,
+  "bundle": "scene-sparring_scene",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|Fine. Show me.": {
+      "file": "2b1c91174247eb3322a58fc7.mp3",
+      "hash": "2b1c91174247eb3322a58fc7",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Fine. Show me."
+    },
+    "elara|I was not aware we were fighting.": {
+      "file": "d66b7d2f686369bf9db26883.mp3",
+      "hash": "d66b7d2f686369bf9db26883",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I was not aware we were fighting."
+    },
+    "elara|Like what.": {
+      "file": "05dd1bbf0f002403f43b342d.mp3",
+      "hash": "05dd1bbf0f002403f43b342d",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Like what."
+    },
+    "elara|Show me the difference.": {
+      "file": "aa5e93f64e0d7b4f7bc5f6c1.mp3",
+      "hash": "aa5e93f64e0d7b4f7bc5f6c1",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Show me the difference."
+    },
+    "elara|That is extremely abstract instruction.": {
+      "file": "ca87249bf912a7241055b4f0.mp3",
+      "hash": "ca87249bf912a7241055b4f0",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "That is extremely abstract instruction."
+    },
+    "elara|There's a difference.": {
+      "file": "ccb451c3cf998e6fd72541e5.mp3",
+      "hash": "ccb451c3cf998e6fd72541e5",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "There's a difference."
+    },
+    "kael|Better. The temple trained you to hold space. I am teaching you to claim it.": {
+      "file": "89e6acd25d7120303b939ee6.mp3",
+      "hash": "89e6acd25d7120303b939ee6",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Better. The temple trained you to hold space. I am teaching you to claim it."
+    },
+    "kael|Don't ask me like that.": {
+      "file": "adbb2b43283c8d801a18159a.mp3",
+      "hash": "adbb2b43283c8d801a18159a",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Don't ask me like that."
+    },
+    "kael|Like you're already sure I will.": {
+      "file": "8e45fc807d9495fec9d755fe.mp3",
+      "hash": "8e45fc807d9495fec9d755fe",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Like you're already sure I will."
+    },
+    "kael|Weight back. Chin down. Stop looking like you are delivering a verdict and look like you are a verdict.": {
+      "file": "231e3d31eacc526e6c0b34df.mp3",
+      "hash": "231e3d31eacc526e6c0b34df",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Weight back. Chin down. Stop looking like you are delivering a verdict and look like you are a verdict."
+    },
+    "kael|Yes.": {
+      "file": "4e921581b1b2f6e9b4a5e739.mp3",
+      "hash": "4e921581b1b2f6e9b4a5e739",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Yes."
+    },
+    "kael|You are a High Priestess. You are used to abstract.": {
+      "file": "8cab917ae386709bfde54b89.mp3",
+      "hash": "8cab917ae386709bfde54b89",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "You are a High Priestess. You are used to abstract."
+    },
+    "kael|You will be fighting. Your feet are apologizing to the ground. Stop apologizing to the ground.": {
+      "file": "f039fbff09e7a4993283f99f.mp3",
+      "hash": "f039fbff09e7a4993283f99f",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "You will be fighting. Your feet are apologizing to the ground. Stop apologizing to the ground."
+    },
+    "kael|Your stance is wrong.": {
+      "file": "b8fa90434509f0ea6da95f75.mp3",
+      "hash": "b8fa90434509f0ea6da95f75",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Your stance is wrong."
+    },
+    "lyra|He's not wrong.": {
+      "file": "7be1ee29a092d320368cfab8.mp3",
+      "hash": "7be1ee29a092d320368cfab8",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "He's not wrong."
+    },
+    "|He teaches her. It takes the whole afternoon. Neither of them calls it what it is.": {
+      "file": "1db03ec58307505783388149.mp3",
+      "hash": "1db03ec58307505783388149",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "He teaches her. It takes the whole afternoon. Neither of them calls it what it is."
+    },
+    "|She adjusts. His eyes do the thing where they stop being cruel for a moment.": {
+      "file": "a935dccda54cf06fc4fa3ccd.mp3",
+      "hash": "a935dccda54cf06fc4fa3ccd",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "She adjusts. His eyes do the thing where they stop being cruel for a moment."
+    }
+  }
+}

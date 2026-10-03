@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "bundle": "talk-captain",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "captain|The last party that came through was all dead inside before the pass. I mean professionally.": {
+      "file": "765f9d81e2db4b7bb9d11d89.mp3",
+      "hash": "765f9d81e2db4b7bb9d11d89",
+      "speaker": "captain",
+      "voice": "captain",
+      "text": "The last party that came through was all dead inside before the pass. I mean professionally."
+    },
+    "captain|You are Church and west. Don't bleed on the mosaic.": {
+      "file": "d203db4c95a10c9ff0d18e0a.mp3",
+      "hash": "d203db4c95a10c9ff0d18e0a",
+      "speaker": "captain",
+      "voice": "captain",
+      "text": "You are Church and west. Don't bleed on the mosaic."
+    },
+    "elara|We will try.": {
+      "file": "49228999101f02fb4b84fac2.mp3",
+      "hash": "49228999101f02fb4b84fac2",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "We will try."
+    },
+    "kael|We have a head start. Elara is only professionally alive.": {
+      "file": "f1c75f1c6626fd71f7ecc831.mp3",
+      "hash": "f1c75f1c6626fd71f7ecc831",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "We have a head start. Elara is only professionally alive."
+    }
+  }
+}

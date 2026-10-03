@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "bundle": "talk-jori",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "jori|That doesn't mean it stopped being true.": {
+      "file": "ece4e0765b9b02d6133292db.mp3",
+      "hash": "ece4e0765b9b02d6133292db",
+      "speaker": "jori",
+      "voice": "jori",
+      "text": "That doesn't mean it stopped being true."
+    },
+    "jori|The canal ate my sister's shoe. Teeth made of water. Not a lie.": {
+      "file": "b08a8041cb62c869916e4543.mp3",
+      "hash": "b08a8041cb62c869916e4543",
+      "speaker": "jori",
+      "voice": "jori",
+      "text": "The canal ate my sister's shoe. Teeth made of water. Not a lie."
+    },
+    "lyra|He's been telling this story for two days.": {
+      "file": "0f8f07b990bd481d37d58397.mp3",
+      "hash": "0f8f07b990bd481d37d58397",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "He's been telling this story for two days."
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "bundle": "talk-bard",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "bard|Found it in the ashes. Thought it was worth something to someone.": {
+      "file": "287b44ec0a73f5665f762493.mp3",
+      "hash": "287b44ec0a73f5665f762493",
+      "speaker": "bard",
+      "voice": "bard",
+      "text": "Found it in the ashes. Thought it was worth something to someone."
+    },
+    "bard|Letter. Dead prince's wax. Fifty rumors, or one stare from the torn coat.": {
+      "file": "b79990715bb224e269ebcfbb.mp3",
+      "hash": "b79990715bb224e269ebcfbb",
+      "speaker": "bard",
+      "voice": "bard",
+      "text": "Letter. Dead prince's wax. Fifty rumors, or one stare from the torn coat."
+    },
+    "kael|How did you get this.": {
+      "file": "f59cce2c52ea987abf17b2c3.mp3",
+      "hash": "f59cce2c52ea987abf17b2c3",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "How did you get this."
+    },
+    "kael|To several people. Most of them don't breathe anymore.": {
+      "file": "320eb5cd58082ba1a3023dc6.mp3",
+      "hash": "320eb5cd58082ba1a3023dc6",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "To several people. Most of them don't breathe anymore."
+    }
+  }
+}

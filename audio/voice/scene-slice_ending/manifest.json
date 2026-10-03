@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "bundle": "scene-slice_ending",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|Not the end. First honest door.": {
+      "file": "64bdbd7379a7d7f9b0744ef9.mp3",
+      "hash": "64bdbd7379a7d7f9b0744ef9",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Not the end. First honest door."
+    },
+    "elara|Purification is a road. Not cleanliness.": {
+      "file": "2ccba333e804a9a942350c38.mp3",
+      "hash": "2ccba333e804a9a942350c38",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Purification is a road. Not cleanliness."
+    },
+    "elara|Too late.": {
+      "file": "c97b142fb6183756945115bf.mp3",
+      "hash": "c97b142fb6183756945115bf",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Too late."
+    },
+    "kael|Don't make that a sermon.": {
+      "file": "eff250d75f6961b278c2acd3.mp3",
+      "hash": "eff250d75f6961b278c2acd3",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Don't make that a sermon."
+    },
+    "kael|Good. I have taken up not dying beside a priestess.": {
+      "file": "e54fc4875a16493d050e5e7a.mp3",
+      "hash": "e54fc4875a16493d050e5e7a",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Good. I have taken up not dying beside a priestess."
+    },
+    "lyra|I'll scout. Count the times he almost says it.": {
+      "file": "6d6caaa90848b614816eb6c5.mp3",
+      "hash": "6d6caaa90848b614816eb6c5",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "I'll scout. Count the times he almost says it."
+    },
+    "thorn|Door.": {
+      "file": "2e84ef079bc7f64e99e4fcd2.mp3",
+      "hash": "2e84ef079bc7f64e99e4fcd2",
+      "speaker": "thorn",
+      "voice": "thorn",
+      "text": "Door."
+    },
+    "|End of the slice. The Throne waits.": {
+      "file": "35d4b01fb0f2ccf35bb8689d.mp3",
+      "hash": "35d4b01fb0f2ccf35bb8689d",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "End of the slice. The Throne waits."
+    },
+    "|The outer gates. The King is still sleeping. The rest of the road is years.": {
+      "file": "ebbbe0867a3b98f90b2f9595.mp3",
+      "hash": "ebbbe0867a3b98f90b2f9595",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "The outer gates. The King is still sleeping. The rest of the road is years."
+    }
+  }
+}

@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "bundle": "talk-herbalist",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|It doesn't sound stupid. It sounds like something we should look at.": {
+      "file": "8ca0efad7f85752af3211f57.mp3",
+      "hash": "8ca0efad7f85752af3211f57",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "It doesn't sound stupid. It sounds like something we should look at."
+    },
+    "herbalist|Bring me back whatever you find. I'll make something useful from it.": {
+      "file": "8b9b51f59a473bd21f148d9a.mp3",
+      "hash": "8b9b51f59a473bd21f148d9a",
+      "speaker": "herbalist",
+      "voice": "herbalist",
+      "text": "Bring me back whatever you find. I'll make something useful from it."
+    },
+    "herbalist|Tea is combat philosophy.": {
+      "file": "9eadd7c938e223da7e58bf6a.mp3",
+      "hash": "9eadd7c938e223da7e58bf6a",
+      "speaker": "herbalist",
+      "voice": "herbalist",
+      "text": "Tea is combat philosophy."
+    },
+    "herbalist|The canal margins have been walking. I know that sounds stupid. They have been walking.": {
+      "file": "5c6e9d6a1ca9d61d212f10c1.mp3",
+      "hash": "5c6e9d6a1ca9d61d212f10c1",
+      "speaker": "herbalist",
+      "voice": "herbalist",
+      "text": "The canal margins have been walking. I know that sounds stupid. They have been walking."
+    },
+    "kael|We bring her combat-philosophy and she makes tea.": {
+      "file": "ac7444ee78e1ac8479e117e4.mp3",
+      "hash": "ac7444ee78e1ac8479e117e4",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "We bring her combat-philosophy and she makes tea."
+    }
+  }
+}

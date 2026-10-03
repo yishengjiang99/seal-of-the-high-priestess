@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "bundle": "scene-post_hound",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|Welcome. You will not be scenery.": {
+      "file": "c227cea2bb0360babad967ee.mp3",
+      "hash": "c227cea2bb0360babad967ee",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Welcome. You will not be scenery."
+    },
+    "kael|Outer Court. I remember the gauntlets.": {
+      "file": "06441114267fff7fbc7f762b.mp3",
+      "hash": "06441114267fff7fbc7f762b",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Outer Court. I remember the gauntlets."
+    },
+    "thorn|Thorn. They left me as scenery. I'll tank. Don't unseal him on my account.": {
+      "file": "6e2c58c3c5b8da7af7c60705.mp3",
+      "hash": "6e2c58c3c5b8da7af7c60705",
+      "speaker": "thorn",
+      "voice": "thorn",
+      "text": "Thorn. They left me as scenery. I'll tank. Don't unseal him on my account."
+    },
+    "thorn|You remember everyone's metal. I'm coming. Someone has to be the door during the K-drama.": {
+      "file": "8b19a4e80f61269cc52fc151.mp3",
+      "hash": "8b19a4e80f61269cc52fc151",
+      "speaker": "thorn",
+      "voice": "thorn",
+      "text": "You remember everyone's metal. I'm coming. Someone has to be the door during the K-drama."
+    }
+  }
+}

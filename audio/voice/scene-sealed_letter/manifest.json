@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "bundle": "scene-sealed_letter",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "bard|Letter. Dead prince's wax. Buy it, or stare.": {
+      "file": "e1b2feb203e75d4067f414d9.mp3",
+      "hash": "e1b2feb203e75d4067f414d9",
+      "speaker": "bard",
+      "voice": "bard",
+      "text": "Letter. Dead prince's wax. Buy it, or stare."
+    },
+    "elara|Learn it. Use it. Not on yourself.": {
+      "file": "e9f6a82b413b04b3f6c0d8b7.mp3",
+      "hash": "e9f6a82b413b04b3f6c0d8b7",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Learn it. Use it. Not on yourself."
+    },
+    "kael|Give it.": {
+      "file": "d83d2f6f661b62267da0a3b1.mp3",
+      "hash": "d83d2f6f661b62267da0a3b1",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Give it."
+    },
+    "kael|Logged.": {
+      "file": "5bebf56c0135c66d464c5365.mp3",
+      "hash": "5bebf56c0135c66d464c5365",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Logged."
+    },
+    "kael|Poisoned Benediction. I saved it for my siblings. They used it first.": {
+      "file": "597691e68a04341ce6f55737.mp3",
+      "hash": "597691e68a04341ce6f55737",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Poisoned Benediction. I saved it for my siblings. They used it first."
+    },
+    "|His handwriting. A list of names he meant to save. None saved.": {
+      "file": "7ee2bb54b4c1aa979c369ce3.mp3",
+      "hash": "7ee2bb54b4c1aa979c369ce3",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "His handwriting. A list of names he meant to save. None saved."
+    }
+  }
+}

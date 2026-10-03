@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "bundle": "scene-courtyard_tablet",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|Because the tablet said. Not because you did.": {
+      "file": "b70aef550d255982b929f660.mp3",
+      "hash": "b70aef550d255982b929f660",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Because the tablet said. Not because you did."
+    },
+    "elara|Seal-script. It wants to be a circlet.": {
+      "file": "333cf5668f06b078bf6e8723.mp3",
+      "hash": "333cf5668f06b078bf6e8723",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Seal-script. It wants to be a circlet."
+    },
+    "kael|Wear it. If anyone wears my house, it should be you.": {
+      "file": "38b9c5b9f553156b174f507b.mp3",
+      "hash": "38b9c5b9f553156b174f507b",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Wear it. If anyone wears my house, it should be you."
+    }
+  }
+}

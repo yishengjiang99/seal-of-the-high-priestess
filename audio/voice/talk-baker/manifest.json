@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "bundle": "talk-baker",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "baker|Bread's cheap. Rumors aren't. The west gate smells like weather that wants a war.": {
+      "file": "a01d4432db6adae685739ff8.mp3",
+      "hash": "a01d4432db6adae685739ff8",
+      "speaker": "baker",
+      "voice": "baker",
+      "text": "Bread's cheap. Rumors aren't. The west gate smells like weather that wants a war."
+    },
+    "baker|I'm a polite man. Roll doesn't cost extra if you take it and leave fast.": {
+      "file": "131ec3edd53df2ad67736ea5.mp3",
+      "hash": "131ec3edd53df2ad67736ea5",
+      "speaker": "baker",
+      "voice": "baker",
+      "text": "I'm a polite man. Roll doesn't cost extra if you take it and leave fast."
+    },
+    "kael|Weather. That's a polite word for it.": {
+      "file": "bd9dff60eede06352c251722.mp3",
+      "hash": "bd9dff60eede06352c251722",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Weather. That's a polite word for it."
+    }
+  }
+}

@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "bundle": "scene-quest_herbalist",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|I have short answers.": {
+      "file": "847b2da2ec0a4e0a3f379731.mp3",
+      "hash": "847b2da2ec0a4e0a3f379731",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "I have short answers."
+    },
+    "elara|What happened to the last three?": {
+      "file": "39694de758a9057b311340e4.mp3",
+      "hash": "39694de758a9057b311340e4",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "What happened to the last three?"
+    },
+    "herbalist|Here. Canal-herb bundle. Use it before the pass , the mountain doesn't like people who arrive tired.": {
+      "file": "bf1770c866e065712253941c.mp3",
+      "hash": "bf1770c866e065712253941c",
+      "speaker": "herbalist",
+      "voice": "herbalist",
+      "text": "Here. Canal-herb bundle. Use it before the pass , the mountain doesn't like people who arrive tired."
+    },
+    "herbalist|That's better than the last three.": {
+      "file": "e333eabacbe5565b23f78333.mp3",
+      "hash": "e333eabacbe5565b23f78333",
+      "speaker": "herbalist",
+      "voice": "herbalist",
+      "text": "That's better than the last three."
+    },
+    "herbalist|They asked why. Plants don't have a short answer.": {
+      "file": "9f3c66c77b14b240d883083f.mp3",
+      "hash": "9f3c66c77b14b240d883083f",
+      "speaker": "herbalist",
+      "voice": "herbalist",
+      "text": "They asked why. Plants don't have a short answer."
+    },
+    "herbalist|You have correct answers at length. Different thing.": {
+      "file": "647009905dedc6c60eba50fd.mp3",
+      "hash": "647009905dedc6c60eba50fd",
+      "speaker": "herbalist",
+      "voice": "herbalist",
+      "text": "You have correct answers at length. Different thing."
+    },
+    "herbalist|You went into the margins. You're still here.": {
+      "file": "2e1646cda0551f92266a6d15.mp3",
+      "hash": "2e1646cda0551f92266a6d15",
+      "speaker": "herbalist",
+      "voice": "herbalist",
+      "text": "You went into the margins. You're still here."
+    },
+    "kael|Neither do priests.": {
+      "file": "96cc62c35f3b97fbaff145a7.mp3",
+      "hash": "96cc62c35f3b97fbaff145a7",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Neither do priests."
+    },
+    "lyra|The plants were moving. We did not ask them why. We asked them to stop.": {
+      "file": "d219cad8e73a8cc317365e32.mp3",
+      "hash": "d219cad8e73a8cc317365e32",
+      "speaker": "lyra",
+      "voice": "lyra",
+      "text": "The plants were moving. We did not ask them why. We asked them to stop."
+    }
+  }
+}
