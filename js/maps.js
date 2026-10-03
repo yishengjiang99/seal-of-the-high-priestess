@@ -518,7 +518,8 @@ window.MAPS = (() => {
 
     // Locate open spots for events, avoiding roads/water/mountains.
     function findOpen(nearX, nearY, radius) {
-      for (let t = 0; t < 400; t++) {
+      const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+      for (let tries = 0; tries < 400; tries++) {
         const x = clamp(nearX + ((rnd() * radius * 2) | 0) - radius, 4, W - 5);
         const y = clamp(nearY + ((rnd() * radius * 2) | 0) - radius, 4, H - 5);
         if ([t.GRASS, t.ASH, t.DIRT].includes(m.tiles[y][x])) return { x, y };
