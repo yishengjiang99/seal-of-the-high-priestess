@@ -44,6 +44,13 @@ jobs:
       - name: Voice pipeline unit tests
         run: npm run test:unit
 
+      - name: Voice clip coverage
+        run: |
+          node scripts/generate-voice.mjs --dry-run | tee voice-plan.txt
+          if ! grep -q " 0 to generate" voice-plan.txt; then
+            echo "::warning::Some dialogue lines have no clip yet; run the 'Generate voice clips' workflow (they play as text-only until then)."
+          fi
+
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
 
