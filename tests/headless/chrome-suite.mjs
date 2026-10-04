@@ -79,6 +79,7 @@ async function main() {
     assert.deepEqual(pageErrors, []);
 
     await voiceChecks(browser);
+    await gameplayChecks(browser);
 
     await browser.close();
   } finally {
@@ -116,7 +117,74 @@ async function voiceChecks(browser) {
   await page.close();
 }
 
-main().catch((err) => {
+// Regression checks for story flow and battle rules.
+async function gameplayChecks(browser) {
+  const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+  const errors = [];
+  page.on("pageerror", (e) => errors.push(e.message));
+  await page.route("**/audio/voice/**", (route) => route.fulfill({ status: 404, body: "" }));
+  await page.goto(`${BASE}/index.html`, { waitUntil: "networkidle" });
+  await page.waitForSelector("#screen-title:not(.hidden)");
+  const S = (fn, arg) => page.evaluate(fn, arg);
+
+  // Number keys pick dialogue choices.
+  await S(() => { window.SOTH.settings.voice = false; window.SOTH_NEW(); });
+  await page.waitForFunction(() => window.SOTH.state === "vn");
+  await S(() => { window.SOTH.vn.i = window.SCENES.intro.script.findIndex((l) => l.choices); window.SOTH.vn.shown = 1e9; });
+  await page.keyboard.press("KeyZ");
+  await page.waitForFunction(() => !!window.SOTH.vn?.choices);
+  await page.keyboard.press("Digit2");
+  assert.equal(await S(() => window.SOTH.flags.intro_fire), 1, "Digit2 picks the second choice");
+
+  // Map warps fade and replay the location banner.
+  await S(() => { window.SOTH.vn = null; window.SOTH.state = "map"; window.SOTH.mapId = "temple"; window.SOTH.px = 36.5 * 32; window.SOTH.py = 49.5 * 32; window.SOTH.dir = "down"; document.getElementById("map-hud").classList.remove("hidden"); });
+  await page.keyboard.down("ArrowDown");
+  try {
+    await page.waitForFunction(() => window.SOTH.mapId === "village", null, { timeout: 6000 });
+  } catch (e) {
+    throw new Error("warp did not fire: " + JSON.stringify(await S(() => ({ s: window.SOTH.state, m: window.SOTH.mapId, y: window.SOTH.py / 32, f: window.SOTH.fade, w: window.SOTH.warpLock }))));
+  } finally { await page.keyboard.up("ArrowDown"); }
+  await page.waitForFunction(() => !window.SOTH.fade, null, { timeout: 4000 });
+  assert.equal(await page.locator("#map-location").innerText(), "Lotus-Step Village");
+  assert.ok(await S(() => document.getElementById("map-location").classList.contains("enter")));
+
+  // Elara opens every fight at 40% Mana.
+  await S(() => window.SOTH_BATTLE("hollow_oak"));
+  const mana = await S(() => { const e = window.SOTH.battle.pals.find((p) => p.id === "elara"); return [e.res, e.maxRes]; });
+  assert.equal(mana[0], Math.round(mana[1] * 0.4));
+
+  // A Gassed hero cannot be swapped into the turn.
+  await page.waitForFunction(() => window.SOTH.battle && (window.SOTH.battle.phase === "cmd" || window.SOTH.battle.phase === "tutorial"), null, { timeout: 5000 });
+  if (await S(() => window.SOTH.battle.phase === "tutorial")) await page.keyboard.press("KeyZ");
+  await page.waitForFunction(() => window.SOTH.battle.phase === "cmd", null, { timeout: 5000 });
+  const swap = await S(() => {
+    const b = window.SOTH.battle;
+    const other = b.pals.find((p) => p !== b.actor);
+    other.gassed = 2;
+    const before = b.actor.id;
+    b.phase = "cmd";
+    document.querySelector(`.hero-tab[data-hero="${other.id}"]`).click();
+    return { before, after: b.actor.id };
+  });
+  assert.equal(swap.after, swap.before, "gassed hero stayed out of the turn");
+
+  // Beating the Unbetrayed leaves the party somewhere they can walk.
+  await S(() => {
+    window.SOTH.battle = null; window.SOTH.flags.unseal_choice = "no";
+    window.SOTH.settings.skipDialog = true;     // run straight to the scene's end
+    window.SOTH_SCENE("post_mirror");
+    window.SOTH.settings.skipDialog = false;
+  });
+  await page.waitForFunction(() => window.SOTH.state === "map" && window.SOTH.mapId === "throne", null, { timeout: 4000 });
+  const y0 = await S(() => window.SOTH.py);
+  await page.keyboard.down("ArrowDown"); await page.waitForTimeout(500); await page.keyboard.up("ArrowDown");
+  assert.ok(await S(() => window.SOTH.py) > y0 + 8, "party can move after the mirror fight");
+
+  assert.deepEqual(errors, []);
+  await page.close();
+}
+
+main().then(() => process.exit(process.exitCode || 0), (err) => {
   console.error(err);
-  process.exitCode = 1;
+  process.exit(1);
 });

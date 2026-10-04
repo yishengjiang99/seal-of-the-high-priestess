@@ -41,7 +41,7 @@ jobs:
           node --check scripts/generate-voice.mjs
           node --check scripts/voice-lib.mjs
 
-      - name: Voice pipeline unit tests
+      - name: Unit tests (voice pipeline + world integrity)
         run: npm run test:unit
 
       - name: Voice clip coverage
