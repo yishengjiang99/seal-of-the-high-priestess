@@ -1404,6 +1404,7 @@
     if (S.vista) return;
     if (ev.once) S.flags[ev.once] = 1;
     S.vista = { t: 0, dur: 6500, text: ev.text };
+    $("map-hud").classList.add("cinematic");
     playJingle("vista");
     if (ev.text) speakLine("", ev.text, "signs");
   }
@@ -1421,23 +1422,52 @@
     v.t += dt;
     S.moving = false;
     if (v.t > 1800 && v.t < v.dur - 1100 && pressed("ok")) v.t = v.dur - 1100;
-    if (v.t >= v.dur) S.vista = null;
+    if (v.t >= v.dur) { S.vista = null; $("map-hud").classList.remove("cinematic"); }
+  }
+  // Behind the map while the camera pulls back: dusk sky, ridges and the
+  // valley floor, so the world past the map's edge reads as distance.
+  function drawVistaBackdrop(c) {
+    c.save();
+    const g = c.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, "#1c1228"); g.addColorStop(0.3, "#4a2a3a"); g.addColorStop(0.44, "#a8603e");
+    g.addColorStop(0.5, "#3a2a36"); g.addColorStop(0.75, "#141626"); g.addColorStop(1, "#0a0c16");
+    c.fillStyle = g; c.fillRect(0, 0, W, H);
+    const ridge = (base, amp, f1, f2, col) => {
+      c.fillStyle = col; c.beginPath(); c.moveTo(0, H);
+      for (let x = 0; x <= W; x += 20) c.lineTo(x, base + Math.sin(x / f1) * amp + Math.sin(x / f2 + 1.3) * amp * 0.35);
+      c.lineTo(W, H); c.fill();
+    };
+    ridge(H * 0.42, 16, 170, 53, "rgba(40,26,44,0.9)");
+    ridge(H * 0.56, 26, 230, 71, "rgba(22,18,32,0.95)");
+    ridge(H * 0.74, 34, 300, 91, "rgba(12,12,22,1)");
+    // mist bands drifting across the valley
+    for (let i = 0; i < 3; i++) {
+      const y = H * (0.5 + i * 0.12) + Math.sin(S.anim / 2200 + i) * 6;
+      const m = c.createLinearGradient(0, y - 24, 0, y + 24);
+      m.addColorStop(0, "rgba(120,100,130,0)"); m.addColorStop(0.5, "rgba(120,100,130,0.16)"); m.addColorStop(1, "rgba(120,100,130,0)");
+      c.fillStyle = m; c.fillRect(0, y - 24, W, 48);
+    }
+    c.restore();
+  }
+  // The backdrop dissolves the upper map into open sky: the party stands on
+  // the lip of the pass with the lowlands beyond.
+  let vistaCanvas = null;
+  function drawVistaSky(k) {
+    if (!vistaCanvas) { vistaCanvas = document.createElement("canvas"); vistaCanvas.width = W; vistaCanvas.height = H; }
+    const vc = vistaCanvas.getContext("2d");
+    vc.globalCompositeOperation = "source-over";
+    vc.clearRect(0, 0, W, H);
+    vc.save(); drawVistaBackdrop(vc); vc.restore();
+    vc.globalCompositeOperation = "destination-in";
+    const mask = vc.createLinearGradient(0, 0, 0, H);
+    mask.addColorStop(0, "rgba(0,0,0,1)"); mask.addColorStop(0.5, "rgba(0,0,0,1)"); mask.addColorStop(0.7, "rgba(0,0,0,0)"); mask.addColorStop(1, "rgba(0,0,0,0)");
+    vc.fillStyle = mask; vc.fillRect(0, 0, W, H);
+    ctx.save(); ctx.globalAlpha = k; ctx.drawImage(vistaCanvas, 0, 0); ctx.restore();
   }
   function drawVistaOverlay() {
     const k = vistaEase();
     if (k <= 0) return;
     ctx.save();
-    // dusk sky bleeding in from the top
-    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.55);
-    sky.addColorStop(0, `rgba(40,24,52,${0.85 * k})`);
-    sky.addColorStop(0.6, `rgba(160,84,60,${0.35 * k})`);
-    sky.addColorStop(1, "rgba(160,84,60,0)");
-    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H * 0.55);
-    // far ridge
-    ctx.fillStyle = `rgba(14,10,18,${0.7 * k})`;
-    ctx.beginPath(); ctx.moveTo(0, H * 0.34);
-    for (let x = 0; x <= W; x += 80) ctx.lineTo(x, H * 0.3 + Math.sin(x / 140) * 18 + Math.sin(x / 47) * 6);
-    ctx.lineTo(W, H * 0.42); ctx.lineTo(0, H * 0.42); ctx.fill();
     // Meridia: a rumor of lamps on the horizon
     ctx.globalCompositeOperation = "lighter";
     for (let i = 0; i < 46; i++) {
@@ -1450,6 +1480,10 @@
       ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.3); ctx.fill();
     }
     ctx.globalCompositeOperation = "source-over";
+    // vignette pulls the eye to the lamps
+    const vg = ctx.createRadialGradient(W / 2, H * 0.42, H * 0.3, W / 2, H * 0.5, W * 0.7);
+    vg.addColorStop(0, "rgba(0,0,0,0)"); vg.addColorStop(1, `rgba(6,4,10,${0.75 * k})`);
+    ctx.fillStyle = vg; ctx.fillRect(0, 0, W, H);
     // letterbox + caption
     const bar = 74 * k;
     ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, bar); ctx.fillRect(0, H - bar, W, bar);
@@ -1973,13 +2007,16 @@
   function drawMap() {
     const m = map();
     // Vista pulls the camera back (zoom out) and drifts it down the slope.
+    // Never zoom past the map's own size, and keep the camera inside it, so
+    // the pull-back can't reveal the void beyond the map's edges.
     const vk = S.vista ? vistaEase() : 0;
-    const zoom = 1 - 0.5 * vk;
+    const minZoom = Math.min(1, Math.max(W / (m.w * T), H / (m.h * T)));
+    const zoom = Math.max(minZoom, 1 - 0.35 * vk);
     viewW = W / zoom; viewH = H / zoom;
     let ox = S.camX, oy = S.camY;
     if (vk > 0) {
-      ox = S.px - viewW / 2;
-      oy = S.py + vk * 6 * T - viewH / 2;
+      ox = clamp(S.px - viewW / 2, 0, Math.max(0, m.w * T - viewW));
+      oy = clamp(S.py - viewH * (0.5 + 0.24 * vk), 0, Math.max(0, m.h * T - viewH));
     }
     ctx.fillStyle = "#0a0c10";
     ctx.fillRect(0, 0, W, H);
@@ -2078,6 +2115,7 @@
     ctx.globalCompositeOperation = "source-over";
     ctx.restore();
     viewW = W; viewH = H;
+    if (vk > 0) drawVistaSky(vk);
     drawAmbient();
     if (vk > 0) drawVistaOverlay();
   }
@@ -2465,7 +2503,7 @@
         charging: 0, chargeSkill: null, gassed: 0, shield: 0, empowered: 0,
         mocked: 0, marked: 0, evade: 0, defUp: 0, taunt: 0, bleed: 0, stun: 0,
         berserk: 0, phase: 1, telegraph: null, turnN: 0, side: "e", alive: true,
-        intro: e.intro
+        intro: e.intro, slamBase: e.slamBase
       };
     });
     const boss = foes.find((f) => f.boss);
@@ -2496,7 +2534,7 @@
     S.tutorialsSeen[id] = 1;
     const text = {
       basic: { h: "Battle", p: "Turns are slow on purpose. Attack is rarely the whole plan. Watch the log. Z confirms, X backs out." },
-      boss1: { h: "The Heart of the Design", p: "Elara spends Mana to Shield, Heal, or Empower. Every fight starts with her font at 40%. Meditate restores Mana but takes her turn and leaves her vulnerable. At full Mana she can Break the High Seal: Kael goes Apeshit Berserk for 4 turns, then Elara is Gassed (cannot act) for 2. Many skills CHARGE (empty turns first) or GAS you afterward. The Hollow Oak telegraphs a root slam — Ward Elara before it lands. Empower Kael, then let him charge Hellcoil." },
+      boss1: { h: "The Heart of the Design", p: "Elara spends Mana to Shield, Heal, or Empower. Every fight starts with her font at 40%; it refills when her Wards absorb blows and when she is struck. Meditate restores Mana but takes her turn and leaves her vulnerable. At full Mana she can Break the High Seal: Kael goes Apeshit Berserk for 4 turns, then Elara is Gassed (cannot act) for 2. Many skills CHARGE (empty turns first) or GAS you afterward. The Hollow Oak telegraphs a root slam — Ward Elara before it lands. Empower Kael, then let him charge Hellcoil." },
       mark: { h: "Marks", p: "Lyra's Detect Weakness makes the next hits count. Interrupt telegraphs with Scout's Mercy if you earned it." },
       setup: { h: "Multi-step setup", p: "The Warden only drops its stance after two different allies have been Empowered this fight, and a charged skill connects. Do not spam. Build." },
       unseal_choice: { h: "The cost you chose", p: "If you unsealed Kael, spend the font and survive Elara's Gassed turns. If you kept the seal, Meditate, mark, and out-arithmetic the mirror." }
@@ -3198,12 +3236,25 @@
     const i = S.battle.foes.indexOf(b);
     return { x: 900 + (i % 2) * 132 - Math.floor(i / 2) * 70 + lunge + hit, y: 240 + i * 62 };
   }
+  // Devotion: Elara's font refills when her Wards drink a blow and when she
+  // is struck herself, so the High Seal can be earned inside a fight.
+  const DEVOTION_WARD = 0.3, DEVOTION_HURT = 0.15;
+  function devotion(amount) {
+    const b = S.battle;
+    const el = b && b.pals.find((p) => p.id === "elara" && p.alive);
+    if (!el || amount <= 0 || el.res >= el.maxRes) return;
+    const before = el.res;
+    el.res = Math.min(el.maxRes, el.res + amount);
+    if (el.res > before) floatTxt(el, "+" + (el.res - before) + " mana", "#9fd0ff");
+  }
   function damage(t, n, why) {
     if (t.shield > 0) {
       const use = Math.min(t.shield, n);
       t.shield -= use; n -= use;
+      if (t.side === "p" && why === "hit") devotion(Math.min(16, Math.round(use * DEVOTION_WARD)));
       if (n <= 0) { blog(`The Ward absorbs the blow.`); floatTxt(t, "ward", "#7eb8d4"); return; }
     }
+    if (t.side === "p" && t.id === "elara" && why === "hit") devotion(Math.min(12, Math.round(n * DEVOTION_HURT)));
     t.hp -= n;
     const heavy = n >= 45;
     t.flash = 240;
@@ -3258,7 +3309,7 @@
       if (tg.kind === "slam") {
         const t = pals.find((p) => p.id === tg.who) || pick();
         blog(`${e.name} slams ${t.name}!`);
-        damage(t, 38 + e.atk, "hit"); sfx("hit"); emit("hit", posOf(t).x, posOf(t).y, 10);
+        damage(t, (e.slamBase ?? 38) + e.atk, "hit"); sfx("hit"); emit("hit", posOf(t).x, posOf(t).y, 10);
       } else if (tg.kind === "aoe") {
         blog(`${e.name}'s prepared calamity lands.`);
         pals.forEach((p) => damage(p, 24 + Math.floor(e.atk * 0.6), "hit"));

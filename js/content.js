@@ -305,8 +305,8 @@ window.DATA = (() => {
     },
 
     hollow_oak: {
-      id: "hollow_oak", name: "Heartwood Hollow", boss: true, epithet: "The Guardian Nobody Thanked", maxHp: 460, atk: 22, def: 14, spd: 7, acc: 86,
-      color: "#3a5a30", phases: 2,
+      id: "hollow_oak", name: "Heartwood Hollow", boss: true, epithet: "The Guardian Nobody Thanked", maxHp: 420, atk: 20, def: 14, spd: 7, acc: 86,
+      color: "#3a5a30", phases: 2, slamBase: 30,
       ai: "hollow_oak",
       intro: "A tree that remembers being worshipped, and has not forgiven the silence."
     },
@@ -321,7 +321,7 @@ window.DATA = (() => {
       intro: "A guardian who was a man, then a vow, then a door that learned to hate hands."
     },
     mirror_shade: {
-      id: "mirror_shade", name: "The Unbetrayed", boss: true, epithet: "Kael, Unwounded", maxHp: 580, atk: 28, def: 14, spd: 15, acc: 94,
+      id: "mirror_shade", name: "The Unbetrayed", boss: true, epithet: "Kael, Unwounded", maxHp: 640, atk: 28, def: 14, spd: 15, acc: 94,
       color: "#c23b4a", phases: 2, ai: "mirror",
       intro: "Kael, if no one had ever loved him badly. It smiles with his mouth."
     },
