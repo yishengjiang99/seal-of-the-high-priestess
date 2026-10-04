@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "bundle": "battle",
+  "model_id": "eleven_multilingual_v2",
+  "output_format": "mp3_44100_64",
+  "lines": {
+    "elara|Silver Lotus, open. I release the High Seal!": {
+      "file": "91549edb107e2ca05fac3ea0.mp3",
+      "hash": "91549edb107e2ca05fac3ea0",
+      "speaker": "elara",
+      "voice": "elara",
+      "text": "Silver Lotus, open. I release the High Seal!"
+    },
+    "kael|Finally. Stand behind me, little saint.": {
+      "file": "0117369dd5360433113c359a.mp3",
+      "hash": "0117369dd5360433113c359a",
+      "speaker": "kael",
+      "voice": "kael",
+      "text": "Finally. Stand behind me, little saint."
+    }
+  }
+}

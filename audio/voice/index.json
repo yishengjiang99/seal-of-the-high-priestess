@@ -3,6 +3,11 @@
   "model_id": "eleven_multilingual_v2",
   "output_format": "mp3_44100_64",
   "bundles": {
+    "battle": {
+      "manifest": "battle/manifest.json",
+      "clips": 2,
+      "missing": 0
+    },
     "scene-ashen_camp": {
       "manifest": "scene-ashen_camp/manifest.json",
       "clips": 6,
