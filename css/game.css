@@ -771,3 +771,7 @@ body.high-contrast-icons .idle-card .row span:first-child { color: #fff7ca; text
 
 .flash-white { animation: fw 0.18s linear; }
 @keyframes fw { 50% { filter: brightness(2); } }
+
+/* Battle cut-ins (boss card, Seal break, victory) clear the HUD for a beat. */
+#battle-hud > * { transition: opacity 220ms ease; }
+#battle-hud.cinematic > * { opacity: 0 !important; pointer-events: none !important; }
