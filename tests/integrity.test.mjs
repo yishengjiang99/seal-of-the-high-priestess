@@ -17,14 +17,10 @@ const GAME = read("js/game.js");
 const SOLID = new Set(JSON.parse(/const SOLID = new Set\((\[[\d,\s]+\])\)/.exec(GAME)[1]));
 const WOOD = 6;
 
-// Content that exists but is intentionally not placed yet. Keep this empty
+// Content that exists but is intentionally not placed yet. Keep these empty
 // unless a follow-up commit is about to wire the entry in.
-const UNPLACED_SCENES = new Set([
-  // Camp chats + side scenes, wired to lotus altars in the next commit.
-  "leaving_temple", "midnight_watch", "sparring_scene", "lyra_backstory", "thorn_confession",
-  "kael_letter_alone", "elara_doubt", "dawn_banter", "post_meridia_skirmish", "quest_herbalist"
-]);
-const UNPLACED_BATTLES = new Set(["meridia_knights", "court_echoes", "court_knights", "forest_revenants"]);
+const UNPLACED_SCENES = new Set([]);
+const UNPLACED_BATTLES = new Set([]);
 
 function blockedByEvent(m, x, y) {
   return (m.events || []).some((ev) => (ev.type === "npc" || ev.type === "encounter") && ev.x === x && ev.y === y);
@@ -110,6 +106,13 @@ test("every scene and battle is reachable", () => {
   const orphanBattles = Object.keys(DATA.BATTLES).filter((b) => !battles.has(b) && !UNPLACED_BATTLES.has(b));
   assert.deepEqual(orphanScenes, [], "scenes nothing starts");
   assert.deepEqual(orphanBattles, [], "battles nothing starts");
+});
+
+test("camp chats point at real scenes and real story flags", () => {
+  for (const c of DATA.CAMP_CHATS) {
+    assert.ok(SCENES[c.scene], c.scene);
+    assert.ok(c.need.length && c.done, c.scene);
+  }
 });
 
 test("story gates: Meridia needs the Heartwood, the pass needs Lyra, the court needs the Warden", () => {

@@ -152,6 +152,57 @@
     if (master) master.gain.value = v;
     try { localStorage.setItem("soth_settings", JSON.stringify(S.settings)); } catch (e) {}
   }
+  let noiseBuf = null;
+  function noiseBurst(dur, gain, hp, at) {
+    if (!actx || S.settings.vol <= 0) return;
+    if (!noiseBuf) {
+      noiseBuf = actx.createBuffer(1, actx.sampleRate, actx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    const t = (at || actx.currentTime);
+    const src = actx.createBufferSource(), f = actx.createBiquadFilter(), g = actx.createGain();
+    src.buffer = noiseBuf; f.type = "highpass"; f.frequency.value = hp || 800;
+    src.connect(f); f.connect(g); g.connect(master);
+    g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    src.start(t); src.stop(t + dur + 0.02);
+  }
+  function tone(freq, dur, type, gain, at, slideTo) {
+    if (!actx || S.settings.vol <= 0) return;
+    const t = at || actx.currentTime;
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (slideTo) o.frequency.exponentialRampToValueAtTime(slideTo, t + dur);
+    o.connect(g); g.connect(master);
+    g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.start(t); o.stop(t + dur + 0.02);
+  }
+  // Layered one-shots for the bigger moments.
+  function bigSfx(kind) {
+    if (!actx || S.settings.vol <= 0) return;
+    const t = actx.currentTime;
+    if (kind === "chains") {
+      for (let i = 0; i < 7; i++) tone(1800 + Math.random() * 1400, 0.09, "square", 0.025, t + i * 0.07);
+      noiseBurst(0.5, 0.05, 3000, t);
+    } else if (kind === "snap") {
+      noiseBurst(0.7, 0.22, 400, t);
+      tone(70, 0.9, "sawtooth", 0.12, t, 32);
+      for (let i = 0; i < 5; i++) tone(2400 + i * 300, 0.25, "triangle", 0.03, t + 0.02 * i);
+    } else if (kind === "boom") {
+      tone(60, 1.2, "sine", 0.2, t, 30);
+      noiseBurst(0.6, 0.08, 200, t);
+    } else if (kind === "encounter") {
+      tone(220, 0.35, "sawtooth", 0.05, t, 880);
+      noiseBurst(0.3, 0.05, 2000, t + 0.05);
+    } else if (kind === "die") {
+      tone(500, 0.4, "triangle", 0.06, t, 90);
+      noiseBurst(0.35, 0.05, 1200, t);
+    } else if (kind === "bossdie") {
+      tone(300, 1.6, "sawtooth", 0.1, t, 40);
+      noiseBurst(1.4, 0.14, 300, t);
+      tone(60, 1.8, "sine", 0.18, t + 0.1, 28);
+    }
+  }
   function sfx(kind) {
     if (!actx || S.settings.vol <= 0) return;
     const o = actx.createOscillator();
@@ -192,13 +243,52 @@
     pass:   { x: 50, y: 70 }, ruins: { x: 44, y: 65 },
     throne: { x: 28, y: 18 }, battle: { x: 32, y: 32 }
   };
+  // The Seal leitmotif: rise to the minor seventh, fall back through the
+  // sixth and land on the fourth. Title, temple, boss, victory and ending all
+  // quote it so the theme reads as one score.
+  const SEAL = [0, 3, 7, 10, 8, 7, 3, 5];
+  const SEAL_MAJ = [0, 4, 7, 11, 9, 7, 4, 5];
   const TUNES = {
+    // Title: the motif alone, slow, with long rests.
+    title: {
+      base: 196, wave: "sine", tempo: 0.62,
+      melody: [0, null, 3, 7, null, 10, 8, null, 7, null, 3, 5, null, null, 3, null,
+               0, null, 3, 7, null, 12, 10, null, 8, 7, 5, 3, null, 0, null, null],
+      melodyMaj: null,
+      chords: [[0, 7, 12], [8, 12, 15], [5, 8, 12], [7, 10, 14]],
+      chordEvery: 8,
+      bass: [0, null, 0, null, 8, null, 7, null],
+      bassOct: 0.5
+    },
+    // Boss: the motif in driving eighths over a pedal, an octave answer.
+    boss: {
+      base: 110, wave: "sawtooth", tempo: 0.2,
+      melody: [12, 15, 19, 22, 20, 19, 15, 17, 12, 15, 19, 22, 24, 22, 20, 19,
+               0, 3, 7, 10, 8, 7, 3, 5, 6, 5, 3, 1, 0, null, 0, null],
+      melodyMaj: null,
+      chords: [[0, 7, 12], [8, 12, 15], [5, 8, 12], [6, 10, 13]],
+      chordEvery: 8,
+      bass: [0, 0, 12, 0, 0, 12, 0, 10],
+      bassOct: 0.5
+    },
+    // Ending: the motif in major, unhurried.
+    ending: {
+      base: 196, wave: "triangle", tempo: 0.7,
+      melody: [0, 4, 7, 11, 9, 7, 4, 5, null, 4, 2, 0, null, null, null, null,
+               0, 4, 7, 12, 11, 9, 7, 9, 11, 12, null, 7, 12, null, null, null],
+      melodyMaj: null,
+      chords: [[0, 4, 7], [9, 12, 16], [5, 9, 12], [7, 11, 14]],
+      chordEvery: 8,
+      bass: [0, null, 0, null, 9, null, 7, null],
+      bassOct: 0.5
+    },
     // Temple of the Priestess — minor: pentatonic A minor; major: A major pentatonic
     temple: {
       base: 220, wave: "sine", tempo: 1.4,
-      melody:    [0, 4, 7, 12, 9, 7, 4, 0, 2, 4, 7, 9, 12, 9, 7, null,
+      // Opens on the Seal motif, then answers in pentatonic.
+      melody:    [0, 3, 7, 10, 8, 7, 3, 5, 2, 4, 7, 9, 12, 9, 7, null,
                   0, 7, 12, 16, 14, 12, 7, 4, 2, 0, 4, 7, 9, 7, 4, null],
-      melodyMaj: [0, 4, 7, 9, 12, 9, 7, 4, 2, 4, 9, 11, 12, 11, 9, null,
+      melodyMaj: [0, 4, 7, 11, 9, 7, 4, 5, 2, 4, 9, 11, 12, 11, 9, null,
                   4, 7, 9, 12, 16, 14, 12, 9, 7, 4, 2, 4, 7, 9, 4, null],
       chords: [[0, 7, 12], [2, 9, 14], [4, 7, 11], [0, 7, 12]],
       chordEvery: 8,
@@ -294,6 +384,26 @@
   // modeBlend: 0 = fully minor, 1 = fully major; interpolates slowly
   let musicId = null, musicTimer = 0, musicStep = 0;
   let musicMode = "minor", modeBlend = 0, prevGoalDist = Infinity, idleTime = 0, musicFade = 1;
+  // One-shot phrases on top of (or instead of) the loop.
+  const JINGLES = {
+    // Victory: the motif in major, then a held tonic chord.
+    victory: { base: 262, wave: "square", step: 0.11, notes: [...SEAL_MAJ, 12, null, 12], hold: [0, 4, 7, 12] },
+    // Region sting: first half of the motif.
+    region: { base: 220, wave: "triangle", step: 0.2, notes: [0, 3, 7, 10], hold: [0, 7, 10] },
+    // Vista swell: the motif, slow, major.
+    vista: { base: 196, wave: "sine", step: 0.32, notes: SEAL_MAJ, hold: [0, 4, 7, 11] }
+  };
+  function playJingle(id) {
+    const j = JINGLES[id];
+    if (!j || !actx || S.settings.vol <= 0) return;
+    const t0 = actx.currentTime + 0.03;
+    j.notes.forEach((n, i) => {
+      if (n === null) return;
+      tone(j.base * Math.pow(2, n / 12), j.step * 1.8, j.wave, 0.05, t0 + i * j.step);
+    });
+    const th = t0 + j.notes.length * j.step;
+    (j.hold || []).forEach((n, i) => tone(j.base * Math.pow(2, n / 12), 1.6, i ? "sine" : j.wave, 0.04 - i * 0.006, th));
+  }
   function playMusic(id) {
     if (musicId === id) return;
     musicId = id;
@@ -336,7 +446,7 @@
     const step = musicStep++;
     const t = actx.currentTime;
     const minorArr = tune.melody;
-    const majorArr = tune.melodyMaj || tune.melody;
+    const majorArr = tune.melodyMaj || tune.melody;   // null = fixed mode
     // Use modeBlend to probabilistically select major vs minor step
     const useMajor = Math.random() < modeBlend;
     const melodyArr = useMajor ? majorArr : minorArr;
@@ -624,9 +734,7 @@
     if (k === "quest_tablet") grant("seal_circlet");
     if (k === "quest_canal") { /* skill flag */ }
     if (k === "quest_hound") grant("climber_charm");
-    if (k === "hollow_oak_dead" || k === "warden_dead" || k === "court_survived" || k === "unsealed_once") {
-      Object.values(S.chars).forEach(applyGrowth);
-    }
+    if (DATA.GROWTH[k]) Object.values(S.chars).forEach(applyGrowth);
     if (S.idle) {
       if (k === "hollow_oak_dead") {
         idleAdd("divine_favor", 8, true);
@@ -1115,7 +1223,7 @@
     $("btn-continue").disabled = !hasAnySave();
     S.titleIdx = 0;
     highlightTitle();
-    playMusic("temple");
+    playMusic("title");
   }
   function highlightTitle() {
     const btns = [...$("title-menu").querySelectorAll("button")].filter((b) => !b.disabled);
@@ -1255,6 +1363,104 @@
     void loc.offsetWidth;
     loc.classList.add("enter");
   }
+  // First visit to a region: a centred title card and the motif's opening.
+  function maybeRegionCard(id) {
+    const r = DATA.REGIONS && DATA.REGIONS[id];
+    if (!r || flagOn("region_" + id)) return;
+    S.flags["region_" + id] = 1;
+    S.regionCard = { name: r.name, sub: r.sub, t: 0, dur: 3600 };
+    playJingle("region");
+  }
+  function drawRegionCard(dt) {
+    const c = S.regionCard;
+    if (!c) return;
+    c.t += dt;
+    if (c.t >= c.dur) { S.regionCard = null; return; }
+    const a = Math.min(1, c.t / 500, (c.dur - c.t) / 700);
+    const k = Math.min(1, c.t / 900);
+    ctx.save();
+    ctx.globalAlpha = a;
+    const y = H * 0.2;
+    const g = ctx.createLinearGradient(0, y - 70, 0, y + 110);
+    g.addColorStop(0, "rgba(6,4,12,0)"); g.addColorStop(0.22, "rgba(6,4,12,0.8)"); g.addColorStop(0.88, "rgba(6,4,12,0.8)"); g.addColorStop(1, "rgba(6,4,12,0)");
+    ctx.fillStyle = g; ctx.fillRect(0, y - 70, W, 180);
+    ctx.fillStyle = "rgba(212,180,106,0.8)";
+    const lw = 360 * k;
+    ctx.fillRect(W / 2 - lw, y - 34, lw * 2, 1); ctx.fillRect(W / 2 - lw, y + 40, lw * 2, 1);
+    ctx.textAlign = "center";
+    ctx.font = "44px Iowan Old Style, Palatino, serif";
+    ctx.letterSpacing = (14 - 10 * k).toFixed(1) + "px";
+    ctx.fillStyle = "#f4ead4";
+    ctx.shadowColor = "rgba(0,0,0,0.9)"; ctx.shadowBlur = 16;
+    ctx.fillText(c.name, W / 2, y + 12);
+    ctx.letterSpacing = "2px";
+    ctx.font = "italic 18px Iowan Old Style, Palatino, serif";
+    ctx.fillStyle = "#d4b46a";
+    ctx.fillText(c.sub, W / 2, y + 66);
+    ctx.restore();
+  }
+  // Ashen Pass vista: the camera pulls back and Meridia's lamps show far below.
+  function startVista(ev) {
+    if (S.vista) return;
+    if (ev.once) S.flags[ev.once] = 1;
+    S.vista = { t: 0, dur: 6500, text: ev.text };
+    playJingle("vista");
+    if (ev.text) speakLine("", ev.text, "signs");
+  }
+  function vistaEase() {
+    const v = S.vista; if (!v) return 0;
+    const inT = 1800, outT = 1100;
+    let k;
+    if (v.t < inT) k = v.t / inT;
+    else if (v.t > v.dur - outT) k = Math.max(0, (v.dur - v.t) / outT);
+    else k = 1;
+    return k * k * (3 - 2 * k);
+  }
+  function updateVista(dt) {
+    const v = S.vista;
+    v.t += dt;
+    S.moving = false;
+    if (v.t > 1800 && v.t < v.dur - 1100 && pressed("ok")) v.t = v.dur - 1100;
+    if (v.t >= v.dur) S.vista = null;
+  }
+  function drawVistaOverlay() {
+    const k = vistaEase();
+    if (k <= 0) return;
+    ctx.save();
+    // dusk sky bleeding in from the top
+    const sky = ctx.createLinearGradient(0, 0, 0, H * 0.55);
+    sky.addColorStop(0, `rgba(40,24,52,${0.85 * k})`);
+    sky.addColorStop(0.6, `rgba(160,84,60,${0.35 * k})`);
+    sky.addColorStop(1, "rgba(160,84,60,0)");
+    ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H * 0.55);
+    // far ridge
+    ctx.fillStyle = `rgba(14,10,18,${0.7 * k})`;
+    ctx.beginPath(); ctx.moveTo(0, H * 0.34);
+    for (let x = 0; x <= W; x += 80) ctx.lineTo(x, H * 0.3 + Math.sin(x / 140) * 18 + Math.sin(x / 47) * 6);
+    ctx.lineTo(W, H * 0.42); ctx.lineTo(0, H * 0.42); ctx.fill();
+    // Meridia: a rumor of lamps on the horizon
+    ctx.globalCompositeOperation = "lighter";
+    for (let i = 0; i < 46; i++) {
+      const x = W * 0.5 + Math.sin(i * 12.9898) * 220 + Math.cos(i * 4.1) * 60;
+      const y = H * 0.4 + Math.abs(Math.sin(i * 78.233)) * 26;
+      const tw = 0.55 + Math.sin(S.anim / 260 + i * 1.7) * 0.45;
+      const r = 6 + (i % 4);
+      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+      g.addColorStop(0, `rgba(255,214,150,${0.9 * tw * k})`); g.addColorStop(1, "rgba(255,180,90,0)");
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, 6.3); ctx.fill();
+    }
+    ctx.globalCompositeOperation = "source-over";
+    // letterbox + caption
+    const bar = 74 * k;
+    ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, bar); ctx.fillRect(0, H - bar, W, bar);
+    if (S.vista && S.vista.text) {
+      ctx.globalAlpha = Math.min(1, k * 1.4);
+      ctx.textAlign = "center"; ctx.fillStyle = "#f4ead4";
+      ctx.font = "italic 24px Iowan Old Style, Palatino, serif";
+      ctx.fillText(S.vista.text, W / 2, H - bar / 2 + 8);
+    }
+    ctx.restore();
+  }
   // Screen fade: out to black, run the swap, back in. Input is held meanwhile.
   function fadeSwap(fn, outMs = 170, inMs = 320) {
     if (S.fade && S.fade.phase === "out") return;
@@ -1283,6 +1489,7 @@
     $("map-hud").classList.remove("hidden");
     showLocation(map().name);
     playMusic(map().music || "temple");
+    maybeRegionCard(S.mapId);
     S.camX = S.px - W / 2; S.camY = S.py - H / 2;
   }
   function footTile() { return { x: Math.floor(S.px / T), y: Math.floor(S.py / T) }; }
@@ -1312,7 +1519,21 @@
       S.camX = S.px - W / 2; S.camY = S.py - H / 2;
       showLocation(m.name, true);
       playMusic(m.music || "temple");
+      maybeRegionCard(ev.map);
     });
+  }
+  // Next optional camp chat the story has unlocked, if any.
+  function campChatAvailable() {
+    return (DATA.CAMP_CHATS || []).find((c) => c.need.every(flagOn) && !flagOn(c.done) && SCENES[c.scene]) || null;
+  }
+  function startCampChat(c) {
+    setFlag(c.done, 1);
+    toast("Camp: " + c.title);
+    startScene(c.scene);
+  }
+  function altarHere() {
+    const f = footTile(), fc = facingTile();
+    return [...eventsAt(f.x, f.y), ...eventsAt(fc.x, fc.y)].some((e) => e.type === "save");
   }
   function restAtAltar() {
     Object.values(S.chars).forEach((c) => {
@@ -1334,7 +1555,12 @@
     const list = [...eventsAt(f.x, f.y), ...eventsAt(here.x, here.y)];
     for (const ev of list) {
       if (ev.type === "warp") { tryWarp(ev); return; }
-      if (ev.type === "save") { restAtAltar(); openMenu(); return; }
+      if (ev.type === "save") {
+        restAtAltar(); openMenu();
+        const chat = campChatAvailable();
+        if (chat) toast(`Camp chat waiting: "${chat.title}". Press C at the altar.`);
+        return;
+      }
       if (ev.type === "chest") {
         if (flagOn("chest_" + ev.id) || flagOn(ev.id)) { toast("Empty."); return; }
         setFlag(ev.id, 1);
@@ -1352,7 +1578,7 @@
         if (ev.scene) { startScene(ev.scene); return; }
         if (ev.talk) { startTalk(ev.talk); return; }
       }
-      if (ev.type === "encounter") { startBattle(ev.battle); return; }
+      if (ev.type === "encounter") { bigSfx("encounter"); S.flash = 160; startBattle(ev.battle); return; }
       if (ev.type === "block") { talkSimple("", ev.text); return; }
     }
   }
@@ -1361,6 +1587,7 @@
     const f = footTile();
     for (const ev of eventsAt(f.x, f.y)) {
       if (ev.type === "warp") { tryWarp(ev); return; }
+      if (ev.type === "vista") { startVista(ev); return; }
       if (ev.type === "trigger") {
         if (ev.flagNeed && !flagOn(ev.flagNeed)) continue;
         if (ev.flagNeedOff && flagOn(ev.flagNeedOff)) continue;
@@ -1373,6 +1600,7 @@
   function updateMap(dt) {
     if (S.warpLock > 0) S.warpLock -= dt;
     if (S.fade) { S.moving = false; return; }
+    if (S.vista) { updateVista(dt); return; }
     const speed = (S.keys.cancel ? 2.8 : 1.7);
     let dx = 0, dy = 0;
     if (S.keys.up) dy -= 1;
@@ -1395,8 +1623,11 @@
     if (pressed("ok")) interact();
     if (pressed("menu")) openMenu();
     if (pressed("camp")) {
-      const f = footTile();
-      if (eventsAt(f.x, f.y).some((e) => e.type === "save")) { restAtAltar(); openMenu(); }
+      if (altarHere()) {
+        const chat = campChatAvailable();
+        restAtAltar();
+        if (chat) startCampChat(chat); else openMenu();
+      }
       else toast("Rest at a glowing lotus altar.");
     }
     stepTriggers();
@@ -1412,7 +1643,7 @@
   function tseed(x, y) { return ((x * 73856093) ^ (y * 19349663)) >>> 0; }
   function paintTile(type, x, y, ox, oy) {
     const px = Math.floor(x * T - ox), py = Math.floor(y * T - oy);
-    if (px < -T || py < -T || px > W || py > H) return;
+    if (px < -T || py < -T || px > viewW || py > viewH) return;
     const night = !map().indoors && (S.time < 6 || S.time >= 20);
     ctx.save();
     ctx.translate(px, py);
@@ -1738,15 +1969,26 @@
     ctx.restore();
   }
 
+  let viewW = W, viewH = H;
   function drawMap() {
     const m = map();
-    const ox = S.camX, oy = S.camY;
-    const x0 = Math.max(0, Math.floor(ox / T) - 1);
-    const y0 = Math.max(0, Math.floor(oy / T) - 1);
-    const x1 = Math.min(m.w, x0 + Math.ceil(W / T) + 2);
-    const y1 = Math.min(m.h, y0 + Math.ceil(H / T) + 2);
+    // Vista pulls the camera back (zoom out) and drifts it down the slope.
+    const vk = S.vista ? vistaEase() : 0;
+    const zoom = 1 - 0.5 * vk;
+    viewW = W / zoom; viewH = H / zoom;
+    let ox = S.camX, oy = S.camY;
+    if (vk > 0) {
+      ox = S.px - viewW / 2;
+      oy = S.py + vk * 6 * T - viewH / 2;
+    }
     ctx.fillStyle = "#0a0c10";
     ctx.fillRect(0, 0, W, H);
+    ctx.save();
+    if (zoom !== 1) ctx.scale(zoom, zoom);
+    const x0 = Math.max(0, Math.floor(ox / T) - 1);
+    const y0 = Math.max(0, Math.floor(oy / T) - 1);
+    const x1 = Math.min(m.w, x0 + Math.ceil(viewW / T) + 2);
+    const y1 = Math.min(m.h, y0 + Math.ceil(viewH / T) + 2);
     for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) paintTile(m.tiles[y][x], x, y, ox, oy);
     // south-facing drop shadows like FF6 / RPG Maker objects
     ctx.fillStyle = "rgba(0,0,0,0.22)";
@@ -1761,6 +2003,7 @@
       }
     }
     // events
+    const chatReady = !!campChatAvailable();
     for (const ev of m.events) {
       if (!eventVisible(ev)) continue;
       const px = ev.x * T - ox + 16, py = ev.y * T - oy + 16;
@@ -1772,6 +2015,15 @@
         const g = ctx.createRadialGradient(px, py, 2, px, py, 18 + Math.sin(S.anim / 200) * 4);
         g.addColorStop(0, "rgba(180,220,255,0.7)"); g.addColorStop(1, "rgba(180,220,255,0)");
         ctx.fillStyle = g; ctx.beginPath(); ctx.arc(px, py, 18, 0, 6.3); ctx.fill();
+        if (chatReady) {
+          // a waiting camp chat: speech bubble over the altar
+          const by = py - 30 + Math.sin(S.anim / 260) * 3;
+          ctx.fillStyle = "rgba(244,234,212,0.95)";
+          ctx.beginPath(); ctx.ellipse(px, by, 12, 9, 0, 0, 6.3); ctx.fill();
+          ctx.beginPath(); ctx.moveTo(px - 3, by + 7); ctx.lineTo(px + 2, by + 13); ctx.lineTo(px + 4, by + 6); ctx.fill();
+          ctx.fillStyle = "#3a2a48";
+          for (let d = -1; d <= 1; d++) { ctx.beginPath(); ctx.arc(px + d * 5, by, 1.6, 0, 6.3); ctx.fill(); }
+        }
       }
       if (ev.type === "npc") {
         drawChibi(px, py, ev.id.includes("lyra") ? "lyra" : ev.id === "thorn" ? "thorn" : "npc", "down", false);
@@ -1780,11 +2032,20 @@
         ctx.fillStyle = "#1a1020"; ctx.fillRect(px - 3, py - 14, 2, 2); ctx.fillRect(px + 1, py - 14, 2, 2);
       }
       if (ev.type === "encounter") {
-        ctx.fillStyle = "rgba(180,40,50,0.35)";
-        ctx.beginPath(); ctx.arc(px, py, 16, 0, 6.3); ctx.fill();
+        // Visible, hand-placed foes: a pulsing aura and a shadowed figure.
+        const boss = DATA.BATTLES[ev.battle]?.enemies.some((e) => DATA.ENEMIES[e]?.boss);
+        const pr = (boss ? 22 : 16) + Math.sin(S.anim / 240 + ev.x) * 3;
+        const ag = ctx.createRadialGradient(px, py, 2, px, py, pr);
+        ag.addColorStop(0, "rgba(200,40,60,0.55)"); ag.addColorStop(1, "rgba(120,20,40,0)");
+        ctx.fillStyle = ag; ctx.beginPath(); ctx.arc(px, py, pr, 0, 6.3); ctx.fill();
+        const bob = Math.sin(S.anim / 380 + ev.y) * 2;
+        ctx.fillStyle = "rgba(14,8,20,0.92)";
+        ctx.beginPath(); ctx.ellipse(px, py - 4 + bob, boss ? 11 : 8, boss ? 15 : 11, 0, 0, 6.3); ctx.fill();
+        ctx.fillStyle = "#ff5a6a";
+        ctx.fillRect(px - 4, py - 8 + bob, 2, 2); ctx.fillRect(px + 2, py - 8 + bob, 2, 2);
         ctx.fillStyle = "#e8c070";
         ctx.font = "10px serif"; ctx.textAlign = "center";
-        ctx.fillText(ev.name || "!", px, py - 18);
+        ctx.fillText(ev.name || "!", px, py - (boss ? 26 : 20));
       }
     }
     // followers then leader
@@ -1797,7 +2058,7 @@
     drawChibi(S.px - ox, S.py - oy, party[0], S.dir, S.moving, S.chars.elara?.armor === "veil_first_oath" ? "gold" : null);
     // night veil
     const dark = m.indoors ? 0 : nightAlpha();
-    if (dark) { ctx.fillStyle = `rgba(8,10,28,${dark})`; ctx.fillRect(0, 0, W, H); }
+    if (dark) { ctx.fillStyle = `rgba(8,10,28,${dark})`; ctx.fillRect(0, 0, viewW, viewH); }
     // Lamps bloom through the veil — the canal town should feel lit, not tinted.
     const lampPow = 0.22 + dark * 1.5;
     ctx.globalCompositeOperation = "lighter";
@@ -1815,7 +2076,10 @@
       }
     }
     ctx.globalCompositeOperation = "source-over";
+    ctx.restore();
+    viewW = W; viewH = H;
     drawAmbient();
+    if (vk > 0) drawVistaOverlay();
   }
   function nightAlpha() {
     const h = S.time;
@@ -1844,6 +2108,8 @@
   function startScene(idOrObj) {
     const sc = typeof idOrObj === "string" ? SCENES[idOrObj] : idOrObj;
     if (!sc) return;
+    if (sc.music) playMusic(sc.music);
+    else if (!musicId && MAPS[S.mapId]) playMusic(MAPS[S.mapId].music || "temple");
     if (S.settings.voice) loadVoiceBundle(voiceBundleFor(sc));
     S.vn = {
       def: sc, i: 0, shown: 0, full: "", waiting: false, choices: null, choiceIdx: 0, done: false, autoT: 0
@@ -2165,6 +2431,7 @@
       hideAllScreens();
       $("screen-credits").classList.remove("hidden");
       S.state = "credits";
+      playMusic("ending");
     } else if (end.type === "choice_then_battle") {
       startBattle("mirror_shade");
     }
@@ -2201,21 +2468,27 @@
         intro: e.intro
       };
     });
+    const boss = foes.find((f) => f.boss);
     S.battle = {
       id, def, pals, foes, log: [], queue: [], qi: 0, phase: "intro",
       menu: "cmd", cmdIdx: 0, skillList: [], targetList: [],
       wait: 700, actor: null, empoweredThisFight: new Set(),
-      unsealedHere: false, healingRainAim: null
+      unsealedHere: false, healingRainAim: null,
+      // Intro: iris in, and for bosses a title card before anyone moves.
+      introT: 0, introDur: boss ? 2600 : 700, boss: boss || null,
+      pendingTutorial: def.tutorial || null
     };
     S.state = "battle";
+    S.cine = null; S.hitStop = 0;
     hideAllScreens();
     $("battle-hud").classList.remove("hidden");
-    playMusic("battle");
+    $("battle-hud").classList.add("cinematic");
+    playMusic(boss ? "boss" : "battle");
+    if (boss) bigSfx("boom");
+    if (S.settings.voice) loadVoiceBundle("battle");
     const intro = foes[0].intro || "Enemies draw near.";
     blog(intro);
-    if (def.tutorial) maybeTutorial(def.tutorial);
     rebuildBattleQueue();
-    S.battle.wait = 600 / S.settings.battleSpeed;
     renderBattleHUD();
   }
   function maybeTutorial(id) {
@@ -2257,7 +2530,11 @@
   function nextActor() {
     const b = S.battle;
     if (!aliveP().length) { loseBattle(); return; }
-    if (!aliveE().length) { winBattle(); return; }
+    if (!aliveE().length) {
+      // let the last foe finish dissolving before the victory beat
+      if (b.foes.some((f) => f.dieT > 0)) { b.phase = "wait"; b.wait = 120; return; }
+      beginVictory(); return;
+    }
     // extra berserk action: Kael acts twice
     if (b._extraKael) { b._extraKael = false; }
     let guard = 0;
@@ -2678,9 +2955,8 @@
       user.gassed += sk.selfGassed || 2;
       S.flags.unsealed_once = 1;
       S.battle.unsealedHere = true;
-      S.shake = 14;
       blog("Elara spends the entire font. The High Seal cracks. Kael goes apeshit.");
-      emit("unseal", 640, 320, 40);
+      startUnsealCine();
       return;
     }
     const targets = [];
@@ -2736,6 +3012,180 @@
       }
     }
   }
+  // Break the High Seal: the battle freezes for a cut-in. Darken, red band,
+  // Kael's portrait slides in bound in gold chains; the chains snap.
+  function startUnsealCine() {
+    S.cine = { kind: "unseal", t: 0, dur: 2700, snapped: false };
+    $("battle-hud").classList.add("cinematic");
+    bigSfx("chains");
+    const [e, k] = VL ? VL.BATTLE_LINES : [];
+    if (e) speakLine(e[0], e[1], "battle", () => { if (k) speakLine(k[0], k[1], "battle"); });
+  }
+  function updateCine(dt) {
+    const c = S.cine;
+    c.t += dt;
+    if (!c.snapped && c.t >= 1100) {
+      c.snapped = true;
+      bigSfx("snap");
+      S.flash = 300; S.shake = 22;
+    }
+    if (c.t >= c.dur) {
+      S.cine = null;
+      $("battle-hud").classList.remove("cinematic");
+      S.shake = 16;
+      emit("unseal", 640, 320, 50);
+      renderBattleHUD();
+    }
+  }
+  function drawChain(x0, y0, x1, y1, offset, alpha) {
+    const len = Math.hypot(x1 - x0, y1 - y0), n = Math.floor(len / 22);
+    const ang = Math.atan2(y1 - y0, x1 - x0);
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.strokeStyle = "#e8c070"; ctx.lineWidth = 4;
+    for (let i = 0; i < n; i++) {
+      const f = i / n;
+      ctx.save();
+      ctx.translate(x0 + (x1 - x0) * f + Math.cos(ang) * offset, y0 + (y1 - y0) * f + Math.sin(ang) * offset);
+      ctx.rotate(ang + (i % 2 ? Math.PI / 2 : 0) * 0.0);
+      ctx.beginPath(); ctx.ellipse(0, 0, 11, i % 2 ? 3 : 6, i % 2 ? 0 : 0, 0, 6.3); ctx.stroke();
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+  function drawCine() {
+    const c = S.cine;
+    if (!c) return;
+    const t = c.t;
+    const a = Math.min(1, t / 250, (c.dur - t) / 400);
+    ctx.save();
+    ctx.fillStyle = `rgba(0,0,0,${0.78 * a})`;
+    ctx.fillRect(0, 0, W, H);
+    // red diagonal band sweeping in from the right
+    const slide = Math.min(1, t / 380);
+    const bx = W * (1 - slide);
+    ctx.globalAlpha = a;
+    const band = ctx.createLinearGradient(0, 0, W, 0);
+    band.addColorStop(0, "rgba(120,10,24,0.0)"); band.addColorStop(0.35, "rgba(180,20,40,0.85)"); band.addColorStop(1, "rgba(60,0,10,0.95)");
+    ctx.fillStyle = band;
+    ctx.beginPath();
+    ctx.moveTo(bx + W * 0.18, 0); ctx.lineTo(bx + W * 1.2, 0); ctx.lineTo(bx + W * 1.0, H); ctx.lineTo(bx - W * 0.02, H);
+    ctx.fill();
+    // Kael portrait in a skewed frame
+    const img = S.images.kael;
+    const pk = Math.min(1, Math.max(0, (t - 120) / 420));
+    const ease = 1 - Math.pow(1 - pk, 3);
+    const fx = W + 40 - (W * 0.56) * ease;
+    if (img) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(fx + 90, 40); ctx.lineTo(fx + 560, 40); ctx.lineTo(fx + 470, H - 40); ctx.lineTo(fx, H - 40);
+      ctx.clip();
+      const ih = H - 80, iw = ih * (img.width / img.height);
+      ctx.drawImage(img, fx + 280 - iw / 2, 40, iw, ih);
+      ctx.fillStyle = "rgba(200,30,40,0.22)"; ctx.fillRect(fx, 40, 560, H - 80);
+      ctx.restore();
+      ctx.strokeStyle = "rgba(232,192,112,0.9)"; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(fx + 90, 40); ctx.lineTo(fx + 560, 40); ctx.lineTo(fx + 470, H - 40); ctx.lineTo(fx, H - 40); ctx.closePath(); ctx.stroke();
+    }
+    // chains across him, snapping at 1.1s and flying apart
+    const cx = fx + 280, cy = H / 2;
+    if (!c.snapped) {
+      const jitter = Math.sin(t / 30) * 2;
+      drawChain(cx - 300, cy - 200 + jitter, cx + 300, cy + 200, 0, a);
+      drawChain(cx - 300, cy + 200, cx + 300, cy - 200 + jitter, 0, a);
+    } else {
+      const d = (t - 1100) * 0.6, fa = Math.max(0, 1 - (t - 1100) / 700);
+      drawChain(cx - 300 - d, cy - 200 - d * 0.6, cx - 20 - d, cy - 10 - d * 0.6, 0, fa);
+      drawChain(cx + 20 + d, cy + 10 + d * 0.6, cx + 300 + d, cy + 200 + d * 0.6, 0, fa);
+      drawChain(cx - 300 - d, cy + 200 + d * 0.6, cx - 20 - d, cy + 10 + d * 0.6, 0, fa);
+      drawChain(cx + 20 + d, cy - 10 - d * 0.6, cx + 300 + d, cy - 200 - d * 0.6, 0, fa);
+    }
+    // title
+    const tk = Math.min(1, Math.max(0, (t - 300) / 350));
+    ctx.globalAlpha = a * tk;
+    ctx.textAlign = "left";
+    ctx.font = "italic 700 56px Iowan Old Style, Palatino, serif";
+    ctx.fillStyle = "#f4ead4"; ctx.shadowColor = "rgba(0,0,0,0.9)"; ctx.shadowBlur = 18;
+    ctx.fillText("BREAK THE", 70 - (1 - tk) * 80, H * 0.4);
+    ctx.fillStyle = "#ff5a5a";
+    ctx.fillText("HIGH SEAL", 110 - (1 - tk) * 120, H * 0.4 + 62);
+    ctx.shadowBlur = 0;
+    ctx.font = "18px Avenir Next, Segoe UI, sans-serif";
+    ctx.fillStyle = "#e8c070";
+    ctx.fillText("Kael: Apeshit Berserk, 4 turns  ·  Elara: Gassed, 2 turns", 114, H * 0.4 + 104);
+    ctx.restore();
+  }
+  // Battle intro: iris opening from black, plus the boss title card.
+  function drawBattleIntro() {
+    const b = S.battle;
+    if (!b || b.introT >= b.introDur + 400) return;
+    const t = b.introT;
+    ctx.save();
+    const ir = Math.min(1, t / 520);
+    if (ir < 1) {
+      const r = Math.hypot(W, H) * 0.5 * (ir * ir);
+      ctx.fillStyle = "#000";
+      ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.arc(W / 2, H * 0.45, Math.max(1, r), 0, 6.3, true); ctx.fill("evenodd");
+      // shard streaks for the cut in
+      ctx.strokeStyle = `rgba(255,240,220,${0.5 * (1 - ir)})`; ctx.lineWidth = 2;
+      for (let i = 0; i < 10; i++) {
+        const ang = i * 0.628 + 0.3;
+        ctx.beginPath(); ctx.moveTo(W / 2 + Math.cos(ang) * r, H * 0.45 + Math.sin(ang) * r);
+        ctx.lineTo(W / 2 + Math.cos(ang) * (r + 200), H * 0.45 + Math.sin(ang) * (r + 200)); ctx.stroke();
+      }
+    }
+    if (b.boss && t > 350) {
+      const ct = t - 350, dur = b.introDur - 350;
+      const ca = Math.min(1, ct / 300, Math.max(0, (dur + 300 - ct) / 500));
+      const bar = 80 * Math.min(1, ct / 300);
+      ctx.fillStyle = "#000"; ctx.fillRect(0, 0, W, bar); ctx.fillRect(0, H - bar, W, bar);
+      ctx.globalAlpha = ca;
+      const y = H * 0.66;
+      const band = ctx.createLinearGradient(0, y - 60, 0, y + 60);
+      band.addColorStop(0, "rgba(90,10,20,0)"); band.addColorStop(0.5, "rgba(110,14,28,0.85)"); band.addColorStop(1, "rgba(90,10,20,0)");
+      ctx.fillStyle = band; ctx.fillRect(0, y - 60, W, 120);
+      const k = Math.min(1, ct / 600);
+      ctx.fillStyle = "rgba(232,192,112,0.9)";
+      ctx.fillRect(W / 2 - 420 * k, y - 38, 840 * k, 2); ctx.fillRect(W / 2 - 420 * k, y + 44, 840 * k, 2);
+      ctx.textAlign = "center";
+      ctx.font = "600 50px Iowan Old Style, Palatino, serif";
+      ctx.letterSpacing = (18 - 14 * k).toFixed(1) + "px";
+      ctx.fillStyle = "#f8e6b8"; ctx.shadowColor = "rgba(0,0,0,0.9)"; ctx.shadowBlur = 20;
+      ctx.fillText(b.boss.name.toUpperCase(), W / 2, y + 14);
+      ctx.letterSpacing = "1px"; ctx.shadowBlur = 0;
+      const ep = DATA.ENEMIES[b.boss.tid]?.epithet;
+      if (ep) {
+        ctx.font = "italic 19px Iowan Old Style, Palatino, serif";
+        ctx.fillStyle = "#f4ead4";
+        ctx.fillText(ep, W / 2, y + 74);
+      }
+    }
+    ctx.restore();
+  }
+  function drawVictory() {
+    const b = S.battle;
+    if (!b || b.phase !== "victory") return;
+    const t = b.vT;
+    const a = Math.min(1, t / 300);
+    ctx.save();
+    ctx.globalAlpha = a;
+    const y = H * 0.3;
+    const g = ctx.createLinearGradient(0, y - 60, 0, y + 60);
+    g.addColorStop(0, "rgba(10,8,4,0)"); g.addColorStop(0.5, "rgba(30,22,6,0.7)"); g.addColorStop(1, "rgba(10,8,4,0)");
+    ctx.fillStyle = g; ctx.fillRect(0, y - 60, W, 120);
+    const k = Math.min(1, t / 500);
+    ctx.textAlign = "center";
+    ctx.font = "600 60px Iowan Old Style, Palatino, serif";
+    ctx.letterSpacing = (24 - 16 * k).toFixed(1) + "px";
+    ctx.fillStyle = "#f8e0a0"; ctx.shadowColor = "rgba(255,200,90,0.6)"; ctx.shadowBlur = 24;
+    ctx.fillText("VICTORY", W / 2, y + 20);
+    ctx.letterSpacing = "1px"; ctx.shadowBlur = 0;
+    ctx.font = "italic 17px Iowan Old Style, Palatino, serif";
+    ctx.fillStyle = "#f4ead4";
+    ctx.fillText("No experience. The story moves.", W / 2, y + 54);
+    ctx.restore();
+  }
   function posOf(b) {
     const dirSign = b.side === "p" ? 1 : -1;
     const lunge = (b.lunge || 0) * dirSign;
@@ -2758,12 +3208,22 @@
     const heavy = n >= 45;
     t.flash = 240;
     floatTxt(t, "−" + n, why === "heal" ? "#7bc47b" : heavy ? "#ffd27a" : "#ff9aa4", heavy);
-    S.shake = Math.min(14, S.shake + (heavy ? 9 : 4));
+    // Shake and hit-stop scale with the damage dealt.
+    const sev = Math.min(1, n / 90);
+    S.shake = Math.min(26, S.shake + 2 + sev * 16);
+    S.hitStop = Math.max(S.hitStop || 0, why === "bleed" ? 0 : 45 + sev * 85);
     if (heavy) S.flash = 140;
     if (t.hp <= 0) {
       t.hp = 0; t.alive = false;
       blog(`${t.name} falls.`);
       sfx("hurt");
+      if (t.side === "e") {
+        t.dieMax = t.dieT = t.boss ? 1700 : 700;
+        const p = posOf(t);
+        emit("death", p.x, p.y, t.boss ? 70 : 26);
+        if (t.boss) { S.flash = 420; S.shake = 28; S.hitStop = 280; bigSfx("bossdie"); }
+        else bigSfx("die");
+      }
     }
   }
   function floatTxt(t, text, color, big) {
@@ -2773,8 +3233,9 @@
   function emit(kind, x, y, n) {
     for (let i = 0; i < n; i++) {
       S.particles.push({
-        x, y, vx: rnd(-1.4, 1.4), vy: rnd(-2.2, -0.2),
-        life: 700 + Math.random() * 400, kind, t: 0
+        x: x + (kind === "death" ? rnd(-40, 40) : 0), y: y + (kind === "death" ? rnd(-50, 30) : 0),
+        vx: rnd(-1.4, 1.4), vy: rnd(-2.2, -0.2),
+        life: (kind === "death" ? 1100 : 700) + Math.random() * 400, kind, t: 0
       });
     }
   }
@@ -2858,6 +3319,20 @@
       if (x.lunge > 0) x.lunge = Math.max(0, x.lunge - dt * 0.12);
       if (x.flash > 0) x.flash -= dt;
     }
+    for (const x of b.foes) if (x.dieT > 0) x.dieT -= dt;
+    if (b.introT < b.introDur + 400) b.introT += dt; // lets the card fade out after the intro
+    if (b.phase === "intro") {
+      if (b.introT < b.introDur) return;
+      $("battle-hud").classList.remove("cinematic");
+      if (b.pendingTutorial) { const t = b.pendingTutorial; b.pendingTutorial = null; maybeTutorial(t); if (b.phase === "tutorial") return; }
+      b.phase = "wait"; b.wait = 250 / S.settings.battleSpeed;
+      return;
+    }
+    if (b.phase === "victory") {
+      b.vT += dt;
+      if (b.vT > 3000 || (b.vT > 1000 && pressed("ok"))) winBattle();
+      return;
+    }
     if (b.phase === "tutorial") {
       if (pressed("ok") || pressed("cancel")) { $("battle-tutorial").classList.add("hidden"); b.phase = "wait"; b.wait = 300; }
       return;
@@ -2876,15 +3351,25 @@
       }
       return;
     }
-    if (b.phase === "wait" || b.phase === "intro") {
+    if (b.phase === "wait") {
       b.wait -= dt;
       if (b.wait <= 0) nextActor();
     }
   }
+  // Victory beat: fanfare, party hop, a held moment before the story resumes.
+  function beginVictory() {
+    const b = S.battle;
+    b.phase = "victory"; b.vT = 0; b.actor = null;
+    musicId = null;
+    playJingle("victory");
+    blog("Victory.");
+    $("battle-hud").classList.add("cinematic");
+    renderBattleHUD();
+  }
   function winBattle() {
     const b = S.battle;
     cancelHealingRainAim(true);
-    blog("Victory. No experience. The story moves.");
+    $("battle-hud").classList.remove("cinematic");
     if (S.idle) idleSimulate(120, "battleReward");
     if (b.def.victoryFlag) setFlag(b.def.victoryFlag, 1);
     const post = b.def.post;
@@ -2901,6 +3386,7 @@
   }
   function loseBattle() {
     cancelHealingRainAim(true);
+    $("battle-hud").classList.remove("cinematic");
     S.state = "gameover";
     hideAllScreens();
     $("screen-over").classList.remove("hidden");
@@ -2937,7 +3423,7 @@
     ctx.beginPath(); ctx.ellipse(640, 520, 460, 84, 0, 0, 6.3); ctx.fill();
     drawAmbient();
     b.foes.forEach((e, i) => {
-      if (!e.alive) return;
+      if (!e.alive && !(e.dieT > 0)) return;
       const p = posOf(e);
       drawFoe(p.x, p.y, e);
     });
@@ -2953,7 +3439,8 @@
         ctx.lineWidth = 2;
         ctx.beginPath(); ctx.arc(pos.x, pos.y, r, 0, 6.3); ctx.stroke(); ctx.lineWidth = 1;
       }
-      drawChibi(pos.x, pos.y, p.id, "right", p.charging > 0, null, 3.1);
+      const hop = b.phase === "victory" && p.alive ? -Math.abs(Math.sin(b.vT / 170 + b.pals.indexOf(p) * 0.9)) * 16 : 0;
+      drawChibi(pos.x, pos.y + hop, p.id, "right", p.charging > 0 || hop < 0, null, 3.1);
       if (p.flash > 0) {
         ctx.globalAlpha = Math.min(0.7, p.flash / 300);
         ctx.fillStyle = "#fff";
@@ -2997,6 +3484,9 @@
       ctx.beginPath(); ctx.arc(x, y, 6, 0, 6.3); ctx.fill();
       ctx.lineWidth = 1;
     }
+    drawVictory();
+    drawBattleIntro();
+    drawCine();
   }
   // Parallax silhouettes so each arena reads as a place, not a gradient.
   function drawBattleSkyline(bg) {
@@ -3043,7 +3533,16 @@
   function drawFoe(x, y, e) {
     const k = e.boss ? 2.2 : 1.5;                 // enemies read at party scale
     const float = Math.sin(S.anim / 700 + x) * (e.boss ? 3 : 5);
+    // Death: white-out, stretch upward and dissolve.
+    const dying = !e.alive && e.dieT > 0;
+    const dk = dying ? 1 - e.dieT / e.dieMax : 0;
     ctx.save(); ctx.translate(x, y);
+    if (dying) {
+      ctx.globalAlpha = Math.max(0, 1 - dk * 1.1);
+      ctx.translate(0, -dk * 30);
+      ctx.scale(1 - dk * 0.35, 1 + dk * 0.6);
+      e.flash = Math.max(e.flash || 0, 320 * (1 - dk));
+    }
     ctx.fillStyle = "rgba(0,0,0,0.35)";
     ctx.beginPath(); ctx.ellipse(0, 44 * (e.boss ? 1.6 : 1.2), (e.boss ? 62 : 26), 12, 0, 0, 6.3); ctx.fill();
     ctx.save();
@@ -3098,6 +3597,7 @@
       ctx.globalAlpha = 1;
     }
     ctx.restore();                                 // end scaled art
+    if (dying) { ctx.restore(); return; }
     if (e.telegraph) {
       // Wind-up ring: the tell the whole fight is built around.
       const r = (e.boss ? 132 : 74) + Math.sin(S.anim / 160) * 5;
@@ -3500,6 +4000,7 @@
       if (p.kind === "petal") { ctx.fillStyle = "#e8d0e8"; ctx.beginPath(); ctx.ellipse(p.x, p.y, 4, 2, p.t / 200, 0, 6.3); ctx.fill(); }
       else if (p.kind === "flame" || p.kind === "unseal") { ctx.fillStyle = p.kind === "unseal" ? "#ff6a40" : "#e04030"; ctx.fillRect(p.x, p.y, 3, 6); }
       else if (p.kind === "heal") { ctx.fillStyle = "#80e0a0"; ctx.fillRect(p.x, p.y, 3, 8); }
+      else if (p.kind === "death") { ctx.fillStyle = p.t % 300 < 150 ? "#fff6e0" : "#e8c070"; ctx.fillRect(p.x, p.y, 3, 3); p.vy -= 0.004; }
       else { ctx.fillStyle = "#f4ead4"; ctx.fillRect(p.x, p.y, 2, 2); }
     }
     ctx.globalAlpha = 1;
@@ -3591,7 +4092,10 @@
       }
       updateVn(dt);
     } else if (S.state === "battle") {
-      updateBattle(dt); drawBattle();
+      if (S.cine) updateCine(dt);
+      else if (S.hitStop > 0) S.hitStop -= dt;    // freeze-frame on impact
+      else updateBattle(dt);
+      drawBattle();
     } else if (S.state === "menu") {
       drawMap();
       if (pressed("menu") || pressed("cancel")) closeMenu();
@@ -3600,6 +4104,7 @@
     }
     drawFx();
     ctx.restore();
+    if (S.state === "map" || S.state === "vn" || S.state === "menu") drawRegionCard(dt);
     const fa = fadeAlpha();
     if (fa > 0) { ctx.fillStyle = `rgba(4,3,8,${fa.toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
     S.mouse.click = false;

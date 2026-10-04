@@ -11,6 +11,12 @@
     ["kael", "Little saint. Your sermons are as dull as your fashion sense."]
   ];
 
+  // Battle barks: the Break-the-Seal cinematic plays these in order.
+  const BATTLE_LINES = [
+    ["elara", "Silver Lotus, open. I release the High Seal!"],
+    ["kael", "Finally. Stand behind me, little saint."]
+  ];
+
   // Text as it is sent to TTS (and as it is keyed in a manifest).
   function cleanSpeech(text) {
     return String(text || "")
@@ -63,13 +69,14 @@
     }
     for (const id of Object.keys(MAPS || {})) {
       for (const ev of (MAPS[id] && MAPS[id].events) || []) {
-        if ((ev.type === "sign" || ev.type === "block") && ev.text) add("signs", "", ev.text);
+        if ((ev.type === "sign" || ev.type === "block" || ev.type === "vista") && ev.text) add("signs", "", ev.text);
       }
     }
     for (const [sp, t] of PREVIEW_LINES) add("ui", sp, t);
+    for (const [sp, t] of BATTLE_LINES) add("battle", sp, t);
     return out;
   }
 
-  const api = { PREVIEW_LINES, cleanSpeech, isSpeakable, lineKey, bundleForScene, collectBundles };
+  const api = { PREVIEW_LINES, BATTLE_LINES, cleanSpeech, isSpeakable, lineKey, bundleForScene, collectBundles };
   root.VoiceLines = api;
 })(typeof window !== "undefined" ? window : globalThis);

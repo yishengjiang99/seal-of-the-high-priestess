@@ -39,7 +39,8 @@ window.SCENES = {
       { s: "elara", e: "neutral", t: "Village first. Mock the acolytes and I add laundry to the seal." },
       { s: "kael", e: "smirk", t: "White and blue. The palette of people who have never been interesting at a funeral." },
       { s: "elara", e: "blush", t: "Vestments. They are supposed to be clean." },
-      { s: "kael", e: "smirk", t: "Then you are succeeding at the wrong thing." }
+      { s: "kael", e: "smirk", t: "Then you are succeeding at the wrong thing." },
+      { set: { left_temple: 1 } }
     ]
   },
 
@@ -286,7 +287,7 @@ window.SCENES = {
   },
 
   slice_ending: {
-    id: "slice_ending", bg: "throne", mode: "vn",
+    id: "slice_ending", bg: "throne", mode: "vn", music: "ending",
     onEnd: { type: "credits" },
     script: [
       { s: "", t: "The outer gates. The King is still sleeping. The rest of the road is years." },
@@ -371,7 +372,8 @@ window.SCENES = {
       { s: "elara", e: "neutral", t: "I'm glad you moved." },
       { s: "lyra", t: "Don't make it sentimental. I'm going the same direction. It was efficient." },
       { s: "elara", e: "blush", t: "Noted." },
-      { s: "lyra", t: "...I'm glad you asked." }
+      { s: "lyra", t: "...I'm glad you asked." },
+      { set: { lyra_backstory_done: 1 } }
     ]
   },
 
@@ -412,7 +414,8 @@ window.SCENES = {
       { s: "kael", e: "smirk", t: "He always wrote too much." },
       { s: "elara", e: "blush", t: "That was the right amount." },
       { s: "kael", e: "soft", t: "...yes." },
-      { s: "", t: "He folds the letter. Keeps it." }
+      { s: "", t: "He folds the letter. Keeps it." },
+      { set: { kael_letter_read: 1 } }
     ]
   },
 
@@ -432,7 +435,8 @@ window.SCENES = {
       { s: "thorn", t: "That too." },
       { s: "elara", e: "determined", t: "...okay." },
       { s: "kael", e: "soft", t: "Okay." },
-      { s: "", t: "She walks first. Because she always does." }
+      { s: "", t: "She walks first. Because she always does." },
+      { set: { elara_doubt_done: 1 } }
     ]
   },
 
@@ -453,7 +457,8 @@ window.SCENES = {
       { s: "thorn", t: "Deal." },
       { s: "kael", e: "smirk", t: "The deal is insulting. I accept." },
       { s: "elara", e: "blush", t: "Good morning." },
-      { s: "", t: "The morning is good. It holds its breath and stays that way." }
+      { s: "", t: "The morning is good. It holds its breath and stays that way." },
+      { set: { dawn_banter_done: 1 } }
     ]
   },
 
@@ -465,7 +470,7 @@ window.SCENES = {
       { s: "kael", e: "serious", t: "Court remnants. Someone is calling old armor with fresh orders." },
       { s: "elara", e: "neutral", t: "Does someone know we're coming?" },
       { s: "kael", e: "smirk", t: "Someone has always known. That's the point of the gate." },
-      { s: "thorn", t: "Then we stop being subtle." },
+      { cond: { thorn_joined: 1 }, s: "thorn", t: "Then we stop being subtle." },
       { s: "lyra", t: "We were never subtle. We had a demon prince and a priestess walking a canal street." },
       { s: "elara", e: "determined", t: "The pass, then. No detours." },
       { s: "kael", e: "soft", t: "No detours." }

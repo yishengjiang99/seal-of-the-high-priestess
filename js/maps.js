@@ -227,6 +227,7 @@ window.MAPS = (() => {
         { type: "npc", x: 20, y: 28, id: "monk", name: "Night Monk", hue: "#c0c8d8", talk: "monk" },
         { type: "npc", x: 48, y: 28, id: "pilgrim", name: "Pilgrim", hue: "#d4c0a0", talk: "pilgrim" },
         { type: "save", x: 36, y: 38 },
+        { type: "trigger", x: 1, y: 47, w: 70, h: 1, scene: "leaving_temple", flagNeedOff: "left_temple" },
         { type: "chest", x: 7, y: 8, id: "chest_temple_petal", item: "lotus_petal" },
         { type: "chest", x: 64, y: 8, id: "chest_temple_lore", item: "lore_west" },
         { type: "chest", x: 8, y: 42, id: "chest_temple_salve", item: "sealing_salve" },
@@ -394,6 +395,7 @@ window.MAPS = (() => {
         { type: "chest", x: 90, y: 57, id: "chest_forest_salve", item: "sealing_salve" },
         { type: "encounter", x: 36, y: 22, battle: "tutorial_wisp", once: "tut_wisp", appearIfOff: "tut_wisp" },
         { type: "encounter", x: 20, y: 64, battle: "forest_vines", once: "forest_skirmish", appearIfOff: "forest_skirmish" },
+        { type: "encounter", x: 73, y: 55, battle: "forest_revenants", once: "forest_revenants", appearIfOff: "forest_revenants", name: "Pale Revenants" },
         { type: "encounter", x: 52, y: 74, battle: "hollow_oak", once: "hollow_oak_dead", appearIfOff: "hollow_oak_dead", name: "Heartwood Hollow" },
         { type: "sign", x: 50, y: 8, text: "The trees whisper. Do not answer unless you can afford the reply." },
         { type: "sign", x: 76, y: 34, text: "A stone with no name. Someone loved a scout here." },
@@ -664,6 +666,8 @@ window.MAPS = (() => {
         { type: "npc", x: 20, y: 28, id: "guard", name: "Gate Guard", hue: "#8090a8", talk: "guard" },
         { type: "npc", x: 80, y: 28, id: "guard2", name: "Canal Watch", hue: "#8090a8", talk: "guard" },
         { type: "save", x: 54, y: 27 },
+        { type: "encounter", x: 69, y: 40, battle: "meridia_knights", once: "meridia_knights", appearIf: "lyra_joined", appearIfOff: "meridia_knights", name: "Shadow Knights" },
+        { type: "npc", x: 40, y: 55, id: "herbalist", name: "Herbalist", hue: "#9ac08a", scene: "quest_herbalist", appearIf: "forest_skirmish", appearIfOff: "quest_herbalist" },
         { type: "chest", x: 12, y: 68, id: "chest_meridia_petal", item: "lotus_petal" },
         { type: "chest", x: 96, y: 68, id: "chest_meridia_salve", item: "sealing_salve" },
         { type: "sign", x: 54, y: 16, text: "MERIDIA — By canal and lantern, we keep the west at a polite distance." },
@@ -728,7 +732,8 @@ window.MAPS = (() => {
         { type: "warp", x: 20, y: 107, map: "ruins", tx: 40, ty: 4, dir: "down", needFlag: "warden_dead" },
         { type: "warp", x: 21, y: 107, map: "ruins", tx: 40, ty: 4, dir: "down", needFlag: "warden_dead" },
         { type: "sign", x: 20, y: 8, text: "ASHEN PASS — The mountain keeps what the war would not bury." },
-        { type: "sign", x: 28, y: 66, text: "Look down. Meridia is a rumor of lamps." }
+        { type: "sign", x: 28, y: 66, text: "Look down. Meridia is a rumor of lamps." },
+        { type: "vista", x: 2, y: 62, w: 36, h: 1, once: "vista_ashen", text: "Look down. Meridia is a rumor of lamps." }
       ]
     });
   })();
@@ -779,6 +784,8 @@ window.MAPS = (() => {
         { type: "warp", x: 45, y: 3, map: "ashen", tx: 20, ty: 105, dir: "up" },
         { type: "save", x: 16, y: 16 },
         { type: "save", x: 44, y: 38 },
+        { type: "encounter", x: 26, y: 30, battle: "court_echoes", once: "court_echoes", appearIfOff: "court_echoes", name: "Court Echoes" },
+        { type: "encounter", x: 62, y: 37, battle: "court_knights", once: "court_knights", appearIfOff: "court_knights", name: "Court Knights" },
         { type: "npc", x: 44, y: 28, id: "echo", name: "Court Echo", hue: "#8a4a6a", talk: "echo" },
         { type: "npc", x: 34, y: 38, id: "tablet", name: "Courtyard Tablet", hue: "#d4b46a", scene: "courtyard_tablet" },
         { type: "chest", x: 70, y: 14, id: "chest_ruins_lore", item: "lore_kael" },
