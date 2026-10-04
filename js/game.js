@@ -65,6 +65,14 @@
     Digit3: "macro3", Numpad3: "macro3"
   };
   window.addEventListener("keydown", (e) => {
+    // Number keys pick the matching dialogue choice ("1." / "2." on screen).
+    const num = /^(?:Digit|Numpad)([1-9])$/.exec(e.code);
+    if (num && S.state === "vn" && S.vn?.choices) {
+      const i = +num[1] - 1;
+      if (i < S.vn.choices.length) { S.vn.choiceIdx = i; pickChoice(); }
+      e.preventDefault();
+      return;
+    }
     const k = KEYMAP[e.code] || KEYMAP[e.key];
     if (!k) return;
     if (k === "macro3") {
@@ -1221,7 +1229,6 @@
       if (ev.type === "npc" || ev.type === "encounter") {
         if (tx === ev.x && ty === ev.y) return true;
       }
-      if (ev.type === "block" && flagOn(ev.needFlagOff ? null : "_") ) {}
       if (ev.type === "block" && ev.needFlagOff && !flagOn(ev.needFlagOff) && tx === ev.x && ty === ev.y) return true;
     }
     return false;
@@ -1239,17 +1246,42 @@
       return tx >= ev.x && tx < ev.x + w && ty >= ev.y && ty < ev.y + h;
     });
   }
+  // Location banner: replays its slide-in whenever the area changes.
+  function showLocation(name, force) {
+    const loc = $("map-location");
+    if (!force && loc.textContent === name) return;
+    loc.textContent = name;
+    loc.classList.remove("enter");
+    void loc.offsetWidth;
+    loc.classList.add("enter");
+  }
+  // Screen fade: out to black, run the swap, back in. Input is held meanwhile.
+  function fadeSwap(fn, outMs = 170, inMs = 320) {
+    if (S.fade && S.fade.phase === "out") return;
+    S.fade = { phase: "out", t: 0, outMs, inMs, fn };
+  }
+  function updateFade(dt) {
+    const f = S.fade;
+    if (!f) return;
+    f.t += dt;
+    if (f.phase === "out" && f.t >= f.outMs) {
+      f.phase = "in"; f.t = 0;
+      const fn = f.fn; f.fn = null;
+      if (fn) fn();
+    } else if (f.phase === "in" && f.t >= f.inMs) {
+      S.fade = null;
+    }
+  }
+  function fadeAlpha() {
+    const f = S.fade;
+    if (!f) return 0;
+    return f.phase === "out" ? Math.min(1, f.t / f.outMs) : Math.max(0, 1 - f.t / f.inMs);
+  }
   function enterMap() {
     S.state = "map";
     hideAllScreens();
     $("map-hud").classList.remove("hidden");
-    const loc = $("map-location");
-    if (loc.textContent !== map().name) {
-      loc.textContent = map().name;
-      loc.classList.remove("enter");
-      void loc.offsetWidth;
-      loc.classList.add("enter");
-    }
+    showLocation(map().name);
     playMusic(map().music || "temple");
     S.camX = S.px - W / 2; S.camY = S.py - H / 2;
   }
@@ -1267,16 +1299,20 @@
       return;
     }
     const m = MAPS[ev.map];
-    if (!m) return;
-    S.mapId = ev.map;
-    S.px = (ev.tx + 0.5) * T;
-    S.py = (ev.ty + 0.5) * T;
-    if (ev.dir) S.dir = ev.dir;
-    S.trail = [];
-    S.warpLock = 400;
-    $("map-location").textContent = m.name;
-    playMusic(m.music || "temple");
+    if (!m || S.fade) return;
+    S.warpLock = 600;
     sfx("ok");
+    fadeSwap(() => {
+      S.mapId = ev.map;
+      S.px = (ev.tx + 0.5) * T;
+      S.py = (ev.ty + 0.5) * T;
+      if (ev.dir) S.dir = ev.dir;
+      S.trail = [];
+      S.warpLock = 400;
+      S.camX = S.px - W / 2; S.camY = S.py - H / 2;
+      showLocation(m.name, true);
+      playMusic(m.music || "temple");
+    });
   }
   function restAtAltar() {
     Object.values(S.chars).forEach((c) => {
@@ -1336,6 +1372,7 @@
 
   function updateMap(dt) {
     if (S.warpLock > 0) S.warpLock -= dt;
+    if (S.fade) { S.moving = false; return; }
     const speed = (S.keys.cancel ? 2.8 : 1.7);
     let dx = 0, dy = 0;
     if (S.keys.up) dy -= 1;
@@ -2136,6 +2173,7 @@
   // ---------------------------------------------------------------------------
   // Battle — LinaHua's loop
   // ---------------------------------------------------------------------------
+  const ELARA_START_MANA = 0.4;
   function startBattle(id) {
     const def = DATA.BATTLES[id];
     if (!def) return;
@@ -2146,7 +2184,9 @@
         charging: 0, chargeSkill: null, chargeTarget: null, gassed: 0,
         shield: 0, empowered: 0, mocked: 0, marked: 0, evade: 0, defUp: 0,
         taunt: 0, bleed: 0, stun: 0, meditating: false, vulnerable: false,
-        side: "p", alive: c.hp > 0
+        side: "p", alive: c.hp > 0,
+        // The font starts low every fight: Breaking the Seal is earned in-battle.
+        ...(pid === "elara" ? { res: Math.round(c.maxRes * ELARA_START_MANA) } : {})
       });
     });
     const foes = def.enemies.map((eid, i) => {
@@ -2183,7 +2223,7 @@
     S.tutorialsSeen[id] = 1;
     const text = {
       basic: { h: "Battle", p: "Turns are slow on purpose. Attack is rarely the whole plan. Watch the log. Z confirms, X backs out." },
-      boss1: { h: "The Heart of the Design", p: "Elara spends Mana to Shield, Heal, or Empower. Meditate restores Mana but takes her turn and leaves her vulnerable. At full Mana she can Break the High Seal: Kael goes Apeshit Berserk for 4 turns, then Elara is Gassed (cannot act) for 2. Many skills CHARGE (empty turns first) or GAS you afterward. The Hollow Oak telegraphs a root slam — Ward Elara before it lands. Empower Kael, then let him charge Hellcoil." },
+      boss1: { h: "The Heart of the Design", p: "Elara spends Mana to Shield, Heal, or Empower. Every fight starts with her font at 40%. Meditate restores Mana but takes her turn and leaves her vulnerable. At full Mana she can Break the High Seal: Kael goes Apeshit Berserk for 4 turns, then Elara is Gassed (cannot act) for 2. Many skills CHARGE (empty turns first) or GAS you afterward. The Hollow Oak telegraphs a root slam — Ward Elara before it lands. Empower Kael, then let him charge Hellcoil." },
       mark: { h: "Marks", p: "Lyra's Detect Weakness makes the next hits count. Interrupt telegraphs with Scout's Mercy if you earned it." },
       setup: { h: "Multi-step setup", p: "The Warden only drops its stance after two different allies have been Empowered this fight, and a charged skill connects. Do not spam. Build." },
       unseal_choice: { h: "The cost you chose", p: "If you unsealed Kael, spend the font and survive Elara's Gassed turns. If you kept the seal, Meditate, mark, and out-arithmetic the mirror." }
@@ -2225,7 +2265,7 @@
       if (b.qi >= b.queue.length) rebuildBattleQueue();
       const a = b.queue[b.qi++];
       if (!a || !a.alive) continue;
-      tickBattler(a);
+      if (a._skipTick) a._skipTick = false; else tickBattler(a);
       if (!a.alive) continue;
       if (a.stun > 0) { a.stun--; blog(`${a.name} is stunned.`); continue; }
       if (a.charging > 0) {
@@ -2250,7 +2290,7 @@
         a.res = Math.min(a.maxRes, a.res + amt);
         a.meditating = false; a.vulnerable = false;
         blog(`${a.name} completes her meditation. Mana ${a.res}/${a.maxRes}.`);
-        emit("petal", 280, 420, 18);
+        emit("petal", 280, 300, 18);
         sfx("heal");
         b.wait = 700 / S.settings.battleSpeed; b.phase = "wait"; b.actor = a;
         renderBattleHUD(); return;
@@ -2305,7 +2345,7 @@
     if (e.ai === "warden" && pct <= 0.66 && e.phase === 1) {
       e.phase = 2; blog("The Warden's stance deepens. Empower two different allies, then land a charged blow.");
     }
-    if (e.ai === "warden" && pct <= 0.33 && e.phase === 2) {
+    if (e.ai === "warden" && pct <= 0.33 && (e.phase === 2 || e.phase === 2.5)) {
       e.phase = 3; blog("The gate remembers fire. Stand together or burn apart.");
     }
   }
@@ -2347,11 +2387,12 @@
     heroSel.innerHTML = b.pals.map((p) => {
       const isActive = b.actor && b.actor.id === p.id;
       const dead = !p.alive;
-      return `<button class="hero-tab${isActive ? " active" : ""}${dead ? " dead" : ""}" data-hero="${p.id}" title="${p.name}${dead ? " (down)" : ""}">
+      const blocked = !dead && !isActive && !swappableHero(p);
+      return `<button class="hero-tab${isActive ? " active" : ""}${dead ? " dead" : ""}${blocked ? " blocked" : ""}" data-hero="${p.id}" title="${p.name}${dead ? " (down)" : blocked ? " (cannot act now)" : ""}">
         ${p.name}
       </button>`;
     }).join("");
-    heroSel.querySelectorAll(".hero-tab:not(.dead)").forEach((btn) => {
+    heroSel.querySelectorAll(".hero-tab:not(.dead):not(.blocked)").forEach((btn) => {
       btn.addEventListener("click", () => selectHero(btn.dataset.hero));
     });
 
@@ -2430,11 +2471,31 @@
       btn.addEventListener("click", () => { b.cmdIdx = +btn.dataset.i; confirmCmd(); });
     });
   }
+  // A hero can take the current turn only if they could act right now and
+  // still have their own turn pending this round. The two swap slots, so
+  // nobody gains or loses an action.
+  function heroCanAct(p) {
+    return !!p && p.alive && !(p.gassed > 0) && !(p.charging > 0) && !p.meditating && !(p.stun > 0);
+  }
+  function swappableHero(p) {
+    const b = S.battle;
+    if (!b || !heroCanAct(p)) return false;
+    if (p === b.actor) return true;
+    const j = b.queue.indexOf(p);
+    return j >= b.qi;
+  }
   function selectHero(id) {
     const b = S.battle;
-    if (!b || b.phase !== "cmd") return;
-    const pal = b.pals.find((p) => p.id === id && p.alive);
-    if (!pal) return;
+    if (!b || b.phase !== "cmd" || b.healingRainAim) return;
+    const pal = b.pals.find((p) => p.id === id);
+    if (!pal || pal === b.actor) return;
+    if (!swappableHero(pal)) { sfx("cancel"); toast(`${pal.name} cannot act right now.`); return; }
+    const cur = b.qi - 1, j = b.queue.indexOf(pal);
+    if (cur >= 0 && b.queue[cur] === b.actor) {
+      b.queue[cur] = pal; b.queue[j] = b.actor;
+      b.actor._skipTick = true;   // already ticked for this turn
+    }
+    tickBattler(pal);
     b.actor = pal;
     b.menu = "cmd"; b.cmdIdx = 0;
     sfx("ok");
@@ -2565,7 +2626,7 @@
     const it = DATA.ITEMS[id];
     if (!it) return;
     it._uses = (it._uses ?? it.uses) - 1;
-    if (it.heal) { t.hp = Math.min(t.maxHp, t.hp + it.heal); blog(`${it.name} restores ${it.heal} HP to ${t.name}.`); sfx("heal"); emit("heal", 300, 400, 10); }
+    if (it.heal) { t.hp = Math.min(t.maxHp, t.hp + it.heal); blog(`${it.name} restores ${it.heal} HP to ${t.name}.`); sfx("heal"); emit("heal", 300, 300, 10); }
     if (it.res) {
       const el = S.battle.pals.find((p) => p.id === "elara");
       if (el) { el.res = Math.min(el.maxRes, el.res + it.res); blog(`Mana +${it.res}.`); }
@@ -2600,7 +2661,7 @@
   }
   function resolveSkill(user, sk, target) {
     sfx(sk.fx === "heal" || sk.fx === "petal" ? "heal" : sk.fx === "unseal" ? "unseal" : "hit");
-    const origin = user.side === "p" ? { x: 280, y: 400 } : { x: 900, y: 280 };
+    const origin = user.side === "p" ? { x: 280, y: 300 } : { x: 900, y: 260 };
     emit(sk.fx || "hit", origin.x, origin.y, 12);
     if (sk.meditate) {
       user.res = Math.min(user.maxRes, user.res + sk.meditate);
@@ -2681,10 +2742,11 @@
     const hit = b.flash > 0 ? Math.sin(b.flash / 18) * (b.flash / 60) : 0;
     if (b.side === "p") {
       const i = S.battle.pals.indexOf(b);
-      return { x: 236 + i * 62 + lunge + hit, y: 322 + i * 62 };   // FF-style diagonal line
+      // FF-style diagonal line, kept above the hero tabs even with four.
+      return { x: 236 + i * 62 + lunge + hit, y: 222 + i * 48 };
     }
     const i = S.battle.foes.indexOf(b);
-    return { x: 900 + (i % 2) * 132 - Math.floor(i / 2) * 70 + lunge + hit, y: 296 + i * 74 };
+    return { x: 900 + (i % 2) * 132 - Math.floor(i / 2) * 70 + lunge + hit, y: 240 + i * 62 };
   }
   function damage(t, n, why) {
     if (t.shield > 0) {
@@ -2729,12 +2791,6 @@
       if (elara && (elara.meditating || elara.charging || elara.gassed || elara.vulnerable)) return elara;
       return tank || pals[0];
     };
-    if (e.flash > 0) {
-      ctx.globalAlpha = Math.min(0.65, e.flash / 320);
-      ctx.fillStyle = "#fff";
-      ctx.beginPath(); ctx.ellipse(0, 0, e.boss ? 60 : 32, e.boss ? 72 : 40, 0, 0, 6.3); ctx.fill();
-      ctx.globalAlpha = 1;
-    }
     if (e.telegraph) {
       const tg = e.telegraph;
       e.telegraph = null;
@@ -2833,11 +2889,7 @@
     if (b.def.victoryFlag) setFlag(b.def.victoryFlag, 1);
     const post = b.def.post;
     S.battle = null;
-    // persist hp
-    // already live on S.chars via reference? we cloned pals — copy back
-    // startBattle cloned, so write back
-    // We used Object.assign copies; write hp/res back
-    // stored in last pals
+    // Battlers are copies of S.chars; write HP/resource back.
     b.pals.forEach((p) => {
       const c = S.chars[p.id];
       if (!c) return;
@@ -3505,6 +3557,7 @@
     }
     tickMusic(dt);
     updateFx(dt);
+    updateFade(dt);
     if (S.state !== "boot") idleTickRuntime(dt);
     ctx.save();
     if (S.shake > 0.4) ctx.translate((Math.random() - 0.5) * S.shake, (Math.random() - 0.5) * S.shake);
@@ -3547,23 +3600,11 @@
     }
     drawFx();
     ctx.restore();
+    const fa = fadeAlpha();
+    if (fa > 0) { ctx.fillStyle = `rgba(4,3,8,${fa.toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
     S.mouse.click = false;
     requestAnimationFrame(frame);
   }
-
-  // Auto-equip rewards that are gear when granted via flags already handled.
-  // Missing acolyte: talking to Mira in her house after finding the letter in the house.
-  // Wire: village jori / forest / mira house sign. When player reads mira's wet letter, set quest found if they then go to house? 
-  // Simpler: chest in house_mira appears with beads when appearIf quest_acolyte_found.
-  // How to set quest_acolyte_found? Talk to mira... but she appears only if found.
-  // Set found when player interacts with the sign in her house (the wet letter) OR talk to jori? 
-  // Let's set it when entering house_mira and interacting with the sign.
-
-  const _interact = interact;
-  // already: sign in house_mira. Add hook:
-  const origInteract = interact;
-  // wrap after definition — monkeypatch events in interact via sign id. The sign text is enough; add in interact:
-  // Can't easily. Add trigger on house_mira floor.
 
   // Boot
   async function boot() {
