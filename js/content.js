@@ -305,23 +305,23 @@ window.DATA = (() => {
     },
 
     hollow_oak: {
-      id: "hollow_oak", name: "Heartwood Hollow", boss: true, epithet: "The Guardian Nobody Thanked", maxHp: 420, atk: 20, def: 14, spd: 7, acc: 86,
+      id: "hollow_oak", name: "Heartwood Hollow", boss: true, epithet: "Worshipped, Then Forgotten", maxHp: 420, atk: 20, def: 14, spd: 7, acc: 86,
       color: "#3a5a30", phases: 2, slamBase: 30,
       ai: "hollow_oak",
       intro: "A tree that remembers being worshipped, and has not forgiven the silence."
     },
     canal_specter: {
-      id: "canal_specter", name: "Canal Specter", boss: true, epithet: "Mouth of the South Canal", maxHp: 320, atk: 18, def: 10, spd: 15, acc: 90,
+      id: "canal_specter", name: "Canal Specter", boss: true, epithet: "It Wears a Child's Shoe", maxHp: 320, atk: 18, def: 10, spd: 15, acc: 90,
       color: "#3a6a8a", phases: 1, ai: "specter",
       intro: "The hungry mouth in the water wears a child's stolen shoe like a crown."
     },
     gate_warden: {
-      id: "gate_warden", name: "Ashen Gate Warden", boss: true, epithet: "A Vow That Learned to Hate Hands", maxHp: 620, atk: 26, def: 16, spd: 10, acc: 88,
+      id: "gate_warden", name: "Ashen Gate Warden", boss: true, epithet: "Man, Then Vow, Then Door", maxHp: 620, atk: 26, def: 16, spd: 10, acc: 88,
       color: "#8a4030", phases: 3, ai: "warden",
       intro: "A guardian who was a man, then a vow, then a door that learned to hate hands."
     },
     mirror_shade: {
-      id: "mirror_shade", name: "The Unbetrayed", boss: true, epithet: "Kael, Unwounded", maxHp: 640, atk: 28, def: 14, spd: 15, acc: 94,
+      id: "mirror_shade", name: "The Unbetrayed", boss: true, epithet: "Kael, Never Loved Badly", maxHp: 640, atk: 28, def: 14, spd: 15, acc: 94,
       color: "#c23b4a", phases: 2, ai: "mirror",
       intro: "Kael, if no one had ever loved him badly. It smiles with his mouth."
     },
@@ -612,13 +612,13 @@ window.DATA = (() => {
 
   // Region title cards, shown the first time the party enters each area.
   C.REGIONS = {
-    temple: { name: "Silver Lotus Temple", sub: "Where the lotus opens toward the west" },
-    village: { name: "Lotus-Step Village", sub: "The last kind light before the trees" },
+    temple: { name: "Silver Lotus Temple", sub: "The lotus opens west" },
+    village: { name: "Lotus-Step Village", sub: "Last lamps before the trees" },
     forest: { name: "The Whispering Forest", sub: "Do not answer the trees" },
-    wilderness: { name: "The Western Wilderness", sub: "Roads the cartographers gave up on" },
+    wilderness: { name: "The Western Wilderness", sub: "Roads the maps gave up on" },
     meridia: { name: "Kingdom of Meridia", sub: "By canal and lantern" },
-    ashen: { name: "Ashen Pass", sub: "The mountain keeps what the war would not bury" },
-    ruins: { name: "Ruins of the Betrayed Court", sub: "Names were taken from the walls" },
+    ashen: { name: "Ashen Pass", sub: "What the war would not bury" },
+    ruins: { name: "Ruins of the Betrayed Court", sub: "They chiseled out his name" },
     throne: { name: "Throne of Ash", sub: "The King is still sleeping" }
   };
 
