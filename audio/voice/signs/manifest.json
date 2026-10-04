@@ -81,6 +81,13 @@
       "voice": "narrator",
       "text": "Meridia , last city before the ash."
     },
+    "|Meridia's scouts hold the ash road. Find Lyra in the city plaza first.": {
+      "file": "00db7841d861966bdd341117.mp3",
+      "hash": "00db7841d861966bdd341117",
+      "speaker": "",
+      "voice": "narrator",
+      "text": "Meridia's scouts hold the ash road. Find Lyra in the city plaza first."
+    },
     "|Seed packets: LOTUS (do not let demon prince near), LOTUS (backup), BEANS.": {
       "file": "24bfd59ffda35f8bc1bcb67d.mp3",
       "hash": "24bfd59ffda35f8bc1bcb67d",
@@ -94,13 +101,6 @@
       "speaker": "",
       "voice": "narrator",
       "text": "THE BETRAYED COURT , Names were taken from the walls."
-    },
-    "|The ash pass is sealed until the gate warden falls.": {
-      "file": "c69925bad2d9496245b4b254.mp3",
-      "hash": "c69925bad2d9496245b4b254",
-      "speaker": "",
-      "voice": "narrator",
-      "text": "The ash pass is sealed until the gate warden falls."
     },
     "|The heartwood still bars the west.": {
       "file": "bcdadc78cbe875a409c90400.mp3",
