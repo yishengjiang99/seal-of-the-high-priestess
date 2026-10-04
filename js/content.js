@@ -305,28 +305,28 @@ window.DATA = (() => {
     },
 
     hollow_oak: {
-      id: "hollow_oak", name: "Heartwood Hollow", boss: true, maxHp: 460, atk: 22, def: 14, spd: 7, acc: 86,
+      id: "hollow_oak", name: "Heartwood Hollow", boss: true, epithet: "The Guardian Nobody Thanked", maxHp: 460, atk: 22, def: 14, spd: 7, acc: 86,
       color: "#3a5a30", phases: 2,
       ai: "hollow_oak",
       intro: "A tree that remembers being worshipped, and has not forgiven the silence."
     },
     canal_specter: {
-      id: "canal_specter", name: "Canal Specter", boss: true, maxHp: 320, atk: 18, def: 10, spd: 15, acc: 90,
+      id: "canal_specter", name: "Canal Specter", boss: true, epithet: "Mouth of the South Canal", maxHp: 320, atk: 18, def: 10, spd: 15, acc: 90,
       color: "#3a6a8a", phases: 1, ai: "specter",
       intro: "The hungry mouth in the water wears a child's stolen shoe like a crown."
     },
     gate_warden: {
-      id: "gate_warden", name: "Ashen Gate Warden", boss: true, maxHp: 620, atk: 26, def: 16, spd: 10, acc: 88,
+      id: "gate_warden", name: "Ashen Gate Warden", boss: true, epithet: "A Vow That Learned to Hate Hands", maxHp: 620, atk: 26, def: 16, spd: 10, acc: 88,
       color: "#8a4030", phases: 3, ai: "warden",
       intro: "A guardian who was a man, then a vow, then a door that learned to hate hands."
     },
     mirror_shade: {
-      id: "mirror_shade", name: "The Unbetrayed", boss: true, maxHp: 580, atk: 28, def: 14, spd: 15, acc: 94,
+      id: "mirror_shade", name: "The Unbetrayed", boss: true, epithet: "Kael, Unwounded", maxHp: 580, atk: 28, def: 14, spd: 15, acc: 94,
       color: "#c23b4a", phases: 2, ai: "mirror",
       intro: "Kael, if no one had ever loved him badly. It smiles with his mouth."
     },
     bound_hound: {
-      id: "bound_hound", name: "The Bound Hound", boss: true, maxHp: 400, atk: 24, def: 18, spd: 9, acc: 84,
+      id: "bound_hound", name: "The Bound Hound", boss: true, epithet: "Left to Starve Politely", maxHp: 400, atk: 24, def: 18, spd: 9, acc: 84,
       color: "#5a4a3a", phases: 1, ai: "hound",
       intro: "A mid-tier demon left on a mountain to starve politely. Thorn looks away."
     }
@@ -348,7 +348,7 @@ window.DATA = (() => {
       victoryFlag: "warden_dead", post: "post_warden" },
     bound_hound: { id: "bound_hound", bg: "pass", enemies: ["bound_hound"],
       victoryFlag: "quest_hound", post: "post_hound" },
-    court_echoes: { id: "court_echoes", bg: "ruins", enemies: ["court_echo", "court_echo"] },
+    court_echoes: { id: "court_echoes", bg: "ruins", enemies: ["court_echo", "court_echo"], victoryFlag: "court_echoes" },
     court_knights: { id: "court_knights", bg: "ruins", enemies: ["shadow_knight", "shadow_knight", "ritual_drone"],
       victoryFlag: "court_knights" },
     mirror_shade: { id: "mirror_shade", bg: "ruins", enemies: ["mirror_shade"], tutorial: "unseal_choice",
@@ -596,6 +596,30 @@ window.DATA = (() => {
 
   C.BGS = {
     title: "assets/backgrounds/title.jpg"
+  };
+
+  // Optional camp chats, offered at lotus altars (press C) once the story
+  // flags in `need` are set. Each plays once; `done` marks it seen.
+  C.CAMP_CHATS = [
+    { scene: "midnight_watch", title: "The third watch", need: ["camp1_done"], done: "midnight_done" },
+    { scene: "sparring_scene", title: "Stance lessons", need: ["lyra_joined"], done: "sparring_done" },
+    { scene: "kael_letter_alone", title: "The unopened letter", need: ["quest_letter"], done: "kael_letter_read" },
+    { scene: "thorn_confession", title: "Veth", need: ["quest_hound"], done: "thorn_confession" },
+    { scene: "dawn_banter", title: "Wrong side of the pass", need: ["thorn_joined"], done: "dawn_banter_done" },
+    { scene: "lyra_backstory", title: "Why Lyra left", need: ["warden_dead", "thorn_joined"], done: "lyra_backstory_done" },
+    { scene: "elara_doubt", title: "Before the gates", need: ["quest_tablet"], done: "elara_doubt_done" }
+  ];
+
+  // Region title cards, shown the first time the party enters each area.
+  C.REGIONS = {
+    temple: { name: "Silver Lotus Temple", sub: "Where the lotus opens toward the west" },
+    village: { name: "Lotus-Step Village", sub: "The last kind light before the trees" },
+    forest: { name: "The Whispering Forest", sub: "Do not answer the trees" },
+    wilderness: { name: "The Western Wilderness", sub: "Roads the cartographers gave up on" },
+    meridia: { name: "Kingdom of Meridia", sub: "By canal and lantern" },
+    ashen: { name: "Ashen Pass", sub: "The mountain keeps what the war would not bury" },
+    ruins: { name: "Ruins of the Betrayed Court", sub: "Names were taken from the walls" },
+    throne: { name: "Throne of Ash", sub: "The King is still sleeping" }
   };
 
   return C;
