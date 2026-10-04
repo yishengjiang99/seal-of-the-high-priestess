@@ -323,10 +323,10 @@ window.MAPS = (() => {
         { type: "chest", x: 91, y: 62, id: "chest_village_petal", item: "lotus_petal" },
         { type: "sign", x: 46, y: 12, text: "Lotus-Step Village — last kind light before the trees begin to speak." },
         { type: "trigger", x: 42, y: 72, w: 10, h: 1, flagNeed: "intro_done", flagNeedOff: "camp1_done", scene: "first_camp" },
-        { type: "warp", x: 44, y: 76, map: "wilderness", tx: 200, ty: 92, dir: "down" },
-        { type: "warp", x: 45, y: 76, map: "wilderness", tx: 200, ty: 92, dir: "down" },
-        { type: "warp", x: 46, y: 76, map: "wilderness", tx: 200, ty: 92, dir: "down" },
-        { type: "warp", x: 47, y: 76, map: "wilderness", tx: 200, ty: 92, dir: "down" }
+        { type: "warp", x: 44, y: 76, map: "wilderness", tx: 200, ty: 91, dir: "down" },
+        { type: "warp", x: 45, y: 76, map: "wilderness", tx: 200, ty: 91, dir: "down" },
+        { type: "warp", x: 46, y: 76, map: "wilderness", tx: 200, ty: 91, dir: "down" },
+        { type: "warp", x: 47, y: 76, map: "wilderness", tx: 200, ty: 91, dir: "down" }
       ]
     });
   })();
@@ -541,18 +541,21 @@ window.MAPS = (() => {
 
     // Meridia city entry.
     const meridEnter = findOpen(meridiaGate.x, meridiaGate.y + 12, 4);
-    events.push({ type: "warp", x: meridEnter.x, y: meridEnter.y, map: "meridia", tx: 54, ty: 6, dir: "down" });
+    events.push({ type: "warp", x: meridEnter.x, y: meridEnter.y, map: "meridia", tx: 54, ty: 6, dir: "down", needFlag: "hollow_oak_dead",
+      needText: "Meridia's north gate is barred while the forest eats travellers. The Heartwood waits in the Whispering Forest." });
 
     // Ashen pass entry (west).
-    events.push({ type: "warp", x: westPass.x - 1, y: westPass.y, map: "ashen", tx: 20, ty: 4, dir: "down", needFlag: "warden_dead" });
-    events.push({ type: "warp", x: westPass.x - 1, y: westPass.y - 1, map: "ashen", tx: 20, ty: 4, dir: "down", needFlag: "warden_dead" });
-    events.push({ type: "block", x: westPass.x - 1, y: westPass.y, needFlagOff: "warden_dead", text: "The ash pass is sealed until the gate warden falls." });
+    // Gated on Lyra (Meridia) so the pass, its camp, the Hound and the Warden play in order.
+    const ashenLock = "Meridia's scouts hold the ash road. Find Lyra in the city plaza first.";
+    events.push({ type: "warp", x: westPass.x - 1, y: westPass.y, map: "ashen", tx: 20, ty: 4, dir: "down", needFlag: "lyra_joined", needText: ashenLock });
+    events.push({ type: "warp", x: westPass.x - 1, y: westPass.y - 1, map: "ashen", tx: 20, ty: 4, dir: "down", needFlag: "lyra_joined", needText: ashenLock });
+    events.push({ type: "block", x: westPass.x - 1, y: westPass.y, needFlagOff: "lyra_joined", text: ashenLock });
 
     // Story encounters.
-    const hollow = findOpen(forestHeart.x + 8, forestHeart.y + 8, 10);
-    events.push({ type: "encounter", x: hollow.x, y: hollow.y, battle: "hollow_oak", once: "hollow_oak_dead", appearIfOff: "hollow_oak_dead", name: "Heartwood Hollow" });
-    const warden = findOpen(westPass.x + 25, westPass.y + 12, 14);
-    events.push({ type: "encounter", x: warden.x, y: warden.y, battle: "gate_warden", once: "warden_dead", appearIfOff: "warden_dead", name: "Ashen Gate Warden" });
+    // The Heartwood lives in the Whispering Forest and the Warden in Ashen Pass;
+    // these spots are still drawn from the RNG so every later placement stays put.
+    findOpen(forestHeart.x + 8, forestHeart.y + 8, 10);
+    findOpen(westPass.x + 25, westPass.y + 12, 14);
 
     // Save altars and signs.
     const save1 = findOpen(forestHeart.x - 8, forestHeart.y - 6, 8);
@@ -579,12 +582,12 @@ window.MAPS = (() => {
       events.push({ type: "chest", x: p.x, y: p.y, id: ch.id, item: ch.item });
     }
 
-    events.push({ type: "sign", x: eastGate.x, y: eastGate.y + 3, text: "The wilderness reclaims roads faster than cartographers can weep." });
+    events.push({ type: "sign", x: eastGate.x + 2, y: eastGate.y, text: "The wilderness reclaims roads faster than cartographers can weep." });
     events.push({ type: "sign", x: meridiaGate.x, y: meridiaGate.y + 4, text: "Meridia — last city before the ash." });
     events.push({ type: "sign", x: westPass.x + 6, y: westPass.y, text: "Beyond here, even the mountains hold their breath." });
 
     M.wilderness = done("wilderness", "Western Wilderness", "forest", m, {
-      spawn: { x: eastGate.x, y: eastGate.y + 2 },
+      spawn: { x: eastGate.x, y: eastGate.y + 1 },   // y+2 is lake water
       events
     });
   })();
@@ -771,9 +774,9 @@ window.MAPS = (() => {
     M.ruins = done("ruins", "Ruins of the Betrayed Court", "ruins", m, {
       spawn: { x: 44, y: 5 },
       events: [
-        { type: "warp", x: 43, y: 3, map: "wilderness", tx: 30, ty: 90, dir: "up" },
-        { type: "warp", x: 44, y: 3, map: "wilderness", tx: 30, ty: 90, dir: "up" },
-        { type: "warp", x: 45, y: 3, map: "wilderness", tx: 30, ty: 90, dir: "up" },
+        { type: "warp", x: 43, y: 3, map: "ashen", tx: 20, ty: 105, dir: "up" },
+        { type: "warp", x: 44, y: 3, map: "ashen", tx: 20, ty: 105, dir: "up" },
+        { type: "warp", x: 45, y: 3, map: "ashen", tx: 20, ty: 105, dir: "up" },
         { type: "save", x: 16, y: 16 },
         { type: "save", x: 44, y: 38 },
         { type: "npc", x: 44, y: 28, id: "echo", name: "Court Echo", hue: "#8a4a6a", talk: "echo" },

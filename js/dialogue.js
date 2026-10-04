@@ -226,7 +226,7 @@ window.SCENES = {
       { s: "elara", e: "sad", t: "Man, then job, then door. I would like, once, a monster that stayed a monster." },
       { s: "kael", e: "soft", t: "Welcome to my old house. Don't touch the mirrors. One of them is me." },
       { s: "lyra", t: "If he gets quiet, that's the danger." },
-      { s: "thorn", t: "I was quiet for a mountain. Don't recommend it." },
+      { cond: { thorn_joined: 1 }, s: "thorn", t: "I was quiet for a mountain. Don't recommend it." },
       { set: { warden_dead: 1 } }
     ]
   },
@@ -271,7 +271,7 @@ window.SCENES = {
 
   post_mirror: {
     id: "post_mirror", bg: "ruins", mode: "vn",
-    onEnd: { type: "map", map: "throne", x: 12, y: 3 },
+    onEnd: { type: "map", map: "throne", x: 28, y: 11 },
     script: [
       { cond: { unseal_choice: "yes" }, s: "kael", e: "soft", t: "You hit the floor. I hated it. I also ended him." },
       { cond: { unseal_choice: "yes" }, s: "elara", e: "blush", t: "I watched the door. It was you coming back." },
