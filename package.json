@@ -1,16 +1,17 @@
 {
   "name": "seal-of-the-high-priestess",
   "version": "1.0.0",
-  "description": "A browser-native 2D JRPG / visual-novel hybrid. Design inspiration: **LinaHua (@Linahuaa)** — a solo, AI-assisted epic in the spirit of Final Fantasy VI × Fate/Stay Night, built around kickass dialogue, named gear, and slow strategic combat.",
+  "description": "A browser-native 2D JRPG / visual-novel hybrid. Design inspiration: **LinaHua (@Linahuaa)** \u2014 a solo, AI-assisted epic in the spirit of Final Fantasy VI \u00d7 Fate/Stay Night, built around kickass dialogue, named gear, and slow strategic combat.",
   "private": true,
   "type": "module",
   "scripts": {
-    "check:syntax": "node --check js/content.js && node --check tests/integrity.test.mjs && node --check js/game.js && node --check js/dialogue.js && node --check js/maps.js && node --check js/voice-lines.js && node --check scripts/generate-voice.mjs && node --check scripts/voice-lib.mjs",
-    "test:unit": "node --test tests/voice.test.mjs tests/integrity.test.mjs",
+    "check:syntax": "node --check js/content.js && node --check tests/integrity.test.mjs && node --check js/game.js && node --check js/dialogue.js && node --check js/maps.js && node --check js/voice-lines.js && node --check scripts/generate-voice.mjs && node --check scripts/voice-lib.mjs && node --check js/content-core.js && node --check js/content-loader.js && node --check scripts/build-content.mjs",
+    "test:unit": "node --test tests/voice.test.mjs tests/integrity.test.mjs tests/content.test.mjs",
     "test:headless": "node tests/headless/chrome-suite.mjs",
     "test:ci": "npm run check:syntax && npm run test:unit && npm run test:headless",
     "voice:generate": "node scripts/generate-voice.mjs",
-    "voice:plan": "node scripts/generate-voice.mjs --dry-run"
+    "voice:plan": "node scripts/generate-voice.mjs --dry-run",
+    "content:build": "node scripts/build-content.mjs --out content-snapshot.json"
   },
   "repository": {
     "type": "git",
