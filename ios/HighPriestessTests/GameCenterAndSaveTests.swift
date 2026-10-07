@@ -65,6 +65,14 @@ final class GameCenterRuleTests: XCTestCase {
     }
 }
 
+final class BundleResourceTests: XCTestCase {
+    func testPrivacyManifestAndGameCenterConfigAreBundled() {
+        XCTAssertNotNil(Bundle.main.url(forResource: "PrivacyInfo", withExtension: "xcprivacy"))
+        XCTAssertNotNil(Bundle.main.url(forResource: "gamecenter", withExtension: "json"))
+        XCTAssertNil(Bundle.main.url(forResource: "first_light", withExtension: "png"), "achievement art is ASC-only")
+    }
+}
+
 final class SaveSummaryTests: XCTestCase {
     func testSummaryFromGameSave() {
         let json = """

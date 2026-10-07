@@ -32,11 +32,13 @@ targets:
       - path: WebBundle/Web
         type: folder
         buildPhase: resources
-    resources:
+      # Privacy manifest (excluded from the folder source above so it is copied, not compiled).
       - path: HighPriestess/Resources/PrivacyInfo.xcprivacy
+        buildPhase: resources
       # Achievement / leaderboard definitions (also pushed to ASC by scripts/asc/game_center.py).
       # The achievement images in GameCenter/images are ASC-only and stay out of the app.
       - path: GameCenter/gamecenter.json
+        buildPhase: resources
     settings:
       base:
         INFOPLIST_FILE: HighPriestess/Resources/Info.plist

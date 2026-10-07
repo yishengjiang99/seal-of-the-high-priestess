@@ -88,3 +88,4 @@ Newest last. Each entry gives the decision, why, and what it affects. Scope: doc
   - GCKeyboard detection. The web view takes first-responder for hardware keyboards; ⌘, opens Settings.
   - `Platform.input` / `Platform.call("inputMode")` add an `input-touch|gamepad|keyboard` class on `<html>` plus an `inputChanged` hook, with no CSS attached. A touch switches back to touch.
   - Settings > Controls shows the active input and connected controller. The touch row was dropped, since the on-screen d-pad is being replaced by the visual workstream.
+- **Fix found on the way:** `project.yml` listed `PrivacyInfo.xcprivacy` under a target-level `resources:` key, which XcodeGen ignores. Builds 1–2 shipped **without the app's privacy manifest**. It's now a `buildPhase: resources` source (same for `gamecenter.json`), and a unit test checks both are in the bundle.
