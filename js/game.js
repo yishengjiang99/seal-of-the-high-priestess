@@ -1290,6 +1290,7 @@
       deserialize(d);
       hideAllScreens();
       enterMap();
+      Platform.event("progress", { flags: Object.keys(S.flags).filter((k) => S.flags[k]) });
       return true;
     } catch (e) { return false; }
   }
@@ -2636,7 +2637,9 @@
       unsealedHere: false, healingRainAim: null,
       // Intro: iris in, and for bosses a title card before anyone moves.
       introT: 0, introDur: boss ? 2600 : 700, boss: boss || null,
-      pendingTutorial: def.tutorial || null
+      pendingTutorial: def.tutorial || null,
+      // Battle clock for Game Center boss times (time hidden in the background doesn't count).
+      t0: performance.now(), hiddenMs: 0, hiddenAt: 0
     };
     S.state = "battle";
     S.cine = null; S.hitStop = 0;
@@ -3539,10 +3542,25 @@
     $("battle-hud").classList.add("cinematic");
     renderBattleHUD();
   }
+  // Summary for the native shell (Game Center achievements + boss-time leaderboards).
+  function battleResult(b) {
+    const hidden = b.hiddenMs + (b.hiddenAt ? performance.now() - b.hiddenAt : 0);
+    return {
+      id: b.def && b.def.id, boss: b.boss ? b.boss.tid : null,
+      ms: Math.max(0, Math.round(performance.now() - b.t0 - hidden - (b.introDur || 0))),
+      unsealed: !!b.unsealedHere, fallen: b.pals.filter((p) => !p.alive).length
+    };
+  }
+  document.addEventListener("visibilitychange", () => {
+    const b = S.battle;
+    if (!b || b.t0 == null) return;
+    if (document.hidden) b.hiddenAt = performance.now();
+    else if (b.hiddenAt) { b.hiddenMs += performance.now() - b.hiddenAt; b.hiddenAt = 0; }
+  });
   function winBattle() {
     const b = S.battle;
     Platform.haptic("victory");
-    Platform.event("battle_won", { id: b.def && b.def.id });
+    Platform.event("battle_won", battleResult(b));
     cancelHealingRainAim(true);
     $("battle-hud").classList.remove("cinematic");
     if (S.idle) idleSimulate(120, "battleReward");

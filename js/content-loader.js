@@ -125,7 +125,9 @@
   function startEngine() {
     if (status.warnings.length && window.console) console.warn("[content]", status.source, status.warnings);
     if (window.Platform) {
-      Platform.event("content", { source: status.source, version: status.version, have, PAYWALL: window.PAYWALL || null, FLAGS: window.FLAGS || {} });
+      const mapNames = {};
+      for (const id in (window.MAPS || {})) if (MAPS[id] && typeof MAPS[id].name === "string") mapNames[id] = MAPS[id].name;
+      Platform.event("content", { source: status.source, version: status.version, have, PAYWALL: window.PAYWALL || null, FLAGS: window.FLAGS || {}, mapNames });
     }
     const s = document.createElement("script");
     s.src = "js/game.js";

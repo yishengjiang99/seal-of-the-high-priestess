@@ -12,7 +12,7 @@ Set through the API by `scripts/asc/app_review_setup.py` from `docs/asc/age-rati
 | Mature or Suggestive Themes | **Infrequent/Mild** | Betrayal, imprisonment and binding, a character's past death, and one line that uses "suicide" as a metaphor ("Pride is a suicide that walks"). Nothing is suggestive or romantic. |
 | Profanity or Crude Humor | None | No profanity in the script. |
 | Sexual Content or Nudity / Graphic Sexual Content and Nudity | None | |
-| Alcohol, Tobacco, or Drug Use or References | None | "Poison" is a story and status effect, not drugs. |
+| Alcohol, Tobacco, or Drug Use or References | None | "Poison" is a story and status effect, not drugs. There is an inn/tavern location ("The Poisoned Word"), but the only drinks mentioned are tea and water. |
 | Medical or Treatment Information | None | |
 | Simulated Gambling | None | |
 | Contests | None | |
@@ -24,4 +24,4 @@ Set through the API by `scripts/asc/app_review_setup.py` from `docs/asc/age-rati
 | Parental Controls / Age Assurance | No | The game has neither. Purchases follow Apple's Ask to Buy. |
 | Health or Wellness Topics | No | |
 
-The expected result is **13+** under the 2025 age rating system, driven by frequent fantasy violence. Made for Kids: no.
+After the API update, App Store Connect computed **12+** (`appStoreAgeRating: TWELVE_PLUS`; Brazil self-rated 12). The main driver is frequent fantasy violence. Made for Kids: no.
