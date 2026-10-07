@@ -1,0 +1,33 @@
+name: server
+on:
+  push:
+    branches: [main]
+    paths: ['server/**', 'js/content-core.js', 'js/content.js', 'js/maps.js', 'js/dialogue.js', '.github/workflows/server.yml']
+  pull_request:
+    paths: ['server/**', 'js/content-core.js', 'js/content.js', 'js/maps.js', 'js/dialogue.js', '.github/workflows/server.yml']
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpw
+          MYSQL_DATABASE: temple_test
+          MYSQL_USER: temple
+          MYSQL_PASSWORD: testpw
+        ports: ['3306:3306']
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -prootpw" --health-interval=5s --health-timeout=5s --health-retries=20
+    defaults:
+      run:
+        working-directory: server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm ci
+      - run: npm test
+        env:
+          TEST_MYSQL_URL: mysql://temple:testpw@127.0.0.1:3306/temple_test
