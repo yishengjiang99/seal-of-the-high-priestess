@@ -2,18 +2,26 @@
    Content core — shared by the game (browser / iOS WebView) and the save/content
    server. Pure data helpers, no DOM, no eval:
      hash53(str)              stable 53-bit hash (hex) of a JSON string
-     contentHash(content)     hash of JSON.stringify({DATA, MAPS, SCENES})
+     contentHash(content)     hash of JSON.stringify({DATA, MAPS, SCENES, PAYWALL?, FLAGS?})
      mergePatch(target, p)    RFC 7386 JSON Merge Patch (returns a new value)
      validate(content, opts)  shape / safety / asset checks against a reference
    Server content is DATA ONLY (App Review 2.5.2): strings, numbers, booleans,
    arrays and objects. It can never carry code or markup.
+   Collections: DATA, MAPS, SCENES (game content, required) and PAYWALL (paywall
+   copy/art/placement/offered product; never prices) + FLAGS (feature flags), optional.
    ============================================================================= */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory();
   else root.SothContent = factory();
 })(typeof self !== "undefined" ? self : this, function () {
   const SCHEMA = 1;
-  const COLLECTIONS = ["DATA", "MAPS", "SCENES"];
+  const COLLECTIONS = ["DATA", "MAPS", "SCENES", "PAYWALL", "FLAGS"];
+  const REQUIRED = ["DATA", "MAPS", "SCENES"];
+  // In-app purchase product IDs the paywall may offer (prices come from the App Store, never from content).
+  const PRODUCTS = {
+    fullGame: ["com.ragnus.weather.fullgame", "com.ragnus.weather.fullgame.b"],
+    supporter: ["com.ragnus.weather.supporter"]
+  };
   const ASSET_RE = /\.(jpe?g|png|webp|gif|mp3|m4a|aac|ogg|wav|ttf|otf|woff2?)$/i;
   const MAX_TILE = 63;
 
@@ -28,7 +36,8 @@
     h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507) ^ Math.imul(h1 ^ (h1 >>> 13), 3266489909);
     return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16).padStart(14, "0");
   }
-  function pick(c) { return { DATA: c.DATA, MAPS: c.MAPS, SCENES: c.SCENES }; }
+  // Absent optional collections serialize away, so pre-PAYWALL content keeps its hash.
+  function pick(c) { return { DATA: c.DATA, MAPS: c.MAPS, SCENES: c.SCENES, PAYWALL: c.PAYWALL, FLAGS: c.FLAGS }; }
   function contentHash(c) { return hash53(JSON.stringify(pick(c))); }
 
   const isObj = (v) => v !== null && typeof v === "object" && !Array.isArray(v);
@@ -74,7 +83,8 @@
     const ref = opts && opts.ref ? opts.ref : null;
     let c;
     try { c = clone(pick(input || {})); } catch (e) { return { ok: false, errors: ["not JSON-serializable"], warnings, content: null }; }
-    for (const k of COLLECTIONS) if (!isObj(c[k])) errors.push(k + " missing or not an object");
+    for (const k of REQUIRED) if (!isObj(c[k])) errors.push(k + " missing or not an object");
+    for (const k of ["PAYWALL", "FLAGS"]) if (c[k] !== undefined && !isObj(c[k])) errors.push(k + " must be an object");
     if (errors.length) return { ok: false, errors, warnings, content: null };
     if (ref) {
       for (const t of Object.keys(ref.DATA)) {
@@ -127,6 +137,25 @@
         for (const id of Object.keys(ref.DATA[t])) if (!isObj(c.DATA[t][id])) { c.DATA[t][id] = clone(ref.DATA[t][id]); warnings.push(t + "." + id + " missing -> restored"); }
       }
     }
+    // Paywall + flags: config only. Invalid pieces revert to the bundled config.
+    if (ref && isObj(ref.PAYWALL) && !isObj(c.PAYWALL)) c.PAYWALL = clone(ref.PAYWALL);
+    if (ref && isObj(ref.FLAGS) && !isObj(c.FLAGS)) c.FLAGS = clone(ref.FLAGS);
+    if (isObj(c.PAYWALL)) {
+      const pwErr = paywallProblems(c.PAYWALL, c.MAPS);
+      if (pwErr.length) {
+        warnings.push("PAYWALL invalid (" + pwErr.slice(0, 3).join("; ") + ") -> reverted to bundled");
+        if (ref && isObj(ref.PAYWALL)) c.PAYWALL = clone(ref.PAYWALL); else delete c.PAYWALL;
+      }
+    }
+    if (isObj(c.FLAGS)) {
+      for (const k of Object.keys(c.FLAGS)) {
+        const v = c.FLAGS[k];
+        if (!/^[A-Za-z][A-Za-z0-9_]{0,40}$/.test(k) || !(typeof v === "boolean" || typeof v === "number" || typeof v === "string")) {
+          delete c.FLAGS[k];
+          warnings.push("flag " + k + " invalid -> removed");
+        }
+      }
+    }
     // Battles may only use enemies that exist.
     if (isObj(c.DATA.BATTLES) && isObj(c.DATA.ENEMIES)) {
       for (const [id, b] of Object.entries(c.DATA.BATTLES)) {
@@ -142,5 +171,26 @@
     return { ok: true, errors, warnings, content: c };
   }
 
-  return { SCHEMA, COLLECTIONS, hash53, contentHash, mergePatch, validate, referencedAssets, clone };
+  function paywallProblems(pw, maps) {
+    const out = [];
+    walk(pw, "PAYWALL", (v, path, parent, key) => { if (typeof key === "string" && /price/i.test(key)) out.push("prices are not configurable (" + path + ")"); });
+    if (pw.offer !== undefined && PRODUCTS.fullGame.indexOf(pw.offer) < 0) out.push("unknown offer " + pw.offer);
+    if (pw.offerVariants !== undefined) {
+      if (!Array.isArray(pw.offerVariants)) out.push("offerVariants must be an array");
+      else pw.offerVariants.forEach((v, i) => {
+        if (!isObj(v) || PRODUCTS.fullGame.indexOf(v.product) < 0) out.push("offerVariants[" + i + "] unknown product");
+        else if (!(typeof v.weight === "number" && v.weight >= 0 && v.weight <= 1000)) out.push("offerVariants[" + i + "] bad weight");
+      });
+    }
+    if (pw.gatedMaps !== undefined) {
+      if (!Array.isArray(pw.gatedMaps) || !pw.gatedMaps.every((m) => typeof m === "string" && maps && maps[m])) out.push("gatedMaps must list known maps");
+      else if (pw.gatedMaps.indexOf("temple") >= 0) out.push("the prologue cannot be gated");
+    }
+    if (pw.supporter !== undefined && (!isObj(pw.supporter) || (pw.supporter.product !== undefined && PRODUCTS.supporter.indexOf(pw.supporter.product) < 0))) out.push("unknown supporter product");
+    if (pw.placements !== undefined && !isObj(pw.placements)) out.push("placements must be an object");
+    if (pw.regionCompleteFlags !== undefined && !isObj(pw.regionCompleteFlags)) out.push("regionCompleteFlags must be an object");
+    return out;
+  }
+
+  return { SCHEMA, COLLECTIONS, PRODUCTS, hash53, contentHash, mergePatch, validate, referencedAssets, clone };
 });
