@@ -1,0 +1,429 @@
+name: iOS TestFlight
+
+# Archive the iOS app (ASC app "Temple of the High Priestess", Apple ID 6819973123, bundle com.ragnus.weather,
+# SKU High-priestess-game), sign with the App Store profile, upload with altool, wait until ASC processing is VALID.
+# The job FAILS if altool reports any error (no false greens). Never submits for App Review; never deletes
+# certificates or profiles.
+
+on:
+  workflow_dispatch:
+    inputs:
+      notes:
+        description: What to Test notes (optional)
+        required: false
+        default: Early build
+
+concurrency:
+  group: ios-testflight
+  cancel-in-progress: false
+
+jobs:
+  build-upload:
+    name: Archive and upload
+    runs-on: macos-15
+    timeout-minutes: 120
+    env:
+      APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+      APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+      ARCHIVE_PATH: ${{ github.workspace }}/build/HighPriestess.xcarchive
+      EXPORT_PATH: ${{ github.workspace }}/build/export
+      TEAM_ID: 83D36RPMUM
+      BUNDLE_ID: com.ragnus.weather
+      SCHEME: HighPriestess
+      PROJECT: ios/HighPriestess.xcodeproj
+      # ASC app record "Temple of the High Priestess" (SKU High-priestess-game). Fails unless its bundleId == BUNDLE_ID.
+      ASC_APP_ID: "6819973123"
+      # App Store provisioning profile for com.ragnus.weather signed by the IOS_DISTRIBUTION_P12 cert
+      # (Apple Distribution: GrepAwk LLC): an active IOS_APP_STORE profile for the bundle id is reused via the
+      # ASC API, or created ("High Priestess App Store (CI)"). Never deletes anything.
+      # PROFILE_NAME is exported by the install step; BUILD_NUMBER by the ASC check (max existing + 1).
+      CI_PROFILE_NAME: High Priestess App Store (CI)
+      MARKETING_VERSION: "1.0"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          # Prefer Xcode 26 (ASC SDK requirement as of 2026); fall back to 16.x
+          for app in /Applications/Xcode_26.0.app /Applications/Xcode_26.app /Applications/Xcode-26.app /Applications/Xcode_16.4.app /Applications/Xcode_16.3.app /Applications/Xcode_16.2.app /Applications/Xcode_16.app /Applications/Xcode.app; do
+            if [[ -d "$app" ]]; then
+              sudo xcode-select -s "$app"
+              break
+            fi
+          done
+          xcodebuild -version
+          ls /Applications | grep -i Xcode || true
+
+      - name: Generate Xcode project
+        run: |
+          set -euo pipefail
+          brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
+          scripts/ios-sync-web.sh
+          cd ios && xcodegen generate
+
+      - name: Write ASC API key
+        env:
+          P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+        run: |
+          set -euo pipefail
+          test -n "${APP_STORE_CONNECT_KEY_ID:-}"
+          test -n "${APP_STORE_CONNECT_ISSUER_ID:-}"
+          test -n "${P8:-}"
+          ASC_KEY_PATH="$RUNNER_TEMP/private_keys/AuthKey.p8"
+          mkdir -p "$(dirname "$ASC_KEY_PATH")"
+          printf '%s\n' "$P8" > "$ASC_KEY_PATH"
+          chmod 600 "$ASC_KEY_PATH"
+          mkdir -p "$HOME/.appstoreconnect/private_keys"
+          cp "$ASC_KEY_PATH" "$HOME/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
+          chmod 600 "$HOME/.appstoreconnect/private_keys/AuthKey_${APP_STORE_CONNECT_KEY_ID}.p8"
+
+      - name: Check ASC app record (read-only)
+        env:
+          P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+        run: |
+          set -euo pipefail
+          pip3 install -q --break-system-packages PyJWT cryptography 2>/dev/null || pip3 install -q PyJWT cryptography
+          python3 - <<'PY'
+          import json, os, time, urllib.request
+          import jwt
+          p8 = os.environ["P8"].replace("\\n", "\n").strip()
+          now = int(time.time())
+          t = jwt.encode({"iss": os.environ["APP_STORE_CONNECT_ISSUER_ID"].strip(), "iat": now, "exp": now + 1100,
+                          "aud": "appstoreconnect-v1"}, p8, algorithm="ES256",
+                         headers={"kid": os.environ["APP_STORE_CONNECT_KEY_ID"].strip()})
+          def get(path):
+              req = urllib.request.Request("https://api.appstoreconnect.apple.com" + path, headers={"Authorization": "Bearer " + t})
+              with urllib.request.urlopen(req, timeout=60) as r:
+                  return json.loads(r.read().decode() or "{}")
+          a = get(f"/v1/apps/{os.environ['ASC_APP_ID']}")["data"]["attributes"]
+          print("ASC app", os.environ["ASC_APP_ID"], "name=", a.get("name"), "bundleId=", a.get("bundleId"), "sku=", a.get("sku"))
+          for info in get(f"/v1/apps/{os.environ['ASC_APP_ID']}/appInfos")["data"]:
+              for loc in get(f"/v1/appInfos/{info['id']}/appInfoLocalizations")["data"]:
+                  la = loc["attributes"]
+                  print("appInfo", info["attributes"].get("appStoreState") or info["attributes"].get("state"), la.get("locale"), "name=", la.get("name"), "subtitle=", la.get("subtitle"))
+          if a.get("bundleId") != os.environ["BUNDLE_ID"]:
+              raise SystemExit(f"::error::ASC app {os.environ['ASC_APP_ID']} has bundleId {a.get('bundleId')!r}, expected {os.environ['BUNDLE_ID']!r}")
+          # Build numbers must be unique per app: max(existing) + 1, at least the run number.
+          nums = []
+          for bld in get(f"/v1/builds?filter[app]={os.environ['ASC_APP_ID']}&limit=200&fields[builds]=version,processingState")["data"]:
+              try: nums.append(int(bld["attributes"]["version"]))
+              except (TypeError, ValueError): pass
+          n = max([int(os.environ["GITHUB_RUN_NUMBER"])] + [x + 1 for x in nums])
+          print("existing builds:", sorted(nums)[-10:], "-> BUILD_NUMBER", n)
+          open(os.environ["GITHUB_ENV"], "a").write(f"BUILD_NUMBER={n}\n")
+          PY
+
+      - name: Install Distribution cert + App Store profile
+        env:
+          P12_BASE64: ${{ secrets.IOS_DISTRIBUTION_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_P12_PASSWORD }}
+          P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+        run: |
+          set -euo pipefail
+          test -n "${P12_BASE64:-}" && test -n "${P12_PASSWORD:-}"
+          CERT_PATH=$RUNNER_TEMP/dist.p12
+          PROFILE_PATH=$RUNNER_TEMP/appstore.mobileprovision
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 24)
+          echo -n "$P12_BASE64" | base64 --decode > "$CERT_PATH"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERT_PATH" -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" $(security list-keychain -d user | sed s/\"//g)
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security find-identity -v -p codesigning "$KEYCHAIN_PATH" | tee "$RUNNER_TEMP/identities.txt"
+          # SHA-1 of the distribution identity in the p12 (upper-case hex)
+          export CERT_SHA1=$(grep -m1 -Eo '[0-9A-F]{40}' "$RUNNER_TEMP/identities.txt")
+          test -n "$CERT_SHA1"
+          if false; then
+            :
+          else
+            echo "Finding (or creating) an App Store profile for $BUNDLE_ID via the ASC API"
+            python3 - <<'PY'
+          # Idempotent: reuse an ACTIVE IOS_APP_STORE profile for BUNDLE_ID that contains the p12 cert;
+          # otherwise register the bundle id if needed and create one. Only creates; never deletes/revokes.
+          import base64, hashlib, json, os, plistlib, subprocess, time, urllib.error, urllib.request
+          import jwt
+          p8 = os.environ["P8"].replace("\\n", "\n").strip()
+          def tok():
+              now = int(time.time())
+              return jwt.encode({"iss": os.environ["APP_STORE_CONNECT_ISSUER_ID"].strip(), "iat": now, "exp": now + 1100,
+                                 "aud": "appstoreconnect-v1"}, p8, algorithm="ES256",
+                                headers={"kid": os.environ["APP_STORE_CONNECT_KEY_ID"].strip()})
+          def api(method, path, body=None):
+              req = urllib.request.Request("https://api.appstoreconnect.apple.com" + path, method=method,
+                                           data=json.dumps(body).encode() if body is not None else None,
+                                           headers={"Authorization": "Bearer " + tok(), "Content-Type": "application/json"})
+              try:
+                  with urllib.request.urlopen(req, timeout=60) as r:
+                      return json.loads(r.read().decode() or "{}")
+              except urllib.error.HTTPError as e:
+                  raise SystemExit(f"::error::{method} {path} -> {e.code}: {e.read().decode()[:2000]}")
+          bid = os.environ["BUNDLE_ID"]
+          want = os.environ["CERT_SHA1"].upper()
+          base_name = os.environ.get("CI_PROFILE_NAME", "High Priestess App Store (CI)")
+          def certs_in(raw):
+              xml = subprocess.run(["security", "cms", "-D"], input=raw, capture_output=True, check=True).stdout
+              return [hashlib.sha1(c).hexdigest().upper() for c in plistlib.loads(xml).get("DeveloperCertificates", [])]
+
+          # 1. bundle id (register if missing; the app needs no extra capabilities)
+          ids = [b for b in api("GET", f"/v1/bundleIds?filter[identifier]={bid}&filter[platform]=IOS&limit=50")["data"]
+                 if b["attributes"]["identifier"] == bid]
+          if ids:
+              bundle = ids[0]
+              print("bundle id registered:", bundle["id"])
+          else:
+              bundle = api("POST", "/v1/bundleIds", {"data": {"type": "bundleIds", "attributes": {
+                  "identifier": bid, "name": "Temple of the High Priestess", "platform": "IOS"}}})["data"]
+              print("registered bundle id", bid, bundle["id"])
+
+          # 2. reuse an existing active App Store profile containing the p12 cert
+          found, names = None, set()
+          for pr in api("GET", f"/v1/bundleIds/{bundle['id']}/profiles?limit=200")["data"]:
+              a = pr["attributes"]
+              names.add(a.get("name"))
+              print("profile", a.get("name"), a.get("profileType"), a.get("profileState"), a.get("expirationDate"))
+              if a.get("profileType") == "IOS_APP_STORE" and a.get("profileState") == "ACTIVE":
+                  raw = base64.b64decode(a["profileContent"])
+                  if want in certs_in(raw):
+                      found = raw
+                      print("  -> reusing")
+                      break
+                  print("  (does not contain the p12 distribution cert)")
+
+          # 3. otherwise create one for the distribution cert matching the p12
+          if not found:
+              cert = None
+              for c in api("GET", "/v1/certificates?filter[certificateType]=DISTRIBUTION,IOS_DISTRIBUTION&limit=200")["data"]:
+                  der = base64.b64decode(c["attributes"]["certificateContent"])
+                  if hashlib.sha1(der).hexdigest().upper() == want:
+                      cert = c
+                      break
+              if not cert:
+                  raise SystemExit(f"::error::no DISTRIBUTION certificate in the account matches the p12 (sha1 {want})")
+              print("distribution cert", cert["id"], cert["attributes"].get("name"), "serial", cert["attributes"].get("serialNumber"))
+              name = base_name
+              if name in names:  # a stale/invalid profile already uses the name; profile names must be unique
+                  name = f"{base_name} {cert['attributes'].get('serialNumber', cert['id'])[-6:]} {time.strftime('%Y%m%d')}"
+              pr = api("POST", "/v1/profiles", {"data": {"type": "profiles",
+                  "attributes": {"name": name, "profileType": "IOS_APP_STORE"},
+                  "relationships": {"bundleId": {"data": {"type": "bundleIds", "id": bundle["id"]}},
+                                    "certificates": {"data": [{"type": "certificates", "id": cert["id"]}]}}}})["data"]
+              print("created profile", pr["id"], pr["attributes"].get("name"))
+              found = base64.b64decode(pr["attributes"]["profileContent"])
+              assert want in certs_in(found), "created profile does not contain the p12 cert"
+          open(os.path.join(os.environ["RUNNER_TEMP"], "appstore.mobileprovision"), "wb").write(found)
+          PY
+          fi
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          security cms -D -i "$PROFILE_PATH" > "$RUNNER_TEMP/profile.plist"
+          UUID=$(plutil -extract UUID raw "$RUNNER_TEMP/profile.plist")
+          NAME=$(plutil -extract Name raw "$RUNNER_TEMP/profile.plist")
+          APPID=$(plutil -extract Entitlements.application-identifier raw "$RUNNER_TEMP/profile.plist")
+          cp "$PROFILE_PATH" "$HOME/Library/MobileDevice/Provisioning Profiles/$UUID.mobileprovision"
+          echo "Installed profile UUID=$UUID Name=$NAME application-identifier=$APPID"
+          test "$APPID" = "$TEAM_ID.$BUNDLE_ID"
+          echo "PROFILE_NAME=$NAME" >> "$GITHUB_ENV"
+
+      - name: Pin manual signing on the app target (CI only)
+        run: |
+          set -euo pipefail
+          # Only the app target gets the profile; SPM package / resource-bundle targets must not
+          # inherit PROVISIONING_PROFILE_SPECIFIER (command-line overrides would apply to all targets).
+          python3 - <<'PY'
+          import os, re
+          p = "ios/HighPriestess.xcodeproj/project.pbxproj"
+          s = open(p).read()
+          anchor = "\t\t\t\tPRODUCT_BUNDLE_IDENTIFIER = com.ragnus.weather;\n"
+          n = s.count(anchor)
+          assert n == 2, f"expected 2 app configs, found {n}"
+          add = (
+            anchor
+            + '\t\t\t\t"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "Apple Distribution";\n'
+            + f'\t\t\t\t"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "{os.environ["PROFILE_NAME"]}";\n'
+          )
+          s = s.replace(anchor, add)
+          s = s.replace("CODE_SIGN_STYLE = Automatic;", "CODE_SIGN_STYLE = Manual;")
+          open(p, "w").write(s)
+          PY
+          grep -n 'PROVISIONING_PROFILE_SPECIFIER\|CODE_SIGN_STYLE' ios/HighPriestess.xcodeproj/project.pbxproj
+
+      - name: Verify Xcode project
+        run: |
+          set -euo pipefail
+          test -f "$PROJECT/project.pbxproj"
+          xcodebuild -list -project "$PROJECT"
+
+      - name: Write ExportOptions.plist
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" << PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>destination</key>
+            <string>export</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>signingCertificate</key>
+            <string>Apple Distribution</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>${BUNDLE_ID}</key>
+              <string>${PROFILE_NAME}</string>
+            </dict>
+            <key>teamID</key>
+            <string>${TEAM_ID}</string>
+            <key>uploadSymbols</key>
+            <true/>
+          </dict>
+          </plist>
+          PLIST
+          sed -i '' 's/^          //' "$RUNNER_TEMP/ExportOptions.plist"
+          plutil -lint "$RUNNER_TEMP/ExportOptions.plist"
+
+      - name: Archive
+        run: |
+          set -euo pipefail
+          mkdir -p "$(dirname "$ARCHIVE_PATH")"
+          xcodebuild \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath "$ARCHIVE_PATH" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            MARKETING_VERSION="$MARKETING_VERSION" \
+            archive 2>&1 | tee "$RUNNER_TEMP/archive.log" | grep -E --line-buffered 'error:|\*\* ARCHIVE' || true
+          if ! grep -q '\*\* ARCHIVE SUCCEEDED \*\*' "$RUNNER_TEMP/archive.log"; then
+            echo "::error::archive failed"
+            grep -E -B2 -A8 'error:' "$RUNNER_TEMP/archive.log" | head -300 || true
+            tail -80 "$RUNNER_TEMP/archive.log"
+            exit 1
+          fi
+          test -d "$ARCHIVE_PATH"
+          APP="$ARCHIVE_PATH/Products/Applications/HighPriestess.app"
+          ls -la "$APP" "$APP/Web"
+          test -f "$APP/Web/index.html" && test ! -e "$APP/Web/assets/lina-ref.jpg"
+          du -sh "$APP"
+          plutil -p "$APP/Info.plist"
+
+      - name: Upload archive log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: archive-log-${{ github.run_number }}
+          path: ${{ runner.temp }}/archive.log
+          if-no-files-found: ignore
+
+      - name: Export IPA
+        run: |
+          set -euo pipefail
+          mkdir -p "$EXPORT_PATH"
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$ARCHIVE_PATH" \
+            -exportPath "$EXPORT_PATH" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist"
+          ls -la "$EXPORT_PATH"
+          test -n "$(find "$EXPORT_PATH" -name '*.ipa' | head -1)"
+
+      - name: Validate with App Store Connect
+        run: |
+          set -euo pipefail
+          IPA=$(find "$EXPORT_PATH" -name '*.ipa' | head -1)
+          set +e
+          xcrun altool --validate-app --type ios --file "$IPA" \
+            --apiKey "$APP_STORE_CONNECT_KEY_ID" --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" > "$RUNNER_TEMP/altool-validate.log" 2>&1
+          rc=$?
+          set -e
+          cat "$RUNNER_TEMP/altool-validate.log"
+          if [ "$rc" -ne 0 ] || grep -Eiq 'Validation failed|ERROR ITMS-|ERROR:\s*\[altool|error: ' "$RUNNER_TEMP/altool-validate.log"; then
+            echo "::error::altool validation failed (rc=$rc)"
+            exit 1
+          fi
+
+      - name: Upload to TestFlight
+        run: |
+          set -euo pipefail
+          IPA=$(find "$EXPORT_PATH" -name '*.ipa' | head -1)
+          echo "Uploading $IPA (build $BUILD_NUMBER)"
+          set +e
+          xcrun altool --upload-app \
+            --type ios \
+            --file "$IPA" \
+            --apiKey "$APP_STORE_CONNECT_KEY_ID" \
+            --apiIssuer "$APP_STORE_CONNECT_ISSUER_ID" > "$RUNNER_TEMP/altool-upload.log" 2>&1
+          rc=$?
+          set -e
+          cat "$RUNNER_TEMP/altool-upload.log"
+          if [ "$rc" -ne 0 ]; then
+            echo "::error::altool exited $rc"
+            exit 1
+          fi
+          # altool can exit 0 while rejecting the package: fail hard on any validation error text.
+          if grep -Eiq 'UPLOAD FAILED|Validation failed|STATE_ERROR\.VALIDATION_ERROR|Failed to upload package|ERROR:\s*\[altool|ERROR ITMS-|error: ' "$RUNNER_TEMP/altool-upload.log"; then
+            echo "::error::altool upload/validation failed (see log)"
+            exit 1
+          fi
+          if ! grep -Eiq 'UPLOAD SUCCEEDED|No errors uploading|Delivery UUID|The package was successfully uploaded' "$RUNNER_TEMP/altool-upload.log"; then
+            echo "::error::altool did not report success"
+            exit 1
+          fi
+
+      - name: Wait for ASC processing (fail unless VALID)
+        env:
+          P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+        run: |
+          set -euo pipefail
+          pip3 install -q --break-system-packages PyJWT cryptography 2>/dev/null || pip3 install -q PyJWT cryptography
+          python3 - <<'PY'
+          import json, os, time, urllib.request
+          import jwt
+          p8 = os.environ["P8"].replace("\\n", "\n").strip()
+          def tok():
+              now = int(time.time())
+              return jwt.encode({"iss": os.environ["APP_STORE_CONNECT_ISSUER_ID"].strip(), "iat": now, "exp": now + 1100,
+                                 "aud": "appstoreconnect-v1"}, p8, algorithm="ES256",
+                                headers={"kid": os.environ["APP_STORE_CONNECT_KEY_ID"].strip()})
+          def get(path):
+              req = urllib.request.Request("https://api.appstoreconnect.apple.com" + path, headers={"Authorization": "Bearer " + tok()})
+              with urllib.request.urlopen(req, timeout=60) as r:
+                  return json.loads(r.read().decode() or "{}")
+          app = os.environ["ASC_APP_ID"]
+          want = os.environ["BUILD_NUMBER"]
+          deadline = time.time() + 40 * 60
+          state = None
+          while time.time() < deadline:
+              d = get(f"/v1/builds?filter[app]={app}&filter[version]={want}&filter[preReleaseVersion.version]={os.environ['MARKETING_VERSION']}&limit=5")
+              if d.get("data"):
+                  state = d["data"][0]["attributes"]["processingState"]
+                  print(time.strftime("%H:%M:%S"), "build", want, state, flush=True)
+                  if state in ("VALID", "INVALID", "FAILED"):
+                      break
+              else:
+                  print(time.strftime("%H:%M:%S"), "build", want, "not visible yet", flush=True)
+              time.sleep(30)
+          if state != "VALID":
+              raise SystemExit(f"::error::build {want} processing state {state!r} (check the ASC 'issues' email for ITMS codes)")
+          PY
+
+      - name: Summary
+        if: success()
+        env:
+          NOTES: ${{ github.event.inputs.notes }}
+        run: |
+          {
+            echo "### TestFlight upload"
+            echo "- App: Temple of the High Priestess (ASC $ASC_APP_ID), bundle \`$BUNDLE_ID\`"
+            echo "- Build: \`$BUILD_NUMBER\` (version $MARKETING_VERSION), processing VALID"
+            echo "- Notes: $NOTES"
+            echo "- Not submitted for review (TestFlight only)."
+          } >> "$GITHUB_STEP_SUMMARY"

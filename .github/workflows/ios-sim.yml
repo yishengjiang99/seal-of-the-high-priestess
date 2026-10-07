@@ -1,0 +1,97 @@
+name: iOS simulator
+
+# Builds the iOS shell (XcodeGen), runs the unit + web-boot tests on an iPhone simulator,
+# then launches the app and captures a landscape screenshot (artifact).
+on:
+  push:
+    branches: [main]
+    paths: ['ios/**', 'js/**', 'css/**', 'index.html', 'assets/**', 'audio/**', 'scripts/ios-sync-web.sh', '.github/workflows/ios-sim.yml']
+  workflow_dispatch:
+
+concurrency:
+  group: ios-sim-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sim:
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          for app in /Applications/Xcode_26.0.app /Applications/Xcode_26.app /Applications/Xcode_16.4.app /Applications/Xcode_16.3.app /Applications/Xcode.app; do
+            if [[ -d "$app" ]]; then sudo xcode-select -s "$app"; break; fi
+          done
+          xcodebuild -version
+
+      - name: Generate project
+        run: |
+          set -euo pipefail
+          brew list xcodegen >/dev/null 2>&1 || brew install xcodegen
+          scripts/ios-sync-web.sh
+          cd ios && xcodegen generate
+
+      - name: Pick simulator
+        run: |
+          set -euo pipefail
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json, sys
+          d = json.load(sys.stdin)["devices"]
+          ios = sorted([k for k in d if "iOS" in k], key=lambda k: [int(x) for x in k.split("iOS-")[-1].split("-")])
+          pref = ["iPhone 17 Pro Max", "iPhone 16 Pro Max", "iPhone 17 Pro", "iPhone 16 Pro", "iPhone 16"]
+          for name in pref:
+              for rt in reversed(ios):
+                  for dev in d[rt]:
+                      if dev["name"] == name: print(dev["udid"]); sys.exit()
+          for rt in reversed(ios):
+              for dev in d[rt]:
+                  if dev["name"].startswith("iPhone"): print(dev["udid"]); sys.exit()
+          ')
+          test -n "$UDID"
+          xcrun simctl list devices | grep "$UDID"
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+
+      - name: Test
+        working-directory: ios
+        run: |
+          set -euo pipefail
+          set +e
+          xcodebuild test \
+            -project HighPriestess.xcodeproj -scheme HighPriestess \
+            -destination "platform=iOS Simulator,id=$UDID" \
+            -derivedDataPath "$RUNNER_TEMP/dd" \
+            -resultBundlePath "$RUNNER_TEMP/tests.xcresult" \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY=- DEVELOPMENT_TEAM= \
+            > "$RUNNER_TEMP/test.log" 2>&1
+          rc=$?
+          set -e
+          grep -E "error:|warning: .*(Swift|concurr)|Test Case .*(passed|failed)|web state:|\*\* TEST" "$RUNNER_TEMP/test.log" | head -200 || true
+          if [ $rc -ne 0 ]; then tail -120 "$RUNNER_TEMP/test.log"; exit $rc; fi
+
+      - name: Launch + screenshot
+        run: |
+          set -euo pipefail
+          APP=$(find "$RUNNER_TEMP/dd/Build/Products" -name HighPriestess.app -path '*iphonesimulator*' | head -1)
+          xcrun simctl boot "$UDID" 2>/dev/null || true
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl launch "$UDID" com.ragnus.weather
+          sleep 15
+          mkdir -p shots
+          xcrun simctl io "$UDID" screenshot shots/launch-raw.png
+          sips -r 270 shots/launch-raw.png --out shots/launch-landscape.png >/dev/null || true
+          sips -g pixelWidth -g pixelHeight shots/launch-raw.png
+          xcrun simctl spawn "$UDID" log show --last 2m --style compact --predicate 'process == "HighPriestess"' > shots/app.log 2>&1 || true
+          tail -40 shots/app.log || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ios-sim-${{ github.run_number }}
+          path: |
+            shots/
+            ${{ runner.temp }}/test.log
+          if-no-files-found: ignore
