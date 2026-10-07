@@ -80,10 +80,15 @@ for email in EMAILS:
     if not ua.get("allAppsVisible"):
         vis = [a["id"] for a in must("GET", f"/v1/users/{users[0]['id']}/visibleApps?limit=200")["data"]]
         print("  visibleApps include this app:", APP in vis)
-    found = must("GET", f"/v1/betaTesters?filter[email]={urllib.parse.quote(email)}&limit=5")["data"]
+    # filter[email] is fuzzy; keep exact matches only. For internal groups, POST /v1/betaTesters with the
+    # group works where linking an existing (external) tester record returns 409 "cannot be assigned".
+    found = [t for t in must("GET", f"/v1/betaTesters?filter[email]={urllib.parse.quote(email)}&limit=20")["data"]
+             if (t["attributes"].get("email") or "").lower() == email]
     for t in found:
         print("  existing betaTester", t["id"], {k: t["attributes"].get(k) for k in ("inviteType", "state", "appDevices")})
     done = False
+    found_ids = found
+    found = []  # create-with-group first; fall back to linking an existing record
     for attempt in range(4):
         if found:
             st, d = api("POST", f"/v1/betaGroups/{gid}/relationships/betaTesters", {"data": [{"type": "betaTesters", "id": found[0]["id"]}]})
@@ -96,8 +101,8 @@ for email in EMAILS:
             done = True
             break
         print(f"  attempt {attempt + 1}: {st} {(d.get('error') or '')[:600]}")
-        if found and attempt == 1:
-            found = []  # fall back to creating via POST /v1/betaTesters with the group
+        if attempt == 1:
+            found = found_ids
         time.sleep(10)
     if not done:
         print(f"::warning::could not add {email} to {GROUP}; see attempts above")
