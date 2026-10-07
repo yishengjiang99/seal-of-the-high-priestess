@@ -66,6 +66,7 @@ gid = group["id"]
 all_builds = bool(group["attributes"].get("hasAccessToAllBuilds"))
 
 # 2. testers
+TESTER_FAIL = False
 members = {t["attributes"].get("email", "").lower(): t for t in must("GET", f"/v1/betaGroups/{gid}/betaTesters?limit=200")["data"]}
 for email in EMAILS:
     if email in members:
@@ -75,15 +76,32 @@ for email in EMAILS:
         print(f"::warning::{email} is not an App Store Connect user on this team; internal testers must be. Skipping.")
         continue
     ua = users[0]["attributes"]
+    print("ASC user", email, "roles=", ua.get("roles"), "allAppsVisible=", ua.get("allAppsVisible"))
+    if not ua.get("allAppsVisible"):
+        vis = [a["id"] for a in must("GET", f"/v1/users/{users[0]['id']}/visibleApps?limit=200")["data"]]
+        print("  visibleApps include this app:", APP in vis)
     found = must("GET", f"/v1/betaTesters?filter[email]={urllib.parse.quote(email)}&limit=5")["data"]
-    if found:
-        must("POST", f"/v1/betaGroups/{gid}/relationships/betaTesters", {"data": [{"type": "betaTesters", "id": found[0]["id"]}]})
-        print("added existing beta tester", email, "to", GROUP)
-    else:
-        must("POST", "/v1/betaTesters", {"data": {"type": "betaTesters",
-            "attributes": {"email": email, "firstName": ua.get("firstName") or "Tester", "lastName": ua.get("lastName") or "Internal"},
-            "relationships": {"betaGroups": {"data": [{"type": "betaGroups", "id": gid}]}}}})
-        print("created beta tester", email, "in", GROUP)
+    for t in found:
+        print("  existing betaTester", t["id"], {k: t["attributes"].get(k) for k in ("inviteType", "state", "appDevices")})
+    done = False
+    for attempt in range(4):
+        if found:
+            st, d = api("POST", f"/v1/betaGroups/{gid}/relationships/betaTesters", {"data": [{"type": "betaTesters", "id": found[0]["id"]}]})
+        else:
+            st, d = api("POST", "/v1/betaTesters", {"data": {"type": "betaTesters",
+                "attributes": {"email": email, "firstName": ua.get("firstName") or "Tester", "lastName": ua.get("lastName") or "Internal"},
+                "relationships": {"betaGroups": {"data": [{"type": "betaGroups", "id": gid}]}}}})
+        if st in (200, 201, 204):
+            print("added", email, "to", GROUP, "status", st)
+            done = True
+            break
+        print(f"  attempt {attempt + 1}: {st} {(d.get('error') or '')[:600]}")
+        if found and attempt == 1:
+            found = []  # fall back to creating via POST /v1/betaTesters with the group
+        time.sleep(10)
+    if not done:
+        print(f"::warning::could not add {email} to {GROUP}; see attempts above")
+        TESTER_FAIL = True
 
 # 3. build
 q = f"/v1/builds?filter[app]={APP}&sort=-uploadedDate&limit=20"
@@ -115,3 +133,5 @@ summary = os.environ.get("GITHUB_STEP_SUMMARY")
 if summary:
     with open(summary, "a") as f:
         f.write(f"### TestFlight internal testing\n- Group: {GROUP} ({gid})\n- Build {bnum}: {detail.get('internalBuildState')}\n")
+if TESTER_FAIL:
+    sys.exit("::error::one or more testers could not be added")
