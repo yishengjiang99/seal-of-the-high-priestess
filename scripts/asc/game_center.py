@@ -28,7 +28,7 @@ def step(label, fn):
 def capability():
     b = [x for x in must("GET", f"/v1/bundleIds?filter[identifier]={BUNDLE_ID}&filter[platform]=IOS&include=bundleIdCapabilities")["data"]
          if x["attributes"]["identifier"] == BUNDLE_ID][0]
-    caps = [c["attributes"]["capabilityType"] for c in get_all(f"/v1/bundleIds/{b['id']}/bundleIdCapabilities?limit=50")]
+    caps = [c["attributes"]["capabilityType"] for c in must("GET", f"/v1/bundleIds/{b['id']}/bundleIdCapabilities")["data"]]
     if "GAME_CENTER" in caps:
         print("capability GAME_CENTER already enabled", caps); return
     st, d = api("POST", "/v1/bundleIdCapabilities", {"data": {"type": "bundleIdCapabilities", "attributes": {"capabilityType": "GAME_CENTER"},
