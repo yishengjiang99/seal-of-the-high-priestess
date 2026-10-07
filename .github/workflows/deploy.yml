@@ -27,3 +27,5 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: .
           publish_branch: gh-pages
+          # Native app, save server and App Store docs are not part of the web game.
+          exclude_assets: '.github,ios,server,docs/asc,assets/lina-ref.jpg,node_modules'

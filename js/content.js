@@ -5,7 +5,7 @@
 window.DATA = (() => {
   const C = {};
 
-  C.TITLE = "Seal of the High Priestess";
+  C.TITLE = "Temple of the High Priestess";
   C.SUBTITLE = "A Journey of Purification and Poisoned Words";
 
   // ---- Characters (story stats; power rises only via flags / named gear) ----
