@@ -6,7 +6,7 @@
   "description": "Temple of the High Priestess: save sync + server-driven content API (grepawk.com/high-priestess/api)",
   "engines": { "node": ">=20" },
   "scripts": {
-    "vendor": "cp ../js/content-core.js lib/content-core.cjs",
+    "vendor": "mkdir -p lib && cp ../js/content-core.js lib/content-core.cjs",
     "start": "node src/index.js",
     "pretest": "npm run -s vendor",
     "test": "node --test --test-concurrency=1 test/*.test.js"

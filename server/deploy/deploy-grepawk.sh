@@ -11,7 +11,7 @@ HOST="${TEMPLE_API_HOST:-root@grepawk.com}"
 DEST=/var/www/temple-api
 here="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$here"
-cp ../js/content-core.js lib/content-core.cjs
+mkdir -p lib && cp ../js/content-core.js lib/content-core.cjs
 ssh -o BatchMode=yes "$HOST" "mkdir -p $DEST"
 rsync -rlptz --delete --chmod=D755,F644 --exclude node_modules --exclude test src lib migrations package.json package-lock.json "$HOST:$DEST/"
 scp -q deploy/temple-api.service "$HOST:/etc/systemd/system/temple-api.service"
