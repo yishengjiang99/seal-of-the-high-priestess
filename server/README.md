@@ -1,4 +1,4 @@
-# temple-api: save sync + server-driven content
+# temple-api: save sync, purchases + server-driven content
 
 Live at **https://grepawk.com/high-priestess/api/**. It runs on the grepawk.com droplet:
 
@@ -7,7 +7,7 @@ Live at **https://grepawk.com/high-priestess/api/**. It runs on the grepawk.com 
 | Code | `/var/www/temple-api` (deployed from this folder) |
 | Service | `temple-api.service`, running as `www-data` on 127.0.0.1:**8791** with `BASE_PATH=/high-priestess`. Migrations run on start. |
 | Database | local MySQL, database `temple`, user `temple@localhost` |
-| Secrets | `/etc/temple.env` (root:www-data 640). Created once by `deploy/bootstrap-remote.sh` and never committed or printed. |
+| Secrets | `/etc/temple.env` (root:www-data 640): DB URL, `CONTENT_ADMIN_TOKEN`, `CONTENT_SIGNING_KID` + `CONTENT_SIGNING_KEY` (Ed25519, PKCS#8 base64), optional `ASSA_KEY_ID`/`ASSA_ISSUER_ID`/`ASSA_P8` (App Store Server API). Created by `deploy/bootstrap-remote.sh` (re-running it only appends a missing signing key) and never committed or printed. |
 | nginx | `location ^~ /high-priestess/api/` (proxy) and `location ^~ /high-priestess/` (static legal pages in `/var/www/high-priestess`), inside `/etc/nginx/sites-available/finalcut` |
 
 Express 5 + mysql2. The content validator `lib/content-core.cjs` is a vendored copy of `../js/content-core.js`, the same code the game runs. `npm run vendor`, `npm test` and the deploy script refresh it.
@@ -36,20 +36,37 @@ Auth is anonymous. The app generates `installId` (UUID) and `secret` (64 hex) an
 | PUT | `/v1/saves/:slot` | Header **`If-Match: <revision>`** (`0` for a new slot); body `{data:"<save JSON string>", summary?, gameVersion?, clientUpdatedAt?}`. Returns `200 {revision}`, **`409 {server:<current copy>}`** on a stale revision, or `428` without If-Match. The replaced copy goes to history (the last 10 are kept). |
 | GET | `/v1/saves/:slot/history` | Earlier revisions |
 | GET / PUT | `/v1/settings` | `{data:"<settings JSON string>"}` |
-| DELETE | `/v1/me` | Deletes the player, devices, tokens, saves, history and settings (the app's "Delete cloud data" button) |
+| DELETE | `/v1/me` | Deletes the player, devices, tokens, saves, history, settings, entitlements and events (the app's "Delete cloud data" button) |
 
-All routes except `/health`, `/v1/auth/device` and `/v1/content` need `Authorization: Bearer <token>`.
+All routes except `/health`, `/v1/auth/device`, `/v1/content*` and `/v1/iap/notifications` need `Authorization: Bearer <token>`.
+
+## Purchases (StoreKit 2) and funnel events
+
+| Method | Path | Notes |
+|---|---|---|
+| POST | `/v1/iap/transactions` | `{signedTransaction: <JWS from Transaction.jsonRepresentation / jwsRepresentation>}`. Verified (x5c chain → pinned Apple Root CA G3, Apple marker OIDs, ES256), bundle id checked, stored per player. → `{ok, verifiedWith, entitlements}`; `422` if unverifiable or unknown product. |
+| GET | `/v1/entitlements` | `{full, supporter, products:[…], revoked:[productId…]}` |
+| POST | `/v1/iap/notifications` | **App Store Server Notifications v2** (production + sandbox URL in ASC). Public; the signed payload is verified the same way. `REFUND`/`REVOKE` revoke, `REFUND_REVERSED` restores. Idempotent per notificationUUID. |
+| POST | `/v1/events` | `{events:[{name, props?, at?}], appVersion?}`. Only `paywall_shown`, `purchase`, `restore`, `region_complete`; max 50 per call. Deleted after 13 months. |
+| GET | `/v1/admin/metrics?days=30` | Admin token. Daily event counts + unique players, entitlement counts. |
+
+Products: `com.ragnus.weather.fullgame` and `com.ragnus.weather.fullgame.b` → `full`; `com.ragnus.weather.supporter` → `supporter`. With `ASSA_*` set, each upload is re-fetched from the App Store Server API (authoritative); without it the JWS chain check is used (`verifiedWith: "jws"`).
 
 ## Content API (server-driven story text and balance; assets stay bundled)
 
-The game's content is `{DATA, MAPS, SCENES}`, about 290 KB of pure JSON from `js/content.js`, `js/maps.js` and `js/dialogue.js`. The server serves it in two layers:
+The game's content is `{DATA, MAPS, SCENES, PAYWALL, FLAGS}`, about 290 KB of pure JSON from `js/content.js`, `js/maps.js`, `js/dialogue.js` and `js/config.js` (paywall copy/placement/offer + feature flags; **never prices**). The server serves it in two layers:
 
 1. **Base**: a published snapshot of the repo content. `.github/workflows/content-publish.yml` builds it with `scripts/build-content.mjs` and PUTs it on every push to `main` that touches content, or on manual dispatch. It is identified by a content hash (cyrb53 of the JSON).
 2. **Overrides**: an [RFC 7386 JSON Merge Patch](https://www.rfc-editor.org/rfc/rfc7386) applied on top of whichever base is active. Overrides are versioned (1, 2, 3, …) and survive base re-publishes. **This is where you make live edits.**
 
 ### Client endpoint
 
-`GET /high-priestess/api/v1/content?have=<bundled hash>&schema=1`
+`GET /high-priestess/api/v1/content?have=<bundled hash>&schema=2` (signed, app build 2+ and the web build)
+
+- Returns the envelope `{schema:2, kid, alg:"Ed25519", payload:"<JSON string>", sig}`. `sig` is Ed25519 over the exact `payload` string; the payload is `{schema:2, have, version, baseHash, base?, overrides, updatedAt}`. Public keys: `GET /v1/content/keys`, bundled in `js/content-keys.js` and `ios/HighPriestess/Net/ContentKeys.swift`. ETag `W/"c2-…"`. `503` if the server has no signing key.
+- Key rotation: add the new kid to both bundled key files, ship, then change `CONTENT_SIGNING_KID`/`KEY` in /etc/temple.env.
+
+`GET …/v1/content?have=<hash>&schema=1` (unsigned, app build 1)
 
 - Returns `{schema, version, baseHash, overrides, updatedAt}`. It adds `base` only when `have` is an older base the server has published. A bundle the server has never seen (an app build newer than the server) keeps its own content.
 - Sends `ETag: W/"c1-<baseHash|nobase>-<overridesVersion>"`. If-None-Match → `304`.
@@ -57,7 +74,22 @@ The game's content is `{DATA, MAPS, SCENES}`, about 290 KB of pure JSON from `js
 
 ### Editing content (admin)
 
-The token is `CONTENT_ADMIN_TOKEN` from `/etc/temple.env`. The same value is stored as the repo secret of the same name, which the publish workflow uses.
+Use the CLI (`node server/cli/temple-content.mjs help`). It gets the admin token from `CONTENT_ADMIN_TOKEN` or over ssh and never prints it:
+
+```bash
+C="node server/cli/temple-content.mjs"
+$C status                                   # live base + override version, signature check
+$C pull -o overrides.json                   # current overrides (--effective for the merged content)
+$C push overrides.json --note "tune wisp"   # replace overrides (validated; 409 if someone else published)
+$C set DATA.ENEMIES.wisp.maxHp 30           # one-key edit (read-modify-write)
+$C flag paywall false                       # FLAGS.paywall = false (kill switch)
+$C offer com.ragnus.weather.fullgame.b      # which Full Game product id to offer
+$C offer-split fullgame=500 fullgame.b=500  # price test buckets (weights)
+$C history; $C rollback 3                   # 0 = no overrides
+$C verify                                   # fetch schema 2 and check the signature with the bundled key
+```
+
+Raw HTTP, if needed. The token is `CONTENT_ADMIN_TOKEN` from `/etc/temple.env`. The same value is stored as the repo secret of the same name, which the publish workflow uses.
 
 ```bash
 API=https://grepawk.com/high-priestess/api/v1/admin/content
@@ -95,8 +127,8 @@ Merge-patch rules: objects merge key by key, and `null` deletes a key. **Arrays 
 
 ### Fallback in the game (`js/content-loader.js`)
 
-1. Fetch `/v1/content`, giving up after **1.5 s**. On iOS the app proxies it through `app://game/__content`.
-2. If that fails, use the last good response, cached in `localStorage["soth_content_cache_v1"]`. A cached base counts only if it was built for this same bundled hash.
+1. Fetch `/v1/content?schema=2`, giving up after **1.5 s**, and verify the signature (WebCrypto Ed25519). On iOS the page asks `app://game/__content`; the shell fetches, verifies with CryptoKit and caches natively (2.5 s budget).
+2. If that fails, use the last good envelope, cached in `localStorage["soth_content_cache_v2"]` (re-verified on load; iOS: Application Support). A cached base counts only if it was built for this same bundled hash.
 3. If there is no cache, use the **bundled snapshot**, which is always present and plays fully offline.
 
 Every result is validated against the bundle before it replaces `window.DATA/MAPS/SCENES`, and only then is `js/game.js` started. `window.SOTH_CONTENT` reports `{source: remote|cache|bundled, version, warnings, errors}`. `?content=bundled` forces the bundle. Runs on localhost or in a headless browser use the bundle unless you add `?content=remote`.

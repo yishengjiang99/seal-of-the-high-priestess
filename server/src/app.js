@@ -1,13 +1,14 @@
 // Temple of the High Priestess API. Mounted under BASE_PATH (/high-priestess) behind nginx.
 import crypto from 'node:crypto'
 import express from 'express'
-import { createContentStore, mountContent } from './content.js'
+import { adminGuard, createContentStore, createSigner, mountContent } from './content.js'
+import { mountIap } from './iap.js'
 import { RateLimiter, clientIp, isUuid, newToken, safeEqual, sha256, str } from './util.js'
 
 export const SLOT_RE = /^(0|1|2|auto)$/
 const MAX_SAVE = 256 * 1024
 
-export function createApp({ db, env = process.env }) {
+export function createApp({ db, env = process.env, iap = {} }) {
   const basePath = (env.BASE_PATH || '').replace(/\/+$/, '')
   const api = express.Router()
   const app = express()
@@ -29,7 +30,7 @@ export function createApp({ db, env = process.env }) {
     try { await db.query('SELECT 1'); dbOk = true } catch {}
     let content = null
     try { const c = await store.load(); content = { baseHash: c.base?.hash ?? null, overridesVersion: c.overrides.version } } catch {}
-    res.status(dbOk ? 200 : 503).json({ ok: dbOk, service: 'temple-api', version: '1.0.0', db: dbOk, content })
+    res.status(dbOk ? 200 : 503).json({ ok: dbOk, service: 'temple-api', version: '1.1.0', db: dbOk, content })
   })
 
   // ---- auth: anonymous install (iCloud Keychain-synced installId + secret) -> bearer token ----
@@ -169,12 +170,13 @@ export function createApp({ db, env = process.env }) {
   // ---- delete everything for this player (Settings > Delete cloud data) ----
   api.delete('/v1/me', auth, async (req, res) => {
     const id = req.player.id
-    for (const t of ['saves', 'save_history', 'settings', 'tokens', 'devices']) await db.query(`DELETE FROM ${t} WHERE player_id=?`, [id])
+    for (const t of ['saves', 'save_history', 'settings', 'events', 'entitlements', 'tokens', 'devices']) await db.query(`DELETE FROM ${t} WHERE player_id=?`, [id])
     await db.query('DELETE FROM players WHERE id=?', [id])
     res.json({ ok: true, deleted: true })
   })
 
-  mountContent(api, { db, store, adminToken: env.CONTENT_ADMIN_TOKEN || '' })
+  mountContent(api, { db, store, adminToken: env.CONTENT_ADMIN_TOKEN || '', signer: createSigner(env) })
+  mountIap(api, { db, auth, admin: adminGuard(env.CONTENT_ADMIN_TOKEN || ''), env, ...iap })
 
   api.use((req, res) => res.status(404).json({ error: 'not found' }))
   api.use((err, req, res, next) => {

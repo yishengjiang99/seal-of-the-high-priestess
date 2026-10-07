@@ -3,8 +3,11 @@
 <plist version="1.0">
 <!--
   Temple of the High Priestess privacy manifest. No tracking, no third-party SDKs.
-  Cloud save sync (grepawk.com/high-priestess/api): a random player ID + game progress,
-  linked to that ID, used only for app functionality. Keep in sync with docs/asc/app-privacy.md
+  Our own server (grepawk.com/high-priestess/api), all linked to a random player ID:
+  - cloud save sync: game progress (App Functionality)
+  - purchases: signed App Store transactions for Full Game / Supporter Pack (App Functionality)
+  - first-party funnel events paywall_shown / purchase / restore / region_complete
+    (Product Interaction, Analytics). No third-party analytics, no ads, no tracking. Keep in sync with docs/asc/app-privacy.md
   and https://grepawk.com/high-priestess/privacy.
 -->
 <dict>
@@ -36,6 +39,30 @@
 			<key>NSPrivacyCollectedDataTypePurposes</key>
 			<array>
 				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypePurchaseHistory</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeProductInteraction</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
 			</array>
 		</dict>
 	</array>

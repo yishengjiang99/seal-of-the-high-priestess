@@ -1,8 +1,14 @@
 import SwiftUI
 import WebKit
 
+struct PaywallRequest: Identifiable, Equatable {
+    let placement: String
+    var id: String { placement }
+}
+
 /// Owns the game web view and wires it to the native side: save store + cloud sync,
-/// haptics, game controllers, audio session and app lifecycle (suspend save).
+/// purchases (StoreKit 2) + paywall, first-party funnel events, haptics, game controllers,
+/// audio session and app lifecycle (suspend save).
 @MainActor
 final class GameModel: NSObject, ObservableObject {
     @Published var webReady = false
@@ -10,17 +16,27 @@ final class GameModel: NSObject, ObservableObject {
     @Published var activeConflict: SaveConflict?
     @Published private(set) var syncStatus = ""
     @Published private(set) var contentStatus = ""
+    @Published var paywall: PaywallRequest?
+    @Published private(set) var paywallConfig = PaywallConfig()
 
     let webView: WKWebView
+    let api: APIClient
     let store: SaveStore
     let sync: SyncClient
+    let storeKit: StoreManager
+    let analytics: Analytics
+    /// -paywallDemo: show the paywall on launch (App Review screenshot of the IAP).
+    let paywallDemo = ProcessInfo.processInfo.arguments.contains("-paywallDemo")
     let haptics = Haptics()
     private var controllers: ControllerInput?
     private var pendingConflicts: [SaveConflict] = []
 
     override init() {
         store = SaveStore()
-        sync = SyncClient(store: store)
+        api = APIClient()
+        sync = SyncClient(store: store, api: api)
+        storeKit = StoreManager(api: api)
+        analytics = Analytics(api: api)
         let config = WebBundle.makeConfiguration()
         webView = WKWebView(frame: .zero, configuration: config)
         super.init()
@@ -48,10 +64,14 @@ final class GameModel: NSObject, ObservableObject {
         sync.onConflicts = { [weak self] list in self?.enqueue(list) }
         sync.onStatus = { [weak self] in self?.refreshSyncStatus() }
         store.onChange = { [weak self] _ in self?.sync.scheduleSync() }
+        storeKit.analytics = analytics
+        storeKit.onChange = { [weak self] e in self?.pushEntitlements(e) }
         refreshSyncStatus()
 
         webView.load(URLRequest(url: WebBundle.startURL))
         Task { await sync.sync() }
+        storeKit.start()
+        analytics.scheduleFlush(after: 8)
     }
 
     /// Runs before any page script: host info for js/platform.js + the native saves seeded into localStorage.
@@ -60,7 +80,12 @@ final class GameModel: NSObject, ObservableObject {
             "platform": "ios",
             "appVersion": Bundle.main.appVersion,
             "assets": WebBundle.assetList(),
-            "contentTimeoutMs": 1500,
+            // Content goes through the native proxy (CryptoKit-verified, cached in Application Support).
+            "contentURL": "\(AppSchemeHandler.scheme)://game\(AppSchemeHandler.contentPath)",
+            "contentVerified": true,
+            "contentCache": false,
+            "contentTimeoutMs": 2500,
+            "entitlements": StoreManager.cached.dictionary,
         ]
         return """
         window.SOTH_HOST = \(Self.json(host));
@@ -91,10 +116,55 @@ final class GameModel: NSObject, ObservableObject {
         case "haptic":
             haptics.play(msg["kind"] as? String ?? "")
         case "event":
-            if (msg["name"] as? String) == "battle_won" { sync.scheduleSync(after: 1) }
+            let data = msg["data"] as? [String: Any]
+            switch msg["name"] as? String {
+            case "battle_won":
+                sync.scheduleSync(after: 1)
+            case "content":
+                paywallConfig = PaywallConfig(paywall: data?["PAYWALL"] as? [String: Any], flags: data?["FLAGS"] as? [String: Any])
+                analytics.enabled = paywallConfig.flag("funnelEvents")
+                if paywallDemo { showPaywall("region1_end") }
+            case "flag":
+                if let k = data?["k"] as? String, let region = paywallConfig.regionCompleteFlags[k] {
+                    analytics.regionComplete(region)
+                }
+            default:
+                break
+            }
+        case "paywall":
+            showPaywall(msg["placement"] as? String ?? "menu")
         default:
             break
         }
+    }
+
+    // MARK: - Purchases
+
+    /// Full Game product id offered to this install (server price test; price itself from StoreKit).
+    var offeredFullGame: String { paywallConfig.offeredProduct(bucketKey: Identity.install().installId).product }
+
+    func showPaywall(_ placement: String) {
+        guard paywallDemo || (paywallConfig.flag("paywall") && !storeKit.entitlements.full) else { return }
+        guard paywall == nil else { return }
+        let offer = paywallConfig.offeredProduct(bucketKey: Identity.install().installId)
+        if !paywallDemo { analytics.track("paywall_shown", ["placement": placement, "product": offer.product, "variant": offer.variant]) }
+        let req = PaywallRequest(placement: placement)
+        if showSettings {
+            // Let the settings sheet finish dismissing before covering the screen.
+            showSettings = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in self?.paywall = req }
+        } else {
+            paywall = req
+        }
+    }
+
+    func purchaseFullGame(placement: String) async {
+        await storeKit.purchase(offeredFullGame, placement: placement)
+    }
+
+    private func pushEntitlements(_ e: StoreManager.Entitlements) {
+        webView.evaluateJavaScript("window.Platform ? Platform.call('entitlements', \(Self.json(e.dictionary))) : null", completionHandler: nil)
+        objectWillChange.send()
     }
 
     // MARK: - Native -> JS
@@ -122,11 +192,12 @@ final class GameModel: NSObject, ObservableObject {
             webView.evaluateJavaScript("window.Platform ? Platform.call('suspend') : null") { [weak self] result, _ in
                 guard let self else { return }
                 if let json = result as? String { self.store.set(SaveStore.slotKey("auto"), value: json) }
-                if phase == .background { self.syncInBackground() }
+                if phase == .background { self.syncInBackground(); Task { await self.analytics.flush() } }
             }
         case .active:
             AudioSessionManager.apply()
             Task { await sync.sync() }
+            Task { await storeKit.fetchServerEntitlements() }
         @unknown default:
             break
         }

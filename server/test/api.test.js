@@ -13,16 +13,18 @@ const ADMIN = 'test-admin-token-' + crypto.randomBytes(8).toString('hex')
 
 function snapshot() {
   const ctx = {}; ctx.window = ctx; ctx.self = ctx; vm.createContext(ctx)
-  for (const f of ['../js/content.js', '../js/maps.js', '../js/dialogue.js', 'lib/content-core.cjs']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx)
-  const content = JSON.parse(JSON.stringify({ DATA: ctx.DATA, MAPS: ctx.MAPS, SCENES: ctx.SCENES }))
+  for (const f of ['../js/content.js', '../js/maps.js', '../js/dialogue.js', '../js/config.js', 'lib/content-core.cjs']) vm.runInContext(fs.readFileSync(f, 'utf8'), ctx)
+  const content = JSON.parse(JSON.stringify({ DATA: ctx.DATA, MAPS: ctx.MAPS, SCENES: ctx.SCENES, PAYWALL: ctx.PAYWALL, FLAGS: ctx.FLAGS }))
   return { schema: 1, hash: ctx.SothContent.contentHash(content), assets: ['assets/backgrounds/title.jpg', 'assets/portraits/elara_neutral.jpg', 'assets/portraits/kael_neutral.jpg'], content }
 }
 
 test('save + content API end to end', { skip: !URL_ && 'TEST_MYSQL_URL not set' }, async (t) => {
   const db = createPool({ MYSQL_URL: URL_ })
-  for (const tb of ['schema_migrations', 'players', 'devices', 'tokens', 'saves', 'save_history', 'settings', 'content_bases', 'content_overrides']) await db.query(`DROP TABLE IF EXISTS ${tb}`)
+  for (const tb of ['schema_migrations', 'players', 'devices', 'tokens', 'saves', 'save_history', 'settings', 'content_bases', 'content_overrides', 'entitlements', 'asn_notifications', 'events']) await db.query(`DROP TABLE IF EXISTS ${tb}`)
   await migrate(db)
-  const server = createApp({ db, env: { BASE_PATH: '/high-priestess', CONTENT_ADMIN_TOKEN: ADMIN } }).listen(0, '127.0.0.1')
+  const signKey = crypto.generateKeyPairSync('ed25519').privateKey
+  const SIGNING = signKey.export({ type: 'pkcs8', format: 'der' }).toString('base64')
+  const server = createApp({ db, env: { BASE_PATH: '/high-priestess', CONTENT_ADMIN_TOKEN: ADMIN, CONTENT_SIGNING_KEY: SIGNING, CONTENT_SIGNING_KID: 't1' } }).listen(0, '127.0.0.1')
   await new Promise((r) => server.once('listening', r))
   const base = `http://127.0.0.1:${server.address().port}/high-priestess/api`
   const call = async (method, path, { body, token, headers = {} } = {}) => {
@@ -92,6 +94,17 @@ test('save + content API end to end', { skip: !URL_ && 'TEST_MYSQL_URL not set' 
   assert.equal(rb.body.version, 2)
   assert.deepEqual((await call('GET', `/v1/content?have=${snap.hash}`)).body.overrides, {})
   assert.equal((await call('GET', '/v1/admin/content/effective', { token: ADMIN })).body.ok, true)
+
+  // signed envelope (schema 2): signature over the exact payload string with the published key
+  const keys = (await call('GET', '/v1/content/keys')).body.keys
+  const env2 = (await call('GET', `/v1/content?have=${po.body.hash}&schema=2`)).body
+  assert.equal(env2.schema, 2); assert.equal(env2.kid, 't1'); assert.equal(env2.alg, 'Ed25519')
+  const raw = Buffer.concat([Buffer.from('302a300506032b6570032100', 'hex'), Buffer.from(keys.t1, 'base64')])
+  const pubKey = crypto.createPublicKey({ key: raw, format: 'der', type: 'spki' })
+  assert.equal(crypto.verify(null, Buffer.from(env2.payload), pubKey, Buffer.from(env2.sig, 'base64')), true)
+  const p2v = JSON.parse(env2.payload)
+  assert.equal(p2v.have, po.body.hash); assert.equal(p2v.baseHash, snap.hash); assert.ok(p2v.base.PAYWALL)
+  assert.equal((await call('GET', '/v1/content?schema=3')).status, 400)
 
   // delete my data
   assert.equal((await call('DELETE', '/v1/me', { token: tok })).status, 200)

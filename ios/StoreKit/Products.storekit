@@ -1,0 +1,62 @@
+{
+  "identifier": "HighPriestessProducts",
+  "nonRenewingSubscriptions": [],
+  "products": [
+    {
+      "displayPrice": "4.99",
+      "familyShareable": true,
+      "internalID": "68199731",
+      "localizations": [
+        {
+          "description": "Unlock every region and the full story.",
+          "displayName": "Full Game",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.ragnus.weather.fullgame",
+      "referenceName": "Full Game",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "6.99",
+      "familyShareable": true,
+      "internalID": "68199732",
+      "localizations": [
+        {
+          "description": "Unlock every region and the full story.",
+          "displayName": "Full Game",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.ragnus.weather.fullgame.b",
+      "referenceName": "Full Game (B)",
+      "type": "NonConsumable"
+    },
+    {
+      "displayPrice": "2.99",
+      "familyShareable": true,
+      "internalID": "68199733",
+      "localizations": [
+        {
+          "description": "Voice Gallery, Kael app icon and a supporter badge. Cosmetic only.",
+          "displayName": "Supporter Pack",
+          "locale": "en_US"
+        }
+      ],
+      "productID": "com.ragnus.weather.supporter",
+      "referenceName": "Supporter Pack",
+      "type": "NonConsumable"
+    }
+  ],
+  "settings": {
+    "_failTransactionsEnabled": false,
+    "_locale": "en_US",
+    "_storefront": "USA",
+    "_storeKitErrors": []
+  },
+  "subscriptionGroups": [],
+  "version": {
+    "major": 3,
+    "minor": 0
+  }
+}

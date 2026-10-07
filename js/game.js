@@ -1286,6 +1286,7 @@
     try {
       const d = JSON.parse(Platform.getItem("soth_slot_" + n) || "null");
       if (!d) return false;
+      if (!Platform.gate(d.mapId, "load")) return false;
       deserialize(d);
       hideAllScreens();
       enterMap();
@@ -1300,6 +1301,9 @@
     catch (e) { return null; }
   }
   Platform.on("suspend", suspendSave);
+  Platform.on("entitlements", (e) => {
+    if (e && e.full && S.state === "map") toast((window.PAYWALL && PAYWALL.copy && PAYWALL.copy.unlockedToast) || "The full journey is open.");
+  });
   Platform.on("savesChanged", () => { if (S.state === "title") $("btn-continue").disabled = !hasAnySave(); });
   document.addEventListener("visibilitychange", () => { if (document.hidden && !Platform.native) suspendSave(); });
   const SLOT_IDS = [0, 1, 2, "auto"];
@@ -1651,6 +1655,10 @@
   function tryWarp(ev) {
     if (ev.needFlag && !flagOn(ev.needFlag)) {
       toast(ev.needText || "The way is closed.");
+      return;
+    }
+    if (!Platform.gate(ev.map, "warp")) {
+      toast((window.PAYWALL && PAYWALL.copy && PAYWALL.copy.lockedToast) || "The road ahead is part of the Full Game.");
       return;
     }
     const m = MAPS[ev.map];
@@ -3984,7 +3992,9 @@
       }));
     }
     if (S.menuTab === "system") {
-      body.innerHTML = `<p><button data-act="opt">Options</button></p><p><button data-act="totitle">Return to Title</button></p>`;
+      body.innerHTML = `<p><button data-act="opt">Options</button></p><p><button data-act="totitle">Return to Title</button></p>` +
+        (Platform.upsell("menu") ? `<p><button data-act="fullgame">Unlock the Full Game…</button></p>` : "");
+      body.querySelector("[data-act=fullgame]")?.addEventListener("click", () => Platform.paywall("menu"));
       body.querySelector("[data-act=opt]")?.addEventListener("click", () => showOptions(false));
       body.querySelector("[data-act=totitle]")?.addEventListener("click", showTitle);
     }

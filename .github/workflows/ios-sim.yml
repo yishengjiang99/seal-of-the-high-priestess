@@ -68,7 +68,7 @@ jobs:
             > "$RUNNER_TEMP/test.log" 2>&1
           rc=$?
           set -e
-          grep -E "error:|warning: .*(Swift|concurr)|Test Case .*(passed|failed)|web state:|\*\* TEST" "$RUNNER_TEMP/test.log" | head -200 || true
+          grep -E "error:|warning: .*(Swift|concurr)|Test Case .*(passed|failed)|web state:|native content state:|\*\* TEST" "$RUNNER_TEMP/test.log" | head -200 || true
           if [ $rc -ne 0 ]; then tail -120 "$RUNNER_TEMP/test.log"; exit $rc; fi
 
       - name: Launch + screenshot
@@ -84,6 +84,12 @@ jobs:
           xcrun simctl io "$UDID" screenshot shots/launch-raw.png
           sips -r 270 shots/launch-raw.png --out shots/launch-landscape.png >/dev/null || true
           sips -g pixelWidth -g pixelHeight shots/launch-raw.png
+          # App Review screenshot of the IAP: paywall with demo price (no StoreKit config outside Xcode).
+          xcrun simctl terminate "$UDID" com.ragnus.weather || true
+          xcrun simctl launch "$UDID" com.ragnus.weather -paywallDemo
+          sleep 15
+          xcrun simctl io "$UDID" screenshot shots/paywall-raw.png
+          sips -r 270 shots/paywall-raw.png --out shots/paywall-landscape.png >/dev/null || true
           xcrun simctl spawn "$UDID" log show --last 2m --style compact --predicate 'process == "HighPriestess"' > shots/app.log 2>&1 || true
           tail -40 shots/app.log || true
 

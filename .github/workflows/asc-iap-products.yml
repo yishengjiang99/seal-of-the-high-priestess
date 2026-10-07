@@ -1,0 +1,32 @@
+name: ASC in-app purchases
+
+# Creates/updates the three non-consumable IAPs (Full Game, Full Game price-test B, Supporter Pack):
+# localization, USD price tier, availability, Family Sharing, App Review screenshot
+# (docs/asc/iap-review-paywall.png, from the ios-sim -paywallDemo run), and points App Store Server
+# Notifications v2 at the temple API. Idempotent. Never submits for review, never deletes.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Only report what would change
+        type: boolean
+        default: false
+
+jobs:
+  iap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: IAP products + ASSN v2
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          ASC_APP_ID: "6819973123"
+          REVIEW_SCREENSHOT: docs/asc/iap-review-paywall.png
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: |
+          set -euo pipefail
+          pip install -q PyJWT cryptography
+          python3 scripts/asc/iap_products.py

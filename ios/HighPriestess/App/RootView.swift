@@ -37,7 +37,12 @@ struct RootView: View {
         .persistentSystemOverlays(.hidden)
         .defersSystemGestures(on: .all)
         .sheet(isPresented: $model.showSettings) {
-            SettingsView().environmentObject(model)
+            SettingsView().environmentObject(model).environmentObject(model.storeKit)
+        }
+        .fullScreenCover(item: $model.paywall) { req in
+            PaywallView(placement: req.placement)
+                .environmentObject(model)
+                .environmentObject(model.storeKit)
         }
         .sheet(item: $model.activeConflict) { conflict in
             ConflictView(conflict: conflict).environmentObject(model)

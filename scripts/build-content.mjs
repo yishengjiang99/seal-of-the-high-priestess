@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Build the content snapshot the server publishes as its "base":
 //   node scripts/build-content.mjs [--out content-snapshot.json]
-// Evaluates the bundled content scripts (js/content.js, js/maps.js, js/dialogue.js) exactly as
+// Evaluates the bundled content scripts (js/content.js, js/maps.js, js/dialogue.js, js/config.js) exactly as
 // the browser does, so the hash matches what the game computes at runtime for this bundle.
 import fs from "node:fs";
 import path from "node:path";
@@ -13,12 +13,12 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ctx = { console };
 ctx.window = ctx; ctx.self = ctx;
 vm.createContext(ctx);
-for (const f of ["js/content.js", "js/maps.js", "js/dialogue.js", "js/content-core.js"]) {
+for (const f of ["js/content.js", "js/maps.js", "js/dialogue.js", "js/config.js", "js/content-core.js"]) {
   vm.runInContext(fs.readFileSync(path.join(root, f), "utf8"), ctx, { filename: f });
 }
 const C = ctx.SothContent;
 // Round-trip through JSON in this realm so the output is plain data.
-const content = JSON.parse(JSON.stringify({ DATA: ctx.DATA, MAPS: ctx.MAPS, SCENES: ctx.SCENES }));
+const content = JSON.parse(JSON.stringify({ DATA: ctx.DATA, MAPS: ctx.MAPS, SCENES: ctx.SCENES, PAYWALL: ctx.PAYWALL, FLAGS: ctx.FLAGS }));
 const hash = C.contentHash(content);
 
 // Asset files that ship in the app/web bundle (lina-ref.jpg and store screenshots never ship).

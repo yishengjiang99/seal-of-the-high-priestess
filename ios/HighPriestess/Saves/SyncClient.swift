@@ -10,17 +10,14 @@ struct SaveConflict: Identifiable, Equatable {
     var slotName: String { slot == "auto" ? "Suspend save" : "Slot \((Int(slot) ?? 0) + 1)" }
 }
 
-/// Cloud save sync against https://grepawk.com/high-priestess/api (see server/README.md).
+/// Cloud save sync against the temple API (see server/README.md); HTTP via APIClient.
 /// Per-slot optimistic concurrency: PUT with If-Match <revision>; 409 returns the server copy.
 @MainActor
 final class SyncClient {
-    static let defaultBase = URL(string: "https://grepawk.com/high-priestess/api")!
-
     enum SyncError: Error { case unauthorized, http(Int), badResponse }
 
-    let base: URL
+    let api: APIClient
     let store: SaveStore
-    private let session: URLSession
     private var running = false
     private var again = false
     private var debounce: Task<Void, Never>?
@@ -29,10 +26,7 @@ final class SyncClient {
         get { UserDefaults.standard.object(forKey: "cloudSync") as? Bool ?? true }
         set { UserDefaults.standard.set(newValue, forKey: "cloudSync") }
     }
-    var playerId: String? {
-        get { UserDefaults.standard.string(forKey: "playerId") }
-        set { UserDefaults.standard.set(newValue, forKey: "playerId") }
-    }
+    var playerId: String? { api.playerId }
     private(set) var lastSync: Date?
     private(set) var lastError: String?
 
@@ -41,14 +35,9 @@ final class SyncClient {
     var onConflicts: (([SaveConflict]) -> Void)?
     var onStatus: (() -> Void)?
 
-    init(store: SaveStore, base: URL = SyncClient.defaultBase) {
+    init(store: SaveStore, api: APIClient) {
         self.store = store
-        self.base = base
-        let cfg = URLSessionConfiguration.default
-        cfg.timeoutIntervalForRequest = 15
-        cfg.waitsForConnectivity = false
-        cfg.httpAdditionalHeaders = ["User-Agent": "HighPriestess-iOS/\(Bundle.main.appVersion)"]
-        session = URLSession(configuration: cfg)
+        self.api = api
     }
 
     func scheduleSync(after seconds: Double = 3) {
@@ -163,8 +152,7 @@ final class SyncClient {
             let (code, _) = try await send("DELETE", "v1/me", token: token)
             guard code == 200 || code == 204 else { throw SyncError.http(code) }
         }
-        Identity.rotate()
-        playerId = nil
+        api.reset()
         enabled = false
         store.resetSyncState()
         lastSync = nil
@@ -173,18 +161,16 @@ final class SyncClient {
 
     // MARK: - HTTP
 
-    private func ensureToken() async throws -> String {
-        if let t = Identity.token { return t }
-        let inst = Identity.install()
-        let (code, obj) = try await send("POST", "v1/auth/device", token: nil,
-                                         json: ["installId": inst.installId, "secret": inst.secret, "appVersion": Bundle.main.appVersion])
-        guard code == 200 || code == 201, let token = obj["token"] as? String else {
-            if code == 403 { Identity.rotate() } // someone else's install id; start over next time
-            throw SyncError.http(code)
+    private func ensureToken() async throws -> String { try await api.ensureToken() }
+
+    @discardableResult
+    private func send(_ method: String, _ path: String, token: String?, json: [String: Any]? = nil,
+                      headers: [String: String] = [:]) async throws -> (Int, [String: Any]) {
+        do {
+            return try await api.send(method, path, token: token, json: json, headers: headers)
+        } catch APIClient.APIError.unauthorized {
+            throw SyncError.unauthorized
         }
-        Identity.token = token
-        playerId = obj["playerId"] as? String
-        return token
     }
 
     private func listSaves(_ token: String) async throws -> [String: Int] {
@@ -228,31 +214,5 @@ final class SyncClient {
         default:
             throw SyncError.http(code)
         }
-    }
-
-    @discardableResult
-    private func send(_ method: String, _ path: String, token: String?, json: [String: Any]? = nil,
-                      headers: [String: String] = [:]) async throws -> (Int, [String: Any]) {
-        var req = URLRequest(url: base.appendingPathComponent(path))
-        req.httpMethod = method
-        if let token { req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization") }
-        for (k, v) in headers { req.setValue(v, forHTTPHeaderField: k) }
-        if let json {
-            req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            req.httpBody = try JSONSerialization.data(withJSONObject: json)
-        }
-        let (data, resp) = try await session.data(for: req)
-        guard let http = resp as? HTTPURLResponse else { throw SyncError.badResponse }
-        if http.statusCode == 401 && token != nil { throw SyncError.unauthorized }
-        let obj = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] ?? [:]
-        return (http.statusCode, obj)
-    }
-}
-
-extension Bundle {
-    var appVersion: String {
-        let v = infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
-        let b = infoDictionary?["CFBundleVersion"] as? String ?? "?"
-        return "\(v) (\(b))"
     }
 }

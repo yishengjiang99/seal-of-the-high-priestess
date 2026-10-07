@@ -4,10 +4,15 @@ import WebKit
 
 /// Serves the bundled game at app://game/... straight from HighPriestess.app/Web, fully offline.
 /// Supports byte ranges (206) so <audio> voice clips stream from the custom scheme.
+/// app://game/__content is proxied to ContentService (signed server-driven content).
 final class AppSchemeHandler: NSObject, WKURLSchemeHandler {
     static let scheme = "app"
+    static let contentPath = "/__content"
     let root: URL
     private let rootPath: String
+    var content: ContentService = .shared
+    /// Async tasks still allowed to receive data (WebKit forbids touching a stopped task).
+    private var live = Set<ObjectIdentifier>()
 
     init(root: URL) {
         self.root = root.standardizedFileURL
@@ -19,6 +24,10 @@ final class AppSchemeHandler: NSObject, WKURLSchemeHandler {
             urlSchemeTask.didFailWithError(URLError(.badURL))
             return
         }
+        if url.path == Self.contentPath {
+            serveContent(urlSchemeTask, url: url)
+            return
+        }
         let (status, headers, body) = response(for: url, range: urlSchemeTask.request.value(forHTTPHeaderField: "Range"))
         let resp = HTTPURLResponse(url: url, statusCode: status, httpVersion: "HTTP/1.1", headerFields: headers)!
         urlSchemeTask.didReceive(resp)
@@ -27,7 +36,37 @@ final class AppSchemeHandler: NSObject, WKURLSchemeHandler {
     }
 
     func webView(_ webView: WKWebView, stop urlSchemeTask: WKURLSchemeTask) {
-        // Responses are delivered synchronously in start(); nothing to cancel.
+        // File responses are synchronous; only content proxy tasks can still be pending.
+        live.remove(ObjectIdentifier(urlSchemeTask))
+    }
+
+    private func serveContent(_ task: WKURLSchemeTask, url: URL) {
+        let id = ObjectIdentifier(task)
+        live.insert(id)
+        let have = URLComponents(url: url, resolvingAgainstBaseURL: false)?
+            .queryItems?.first(where: { $0.name == "have" })?.value ?? ""
+        let service = content
+        Task.detached {
+            let result = await service.load(have: have)
+            await MainActor.run {
+                guard self.live.remove(id) != nil else { return } // stopped (page aborted / reloaded)
+                var headers = ["Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store"]
+                let status: Int
+                let body: Data
+                if let result {
+                    status = 200
+                    body = result.body
+                    headers["X-Soth-Source"] = result.source
+                } else {
+                    status = 504
+                    body = Data("{\"error\":\"content unavailable\"}".utf8)
+                }
+                headers["Content-Length"] = String(body.count)
+                task.didReceive(HTTPURLResponse(url: url, statusCode: status, httpVersion: "HTTP/1.1", headerFields: headers)!)
+                task.didReceive(body)
+                task.didFinish()
+            }
+        }
     }
 
     /// Resolves a request to (status, headers, body). Internal for tests.

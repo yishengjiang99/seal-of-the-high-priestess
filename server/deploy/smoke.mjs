@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 // End-to-end smoke test of the live API. Creates a throwaway install, exercises saves + content, then deletes it.
 // Usage: node server/deploy/smoke.mjs [https://grepawk.com/high-priestess/api]   (never prints tokens/secrets)
-import { randomUUID, randomBytes } from 'node:crypto'
+import { randomUUID, randomBytes, createPublicKey, verify as edVerify } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 const API = (process.argv[2] || 'https://grepawk.com/high-priestess/api').replace(/\/$/, '')
 let fails = 0
 const ok = (cond, label, extra = '') => { console.log(`${cond ? 'PASS' : 'FAIL'}  ${label}${extra ? '  ' + extra : ''}`); if (!cond) fails++ }
@@ -46,6 +47,24 @@ ok(c304.status === 304, 'GET /v1/content If-None-Match -> 304')
 const cHave = await call('GET', `/v1/content?schema=1&have=${c.json?.baseHash}`)
 ok(cHave.status === 200 && !('base' in (cHave.json || {})), 'GET /v1/content?have=<current base> -> overrides only (no base)')
 ok((await call('GET', '/v1/admin/content/overrides')).status === 401, 'admin without token -> 401')
+// signed content (schema 2) against the key bundled in the app
+const bundledKeys = Object.fromEntries([...readFileSync(new URL('../../js/content-keys.js', import.meta.url), 'utf8').matchAll(/(\w+):\s*"([A-Za-z0-9+/=]+)"/g)].map((m) => [m[1], m[2]]))
+const s2 = await call('GET', '/v1/content?schema=2&have=smoke')
+const env = s2.json || {}
+const pub = bundledKeys[env.kid] && createPublicKey({ key: Buffer.concat([Buffer.from('302a300506032b6570032100', 'hex'), Buffer.from(bundledKeys[env.kid], 'base64')]), format: 'der', type: 'spki' })
+const sigOk = !!pub && typeof env.payload === 'string' && edVerify(null, Buffer.from(env.payload), pub, Buffer.from(env.sig || '', 'base64'))
+ok(s2.status === 200 && env.schema === 2 && sigOk, 'GET /v1/content?schema=2 signature verifies with bundled key', `kid ${env.kid}`)
+const keys = await call('GET', '/v1/content/keys')
+ok(keys.status === 200 && keys.json?.keys?.[env.kid] === bundledKeys[env.kid], 'GET /v1/content/keys matches bundle')
+// purchases + funnel events (no real transaction: verification must reject a forged one)
+const ent = await call('GET', '/v1/entitlements', { token })
+ok(ent.status === 200 && ent.json?.full === false, 'GET /v1/entitlements (new player -> not entitled)')
+const forged = await call('POST', '/v1/iap/transactions', { token, body: { signedTransaction: 'eyJhbGciOiJFUzI1NiJ9.e30.c2ln' } })
+ok(forged.status === 422, 'POST /v1/iap/transactions forged JWS -> 422')
+const asn = await call('POST', '/v1/iap/notifications', { body: { signedPayload: 'x.y.z' } })
+ok(asn.status === 400, 'POST /v1/iap/notifications unsigned -> 400')
+const ev = await call('POST', '/v1/events', { token, body: { events: [{ name: 'paywall_shown', props: { placement: 'smoke' } }, { name: 'not_allowed' }] } })
+ok(ev.status === 200 && ev.json?.accepted === 1, 'POST /v1/events whitelist', `accepted ${ev.json?.accepted}`)
 // cleanup
 const d = await call('DELETE', '/v1/me', { token })
 ok(d.status === 200 || d.status === 204, 'DELETE /v1/me (cleanup)')
