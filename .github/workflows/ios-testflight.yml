@@ -415,6 +415,16 @@ jobs:
               raise SystemExit(f"::error::build {want} processing state {state!r} (check the ASC 'issues' email for ITMS codes)")
           PY
 
+      - name: Add build to Internal TestFlight group
+        env:
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          TESTER_EMAILS: yisheng.jiang@gmail.com
+          GROUP_NAME: Internal
+        run: |
+          set -euo pipefail
+          pip3 install -q --break-system-packages PyJWT cryptography 2>/dev/null || pip3 install -q PyJWT cryptography
+          python3 scripts/asc/internal_testing.py
+
       - name: Summary
         if: success()
         env:
@@ -425,5 +435,5 @@ jobs:
             echo "- App: Temple of the High Priestess (ASC $ASC_APP_ID), bundle \`$BUNDLE_ID\`"
             echo "- Build: \`$BUILD_NUMBER\` (version $MARKETING_VERSION), processing VALID"
             echo "- Notes: $NOTES"
-            echo "- Not submitted for review (TestFlight only)."
+            echo "- Added to the Internal TestFlight group. Not submitted for review."
           } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,36 @@
+name: ASC internal testing
+
+# Ensure the "Internal" TestFlight group exists, has the internal testers, and has a build attached.
+# ios-testflight.yml runs the same script after every VALID upload. Never submits for review.
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: Build number to attach (empty = newest VALID)
+        required: false
+        type: string
+      testers:
+        description: Comma-separated internal tester emails (must be ASC users)
+        required: false
+        type: string
+        default: yisheng.jiang@gmail.com
+
+jobs:
+  internal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Internal group + testers + build
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          ASC_APP_ID: "6819973123"
+          BUILD_NUMBER: ${{ inputs.build_number }}
+          TESTER_EMAILS: ${{ inputs.testers }}
+          GROUP_NAME: Internal
+        run: |
+          set -euo pipefail
+          pip install -q PyJWT cryptography
+          python3 scripts/asc/internal_testing.py
