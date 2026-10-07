@@ -2543,7 +2543,8 @@
   // 2.5D map (feature flag visualOverhaul) — js/world.js does the projection,
   // tiles and lighting; this supplies the entities.
   // ---------------------------------------------------------------------------
-  const CHAR_K = 0.74;               // character sheet scale relative to the tile atlas
+  const CHAR_K = 0.92;
+  const ISO_ZOOM = 1.4;               // exploration camera zoom (2.5D view)               // character sheet scale relative to the tile atlas
   const isoP = { x: 0, y: 0 }, isoQ = { x: 0, y: 0 };
   const isoFace = { yaw: 0, flip: false };
   let isoChatReady = false;
@@ -2644,8 +2645,8 @@
         if (m.tiles[ev.y][ev.x] !== 10) SW.drawFrame(c, SW.frame("altar"), p.x, p.y, k);
         const z = WORLD.view.z;
         c.globalCompositeOperation = "lighter";
-        c.globalAlpha = 0.55 + Math.sin(S.anim / 300) * 0.25;
-        const gl = SW.frame("glow_cool"), r = 54 * z;
+        c.globalAlpha = 0.3 + Math.sin(S.anim / 300) * 0.12;
+        const gl = SW.frame("glow_cool"), r = 50 * z;
         c.drawImage(window.SothWorld._img("world"), gl[0], gl[1], gl[2], gl[3], p.x - r, p.y - 40 * z - r, r * 2, r * 2);
         c.globalAlpha = 1; c.globalCompositeOperation = "source-over";
         if (isoChatReady) {
@@ -2673,6 +2674,24 @@
       }
       c.globalAlpha = 1;
       c.globalCompositeOperation = "source-over";
+      // the planned route: a trail of soft dots from the leader to the goal
+      if (tap.path && tap.idx < tap.path.length) {
+        let px = S.px, py = S.py, carry = 10, n = 0;
+        c.fillStyle = "rgba(255,244,214,0.85)";
+        for (let i = tap.idx; i < tap.path.length && n < 48; i++) {
+          const qx = (tap.path[i][0] + 0.5) * T, qy = (tap.path[i][1] + 0.5) * T;
+          const seg = Math.hypot(qx - px, qy - py);
+          let d = carry;
+          while (d < seg && n < 48) {
+            const p = toScreen(px + (qx - px) * d / seg, py + (qy - py) * d / seg, isoQ);
+            c.globalAlpha = 0.25 + 0.5 * Math.min(1, n / 6);
+            c.beginPath(); c.ellipse(p.x, p.y, 3.2 * z, 1.7 * z, 0, 0, 6.283); c.fill();
+            d += 14; n++;
+          }
+          carry = d - seg; px = qx; py = qy;
+        }
+        c.globalAlpha = 1;
+      }
       // tap marker: a ring that pops in, pulses, and fades on arrival
       const mk = tap.marker;
       if (mk && mk.t < 900) {
@@ -2707,7 +2726,7 @@
   };
   function drawIsoMap(m, vk) {
     const v = WORLD.view;
-    v.z = 1 - 0.32 * vk;
+    v.z = ISO_ZOOM * (1 - 0.32 * vk);
     if (vk > 0) WORLD.updateCamera(16, m, S.px, S.py + 260 * vk, false);
     if (tap.marker) tap.marker.t += 16;
     isoState.map = m; isoState.mapId = S.mapId; isoState.anim = S.anim;
@@ -4782,6 +4801,7 @@
         if (S._optFrom === "title") showTitle(); else openMenu();
       }
     } else if (S.state === "map") {
+      if (document.body.classList.contains("hd") !== USE_ISO()) document.body.classList.toggle("hd", USE_ISO());
       updateHold(t);
       if (!USE_ISO() && tap.marker) tap.marker.t += dt;
       updateMap(dt); drawMap();
@@ -4855,6 +4875,7 @@
   window.SOTH_TAP = (sx, sy) => mapTap(sx, sy, false);
   window.SOTH_TEST_RESET = () => { if (S.state === "map") snapCamera(); };
   window.SOTH_DEBUG_W2S = (wx, wy) => { const o = worldToScreen(wx, wy, { x: 0, y: 0 }); return [o.x, o.y]; };
+  window.SOTH_WORLD_STATS = () => (WORLD ? WORLD.stats : null);
 
   boot();
 })();
