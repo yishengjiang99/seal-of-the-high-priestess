@@ -20,29 +20,45 @@ html, body {
   background: #000;
   color: var(--cream);
   font-family: var(--ui);
+  width: 100%;
   height: 100%;
   overflow: hidden;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  overscroll-behavior: none;
 }
-body { display: flex; align-items: center; justify-content: center; }
-button, select, input { font-family: inherit; }
+/* Pinned to the visible viewport: no rubber-band scroll on iOS, and no 100vh
+   (which on mobile Safari is taller than what is actually on screen). */
+body { position: fixed; inset: 0; }
+button, select, input { font-family: inherit; touch-action: manipulation; }
 
+/* #frame is the visible viewport minus the notch / home-indicator safe areas.
+   fit() in game.js reads its padding box and places #app inside it at the
+   largest 16:9 scale that fits. */
 #frame {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 100vw;
-  height: 100vh;
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+  touch-action: none;
 }
 #app {
-  position: relative;
+  position: absolute;
+  left: 0; top: 0;
   width: 1280px;
   height: 720px;
-  transform-origin: center center;
+  flex: none;
+  transform-origin: 0 0;
   overflow: hidden;
   background: #08060d;
   box-shadow: 0 0 0 1px #000, 0 0 0 3px rgba(212,180,106,0.35), 0 0 90px rgba(0,0,0,0.9);
 }
+/* Panels and lists that scroll keep their vertical pan. */
+.panel, #menu-body, #save-slots, #battle-log, #vn-choices { touch-action: pan-y; -webkit-overflow-scrolling: touch; }
 /* Soft screen vignette over everything but the UI panels. */
 #app::after {
   content: "";
@@ -53,7 +69,11 @@ button, select, input { font-family: inherit; }
 }
 #game {
   position: absolute;
-  inset: 0;
+  left: 0; top: 0;
+  /* Backing store is resized for devicePixelRatio by fit(); CSS size stays at
+     the 1280x720 logical resolution. */
+  width: 1280px;
+  height: 720px;
   display: block;
   image-rendering: auto;
 }
@@ -732,42 +752,85 @@ body.high-contrast-icons .idle-card .row span:first-child { color: #fff7ca; text
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
+/* Touch controls live outside the scaled #app so they stay finger-sized.
+   fit() sets the mode class and the --btn-* / --dpad-* offsets. */
 #touch {
-  position: absolute; inset: 0; z-index: 15; pointer-events: none;
+  position: fixed; inset: 0; z-index: 15; pointer-events: none;
+  --btn: 52px; --dp: 44px;
 }
-#touch button { pointer-events: auto; }
+#touch button {
+  pointer-events: auto;
+  touch-action: none;
+  -webkit-user-select: none; user-select: none;
+  font-size: 18px;
+  line-height: 1;
+}
+#touch button.held { background: rgba(212,180,106,0.35); color: var(--cream); }
 #dpad {
-  position: absolute; left: 24px; bottom: 24px;
-  width: 140px; height: 140px;
+  position: absolute;
+  left: var(--dpad-left, 24px); bottom: var(--dpad-bottom, 24px);
+  width: calc(var(--dp) * 3); height: calc(var(--dp) * 3);
 }
 /* D-pad only while exploring. During dialogue it sat on the text box. */
 #touch:not(.on-map) #dpad { display: none; }
-#touch.on-dialog #touch-btns {
-  bottom: 196px;
-  right: 20px;
-}
 #dpad button {
   position: absolute;
-  width: 44px; height: 44px;
+  width: var(--dp); height: var(--dp);
   background: rgba(10,8,18,0.6);
   color: var(--gold);
   border: 1px solid var(--gold-dim);
+  border-radius: 8px;
 }
-#dpad [data-dir=up] { left: 48px; top: 0; }
-#dpad [data-dir=down] { left: 48px; bottom: 0; }
-#dpad [data-dir=left] { left: 0; top: 48px; }
-#dpad [data-dir=right] { right: 0; top: 48px; }
+#dpad [data-dir=up] { left: var(--dp); top: 0; }
+#dpad [data-dir=down] { left: var(--dp); bottom: 0; }
+#dpad [data-dir=left] { left: 0; top: var(--dp); }
+#dpad [data-dir=right] { right: 0; top: var(--dp); }
 #touch-btns {
-  position: absolute; right: 24px; bottom: 24px;
-  display: flex; gap: 10px;
+  position: absolute;
+  right: var(--btn-right, 24px); bottom: var(--btn-bottom, 24px);
+  display: flex; gap: 12px;
 }
 #touch-btns button {
-  width: 56px; height: 56px;
+  width: var(--btn); height: var(--btn);
   border-radius: 50%;
   background: rgba(10,8,18,0.6);
   color: var(--gold);
   border: 1px solid var(--gold);
 }
+/* Portrait phone: a control deck in the empty band under the game. */
+#touch.mode-deck { --btn: 56px; --dp: 46px; }
+#touch.mode-deck #touch-btns {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-areas: ". menu" "x z";
+  align-items: end; justify-items: end;
+  gap: 12px;
+}
+#touch.mode-deck #touch-btns [data-k=KeyZ] { grid-area: z; width: 68px; height: 68px; font-size: 22px; }
+#touch.mode-deck #touch-btns [data-k=KeyX] { grid-area: x; }
+#touch.mode-deck #touch-btns [data-k=Escape] { grid-area: menu; width: 46px; height: 46px; }
+/* Landscape phone: buttons stacked in the right gutter, d-pad bottom-left. */
+#touch.mode-overlay #touch-btns {
+  flex-direction: column;
+  bottom: auto;
+  top: var(--btn-top, 50%);
+  transform: translateY(-50%);
+}
+#touch.mode-overlay #dpad button, #touch.mode-overlay #touch-btns button { background: rgba(10,8,18,0.45); }
+#rotate-hint {
+  position: fixed;
+  left: 0; right: 0;
+  top: var(--hint-top, 50%);
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  pointer-events: none;
+  z-index: 14;
+}
+#rotate-hint::before { content: "⟳ "; color: var(--gold); }
+/* Keyboard hints mean nothing on a phone. */
+body.touch .title-hint, body.touch #map-hint { display: none; }
 
 .flash-white { animation: fw 0.18s linear; }
 @keyframes fw { 50% { filter: brightness(2); } }

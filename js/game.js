@@ -112,18 +112,60 @@
     S.mouse.locked = document.pointerLockElement === canvas;
   });
 
-  $("touch").addEventListener("pointerdown", (e) => {
-    const b = e.target.closest("button");
-    if (!b) return;
+  // Touch controls. Each finger is tracked on its own, so holding the d-pad
+  // while tapping Z no longer drops the walk, and sliding a thumb across the
+  // d-pad changes direction.
+  const IS_TOUCH = "ontouchstart" in window;
+  const touchHeld = new Map();          // pointerId -> button
+  function touchPress(b) {
+    b.classList.add("held");
     if (b.dataset.dir) S.keys[b.dataset.dir] = true;
     if (b.dataset.k === "KeyZ") { S.just.ok = true; S.keys.ok = true; }
     if (b.dataset.k === "KeyX") { S.just.cancel = true; S.keys.cancel = true; }
     if (b.dataset.k === "Escape") { S.just.menu = true; }
+  }
+  function touchRelease(b) {
+    b.classList.remove("held");
+    if ([...touchHeld.values()].includes(b)) return;   // another finger still on it
+    if (b.dataset.dir) S.keys[b.dataset.dir] = false;
+    if (b.dataset.k === "KeyZ") S.keys.ok = false;
+    if (b.dataset.k === "KeyX") S.keys.cancel = false;
+  }
+  $("touch").addEventListener("pointerdown", (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    e.preventDefault();
+    touchHeld.set(e.pointerId, b);
+    touchPress(b);
   });
-  $("touch").addEventListener("pointerup", () => {
-    S.keys.up = S.keys.down = S.keys.left = S.keys.right = S.keys.ok = S.keys.cancel = false;
+  window.addEventListener("pointermove", (e) => {
+    const cur = touchHeld.get(e.pointerId);
+    if (!cur || !cur.dataset.dir) return;
+    const over = document.elementFromPoint(e.clientX, e.clientY);
+    const nb = over && over.closest && over.closest("#dpad button");
+    if (nb && nb !== cur) { touchHeld.set(e.pointerId, nb); touchRelease(cur); touchPress(nb); }
   });
-  if ("ontouchstart" in window) $("touch").classList.remove("hidden");
+  const touchUp = (e) => {
+    const b = touchHeld.get(e.pointerId);
+    if (!b) return;
+    touchHeld.delete(e.pointerId);
+    touchRelease(b);
+  };
+  ["pointerup", "pointercancel"].forEach((ev) => window.addEventListener(ev, touchUp));
+  $("touch").addEventListener("contextmenu", (e) => e.preventDefault());
+  if (IS_TOUCH) {
+    $("touch").classList.remove("hidden");
+    document.body.classList.add("touch");
+    // iOS ignores user-scalable=no; stop pinch / double-tap zoom on the game.
+    // (Double-tap zoom is already off via touch-action in the CSS.)
+    ["gesturestart", "gesturechange"].forEach((ev) => document.addEventListener(ev, (e) => e.preventDefault(), { passive: false }));
+    // A finger lifted while the page lost focus must not leave Kael walking.
+    window.addEventListener("blur", () => {
+      touchHeld.forEach((b) => b.classList.remove("held"));
+      touchHeld.clear();
+      S.keys.up = S.keys.down = S.keys.left = S.keys.right = S.keys.ok = S.keys.cancel = false;
+    });
+  }
 
   function pressed(k) { const v = S.just[k]; S.just[k] = false; return v; }
   function flushJust() { /* kept until consumed */ }
@@ -647,11 +689,70 @@
       img.src = src;
     })));
   }
+  // Scale-to-fit. #frame is the visible viewport minus safe-area insets; the
+  // 1280x720 #app is placed in it at the largest scale that fits. #app used to
+  // be a flex item that shrank to its min-content width on narrow screens
+  // (a ~120x220 sliver on phones) before being scaled down by width.
+  // The canvas backing store follows scale x devicePixelRatio so it stays
+  // crisp on retina phones; drawing code keeps using 1280x720 coordinates.
+  const DECK_H = 196;                   // portrait control deck under the game
+  let fitKey = "";
   function fit() {
-    const scale = Math.min(window.innerWidth / W, window.innerHeight / H);
-    $("app").style.transform = `scale(${scale})`;
+    const frame = $("frame"), app = $("app"), touch = $("touch"), hint = $("rotate-hint");
+    const cs = getComputedStyle(frame);
+    const pl = parseFloat(cs.paddingLeft) || 0, pr = parseFloat(cs.paddingRight) || 0;
+    const pt = parseFloat(cs.paddingTop) || 0, pb = parseFloat(cs.paddingBottom) || 0;
+    const vw = frame.clientWidth, vh = frame.clientHeight;
+    const fw = Math.max(1, vw - pl - pr), fh = Math.max(1, vh - pt - pb);
+    let scale = Math.min(fw / W, fh / H);
+    // Portrait phones: the game is width-bound, so the spare band below it
+    // becomes a control deck instead of covering the game's own UI.
+    const deck = IS_TOUCH && fh - H * scale >= DECK_H + 24;
+    const areaH = deck ? fh - DECK_H : fh;
+    scale = Math.min(fw / W, areaH / H);
+    const gw = W * scale, gh = H * scale;
+    const gx = pl + (fw - gw) / 2;
+    const gy = pt + (areaH - gh) / 2;
+    app.style.transform = `translate(${gx}px, ${gy}px) scale(${scale})`;
+
+    const dpr = window.devicePixelRatio || 1;
+    const k = clamp(scale * dpr, 0.5, 2);
+    const cw = Math.round(W * k), ch = Math.round(H * k);
+    if (canvas.width !== cw || canvas.height !== ch) {
+      canvas.width = cw; canvas.height = ch;
+    }
+    ctx.setTransform(cw / W, 0, 0, ch / H, 0, 0);
+
+    if (IS_TOUCH) {
+      touch.classList.toggle("mode-deck", deck);
+      touch.classList.toggle("mode-overlay", !deck);
+      const set = (n, v) => touch.style.setProperty(n, `${Math.round(v)}px`);
+      if (deck) {
+        const deckTop = gy + gh;
+        const bottom = Math.max(16, (vh - pb - deckTop - 160) / 2) + pb;
+        set("--btn-right", pr + 20); set("--btn-bottom", bottom);
+        set("--dpad-left", pl + 16); set("--dpad-bottom", bottom - 6);
+        hint.style.setProperty("--hint-top", `${Math.round(deckTop + 14)}px`);
+      } else {
+        const btn = 52, dp = 44;
+        const gutL = gx - pl, gutR = vw - pr - (gx + gw);
+        set("--btn-right", gutR >= btn + 12 ? pr + (gutR - btn) / 2 : pr + 8);
+        set("--btn-top", pt + fh * 0.56);
+        set("--dpad-left", gutL >= dp * 3 + 12 ? pl + (gutL - dp * 3) / 2 : pl + 8);
+        set("--dpad-bottom", pb + 10);
+      }
+      hint.classList.toggle("hidden", !deck);
+    }
+    fitKey = `${vw}x${vh}@${dpr}`;
   }
   window.addEventListener("resize", fit);
+  window.addEventListener("orientationchange", () => { fit(); setTimeout(fit, 250); setTimeout(fit, 700); });
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", fit);
+  // iOS can settle the toolbar / safe areas without a resize event.
+  setInterval(() => {
+    const f = $("frame");
+    if (`${f.clientWidth}x${f.clientHeight}@${window.devicePixelRatio || 1}` !== fitKey) fit();
+  }, 1000);
 
   // ---------------------------------------------------------------------------
   // Party / items / flags
