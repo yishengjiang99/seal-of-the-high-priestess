@@ -9,13 +9,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="High Priestess" />
   <meta name="format-detection" content="telephone=no" />
-  <title>Seal of the High Priestess</title>
+  <title>Temple of the High Priestess</title>
   <meta name="description" content="A 2D JRPG / visual-novel hybrid. A journey of purification and poisoned words." />
   <link rel="stylesheet" href="css/game.css" />
 </head>
 <body>
   <!--
-    Seal of the High Priestess
+    Temple of the High Priestess
     Design inspiration: LinaHua (@Linahuaa) — AI-assisted solo JRPG
     focused on writing, world-building, and slow strategic combat.
 
@@ -31,7 +31,7 @@
         <div class="title-veil"></div>
         <div class="title-card">
           <p class="title-kicker">A Journey of Purification and Poisoned Words</p>
-          <h1>Seal of the High Priestess</h1>
+          <h1>Temple of the High Priestess</h1>
           <p class="title-sub">A 2D epic JRPG / visual-novel hybrid</p>
           <nav class="title-menu" id="title-menu">
             <button data-act="new">New Game</button>
@@ -175,12 +175,14 @@
       <div id="touch-btns">
         <button data-k="KeyZ">Z</button>
         <button data-k="KeyX">X</button>
+        <button data-k="KeyC" class="camp-btn" aria-label="Camp at lotus altar">⛺</button>
         <button data-k="Escape">☰</button>
       </div>
     </div>
     <p id="rotate-hint" class="hidden">Turn your phone sideways for a bigger view</p>
   </div>
 
+  <script src="js/platform.js"></script>
   <script src="js/content.js"></script>
   <script src="js/maps.js"></script>
   <script src="js/dialogue.js"></script>
