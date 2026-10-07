@@ -89,7 +89,7 @@ export function mountContent(app, { db, store, adminToken, signer }) {
     }
     let json
     if (schema === 2) {
-      const ck = etag + '|' + have
+      const ck = etag + '|' + have + '|' + (base ? base.hash : '') + '|' + (overrides.createdAt || '')
       json = signed.get(ck)
       if (!json) {
         const payload = JSON.stringify(body)
