@@ -1,0 +1,22 @@
+name: ASC status (read-only)
+
+# Prints the app's App Store Connect state (versions, review detail, age rating, Game Center,
+# capabilities, profiles, IAPs). Changes nothing.
+on:
+  workflow_dispatch:
+
+jobs:
+  status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          ASC_APP_ID: "6819973123"
+        run: |
+          set -euo pipefail
+          pip install -q PyJWT cryptography
+          cd scripts/asc && python3 status.py
