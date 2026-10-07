@@ -64,10 +64,14 @@ def ensure_image(loc_id, path):
             return "present"
         return f"existing image in state {state}"
     data = open(path, "rb").read()
-    res = must("POST", "/v1/gameCenterAchievementImages", {"data": {"type": "gameCenterAchievementImages",
+    st, d = api("POST", "/v1/gameCenterAchievementImages", {"data": {"type": "gameCenterAchievementImages",
                "attributes": {"fileName": os.path.basename(path), "fileSize": len(data)},
-               "relationships": {"gameCenterAchievementLocalization": {"data": {"type": "gameCenterAchievementLocalizations", "id": loc_id}}}}},
-               what="reserve achievement image")["data"]
+               "relationships": {"gameCenterAchievementLocalization": {"data": {"type": "gameCenterAchievementLocalizations", "id": loc_id}}}}})
+    if st == 409 and "IMAGE_ALREADY_EXISTS" in str(d):
+        return "present (the lookup missed it)"  # the GET above is occasionally empty/flaky
+    if st not in (200, 201):
+        raise RuntimeError(f"reserve achievement image -> {st}: {str(d.get('error', d))[:800]}")
+    res = d["data"]
     upload_asset(res, data)
     must("PATCH", f"/v1/gameCenterAchievementImages/{res['id']}", {"data": {"type": "gameCenterAchievementImages", "id": res["id"],
          "attributes": {"uploaded": True}}}, what="commit achievement image")
