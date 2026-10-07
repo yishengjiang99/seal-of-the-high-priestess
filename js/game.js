@@ -8,6 +8,44 @@
   const W = 1280, H = 720, T = 32;
   const canvas = document.getElementById("game");
   const ctx = canvas.getContext("2d");
+
+  // ---------------------------------------------------------------------------
+  // Feature flags for the visual overhaul.
+  //   visualOverhaul: 2.5D renderer + new sprite sheets. Default OFF.
+  //   tapToMove:      tap/click-to-move with A* paths. Default ON.
+  // Precedence: URL param (?visual=1|0, ?tap=1|0; persisted as a local dev
+  // override, ?visual=default clears it) > local dev override > server-driven
+  // window.FLAGS from the content bundle > default.
+  // ---------------------------------------------------------------------------
+  const FEAT = {};
+  const FEAT_DEF = { visual: ["visualOverhaul", false], tap: ["tapToMove", true] };
+  function feature(key) {
+    if (key in FEAT) return FEAT[key];
+    const [flagName, def] = FEAT_DEF[key];
+    const store = "soth_dev_" + key;
+    let v = null;
+    try {
+      const q = new URLSearchParams(location.search).get(key);
+      if (q === "1" || q === "0") { v = q === "1"; Platform.setItem(store, q); }
+      else if (q === "default") Platform.removeItem(store);
+      if (v === null) {
+        const s = Platform.getItem(store);
+        if (s === "1" || s === "0") v = s === "1";
+      }
+    } catch (e) {}
+    if (v === null && window.FLAGS && typeof window.FLAGS[flagName] === "boolean") v = window.FLAGS[flagName];
+    if (v === null) v = def;
+    FEAT[key] = v;
+    return v;
+  }
+  let WORLD = null;
+  function USE_ISO() {
+    if (WORLD) return FEAT.visual === true;
+    if (!feature("visual") || !window.SothWorld || !window.SothWorld.Art.ready) return false;
+    WORLD = window.SothWorld.create({ ctx, W, H, T });
+    return true;
+  }
+  function TAP_MOVE() { return feature("tap"); }
   const $ = (id) => document.getElementById(id);
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const rnd = (a, b) => a + Math.random() * (b - a);
@@ -105,6 +143,7 @@
       e.preventDefault();
       return;
     }
+    if (S.state === "map" && TAP_MOVE()) return;  // tap-to-move owns map clicks
     S.mouse.click = true; S.just.ok = true;
   });
   canvas.addEventListener("contextmenu", (e) => e.preventDefault());
@@ -112,9 +151,8 @@
     S.mouse.locked = document.pointerLockElement === canvas;
   });
 
-  // Touch controls. Each finger is tracked on its own, so holding the d-pad
-  // while tapping Z no longer drops the walk, and sliding a thumb across the
-  // d-pad changes direction.
+  // Touch controls: the round context buttons (Back / Camp / Menu). Movement,
+  // talking and confirming are taps on the game itself (tap-to-move below).
   const IS_TOUCH = "ontouchstart" in window;
   const touchHeld = new Map();          // pointerId -> button
   function touchPress(b) {
@@ -138,13 +176,6 @@
     e.preventDefault();
     touchHeld.set(e.pointerId, b);
     touchPress(b);
-  });
-  window.addEventListener("pointermove", (e) => {
-    const cur = touchHeld.get(e.pointerId);
-    if (!cur || !cur.dataset.dir) return;
-    const over = document.elementFromPoint(e.clientX, e.clientY);
-    const nb = over && over.closest && over.closest("#dpad button");
-    if (nb && nb !== cur) { touchHeld.set(e.pointerId, nb); touchRelease(cur); touchPress(nb); }
   });
   const touchUp = (e) => {
     const b = touchHeld.get(e.pointerId);
@@ -684,12 +715,13 @@
       ["elara", DATA.PORTRAITS.elara.neutral],
       ["kael", DATA.PORTRAITS.kael.smirk]
     ];
-    return Promise.all(list.map(([k, src]) => new Promise((res) => {
+    const art = window.SothWorld && feature("visual") ? window.SothWorld.Art.load() : Promise.resolve(false);
+    return Promise.all([art].concat(list.map(([k, src]) => new Promise((res) => {
       const img = new Image();
       img.onload = () => { S.images[k] = img; res(); };
       img.onerror = () => res();
       img.src = src;
-    })));
+    }))));
   }
   // Scale-to-fit. #frame is the visible viewport minus safe-area insets; the
   // 1280x720 #app is placed in it at the largest scale that fits. #app used to
@@ -718,7 +750,7 @@
     app.style.transform = `translate(${gx}px, ${gy}px) scale(${scale})`;
 
     const dpr = window.devicePixelRatio || 1;
-    const k = clamp(scale * dpr, 0.5, 2);
+    const k = clamp(scale * dpr, 0.5, 2.5);
     const cw = Math.round(W * k), ch = Math.round(H * k);
     if (canvas.width !== cw || canvas.height !== ch) {
       canvas.width = cw; canvas.height = ch;
@@ -733,15 +765,12 @@
         const deckTop = gy + gh;
         const bottom = Math.max(16, (vh - pb - deckTop - 160) / 2) + pb;
         set("--btn-right", pr + 20); set("--btn-bottom", bottom);
-        set("--dpad-left", pl + 16); set("--dpad-bottom", bottom - 6);
         hint.style.setProperty("--hint-top", `${Math.round(deckTop + 14)}px`);
       } else {
-        const btn = 52, dp = 44;
-        const gutL = gx - pl, gutR = vw - pr - (gx + gw);
-        set("--btn-right", gutR >= btn + 12 ? pr + (gutR - btn) / 2 : pr + 8);
+        const btn = 58;
+        const gutR = vw - pr - (gx + gw);
+        set("--btn-right", gutR >= btn + 12 ? pr + (gutR - btn) / 2 : pr + 10);
         set("--btn-top", pt + fh * 0.56);
-        set("--dpad-left", gutL >= dp * 3 + 12 ? pl + (gutL - dp * 3) / 2 : pl + 8);
-        set("--dpad-bottom", pb + 10);
       }
       hint.classList.toggle("hidden", !deck);
     }
@@ -1408,6 +1437,13 @@
     if (e.target.closest("#vn-skip") || e.target.closest("#vn-choices")) return;
     if (S.state === "vn") S.just.ok = true;
   });
+  // Tap anywhere on the dialogue screen (not only the text box) to advance.
+  $("screen-vn").addEventListener("click", (e) => {
+    if (e.target.closest("#vn-skip") || e.target.closest("#vn-choices") || e.target.closest("button")) return;
+    if (S.state === "vn" && !S.vn?.choices) S.just.ok = true;
+  });
+  // Battle tutorial cards close on tap.
+  $("battle-tutorial").addEventListener("click", () => { if (S.battle?.phase === "tutorial") S.just.ok = true; });
   function persistSettings() {
     try { Platform.setItem("soth_settings", JSON.stringify(S.settings)); } catch (e) {}
   }
@@ -1644,6 +1680,11 @@
     playMusic(map().music || "temple");
     maybeRegionCard(S.mapId);
     S.camX = S.px - W / 2; S.camY = S.py - H / 2;
+    snapCamera();
+  }
+  function snapCamera() {
+    cancelPath();
+    if (USE_ISO()) WORLD.updateCamera(0, map(), S.px, S.py, true);
   }
   function footTile() { return { x: Math.floor(S.px / T), y: Math.floor(S.py / T) }; }
   function facingTile() {
@@ -1674,6 +1715,7 @@
       S.trail = [];
       S.warpLock = 400;
       S.camX = S.px - W / 2; S.camY = S.py - H / 2;
+      snapCamera();
       showLocation(m.name, true);
       playMusic(m.music || "temple");
       maybeRegionCard(ev.map);
@@ -1710,34 +1752,52 @@
     }
     const f = facingTile(), here = footTile();
     const list = [...eventsAt(f.x, f.y), ...eventsAt(here.x, here.y)];
-    for (const ev of list) {
-      if (ev.type === "warp") { tryWarp(ev); return; }
+    // Iso view: movement is often diagonal, so also accept the best-facing neighbour.
+    if (!list.some((ev) => TALKABLE.has(ev.type))) {
+      let best = null, bestScore = -2;
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        if (!dx && !dy) continue;
+        for (const ev of eventsAt(here.x + dx, here.y + dy)) {
+          if (!TALKABLE.has(ev.type)) continue;
+          const sc = ((S.fx || 0) * dx + (S.fy || 0) * dy) / Math.hypot(dx, dy);
+          if (sc > bestScore) { bestScore = sc; best = ev; }
+        }
+      }
+      if (best && bestScore > -0.2) list.push(best);
+    }
+    for (const ev of list) { if (runEvent(ev)) return; }
+  }
+  const TALKABLE = new Set(["npc", "chest", "sign", "save", "encounter", "block"]);
+  function runEvent(ev) {
+    {
+      if (ev.type === "warp") { tryWarp(ev); return true; }
       if (ev.type === "save") {
         restAtAltar(); openMenu();
         const chat = campChatAvailable();
-        if (chat) toast(`Camp chat waiting: "${chat.title}". Press C at the altar.`);
-        return;
+        if (chat) toast(`Camp chat waiting: "${chat.title}". ${IS_TOUCH ? "Tap ⛺" : "Press C"} at the altar.`);
+        return true;
       }
       if (ev.type === "chest") {
-        if (flagOn("chest_" + ev.id) || flagOn(ev.id)) { toast("Empty."); return; }
+        if (flagOn("chest_" + ev.id) || flagOn(ev.id)) { toast("Empty."); return true; }
         setFlag(ev.id, 1);
         grant(ev.item);
         sfx("ok");
-        return;
+        return true;
       }
       if (ev.type === "sign") {
         if (ev.set) setFlag(ev.set, 1);
-        talkSimple("", ev.text); return;
+        talkSimple("", ev.text); return true;
       }
       if (ev.type === "npc") {
         if (ev.quest && S.quests[ev.quest] === "active" && ev.id === "mira") setFlag("quest_acolyte_found");
         if (ev.quest === "missing_acolyte" && ev.id === "ren") S.quests.missing_acolyte = "active";
-        if (ev.scene) { startScene(ev.scene); return; }
-        if (ev.talk) { startTalk(ev.talk); return; }
+        if (ev.scene) { startScene(ev.scene); return true; }
+        if (ev.talk) { startTalk(ev.talk); return true; }
       }
-      if (ev.type === "encounter") { bigSfx("encounter"); S.flash = 160; startBattle(ev.battle); return; }
-      if (ev.type === "block") { talkSimple("", ev.text); return; }
+      if (ev.type === "encounter") { bigSfx("encounter"); S.flash = 160; startBattle(ev.battle); return true; }
+      if (ev.type === "block") { talkSimple("", ev.text); return true; }
     }
+    return false;
   }
   function stepTriggers() {
     if (S.warpLock > 0) return;
@@ -1758,25 +1818,22 @@
     if (S.warpLock > 0) S.warpLock -= dt;
     if (S.fade) { S.moving = false; return; }
     if (S.vista) { updateVista(dt); return; }
-    const speed = (S.keys.cancel ? 2.8 : 1.7);
+    const iso = USE_ISO();
+    let ix = 0, iy = 0;
+    if (S.keys.up) iy -= 1;
+    if (S.keys.down) iy += 1;
+    if (S.keys.left) ix -= 1;
+    if (S.keys.right) ix += 1;
     let dx = 0, dy = 0;
-    if (S.keys.up) dy -= 1;
-    if (S.keys.down) dy += 1;
-    if (S.keys.left) dx -= 1;
-    if (S.keys.right) dx += 1;
-    if (dx || dy) {
-      if (Math.abs(dx) > Math.abs(dy)) S.dir = dx < 0 ? "left" : "right";
-      else S.dir = dy < 0 ? "up" : "down";
-      const len = Math.hypot(dx, dy) || 1;
-      dx = (dx / len) * speed; dy = (dy / len) * speed;
-      const nx = S.px + dx, ny = S.py + dy;
-      const r = 10;
-      if (!solidAt(nx, S.py + r) && !solidAt(nx, S.py - 4) && !solidAt(nx - r, S.py) && !solidAt(nx + r, S.py)) S.px = nx;
-      if (!solidAt(S.px, ny + r) && !solidAt(S.px, ny - 4) && !solidAt(S.px - r, ny) && !solidAt(S.px + r, ny)) S.py = ny;
-      S.trail.push({ x: S.px, y: S.py, dir: S.dir });
-      if (S.trail.length > 80) S.trail.shift();
-      S.moving = true;
-    } else S.moving = false;
+    if (ix || iy) {
+      cancelPath();
+      // Keys/d-pad are screen-relative: in the iso view "up" walks up the screen.
+      if (iso) { dx = ix + iy; dy = iy - ix; } else { dx = ix; dy = iy; }
+    } else if (tap.path) {
+      const steer = steerPath(dt);
+      dx = steer.x; dy = steer.y;
+    }
+    walkStep(dx, dy, dt);
     if (pressed("ok")) interact();
     if (pressed("menu")) openMenu();
     if (pressed("camp")) {
@@ -1789,10 +1846,232 @@
     }
     stepTriggers();
     const m = map();
-    S.camX += ((S.px - W / 2) - S.camX) * 0.12;
-    S.camY += ((S.py - H / 2) - S.camY) * 0.12;
-    S.camX = clamp(S.camX, 0, Math.max(0, m.w * T - W));
-    S.camY = clamp(S.camY, 0, Math.max(0, m.h * T - H));
+    if (iso) {
+      WORLD.updateCamera(dt, m, S.px, S.py, false);
+    } else {
+      const k = 1 - Math.exp(-dt / 130);
+      S.camX += ((S.px - W / 2) - S.camX) * k;
+      S.camY += ((S.py - H / 2) - S.camY) * k;
+      S.camX = clamp(S.camX, 0, Math.max(0, m.w * T - W));
+      S.camY = clamp(S.camY, 0, Math.max(0, m.h * T - H));
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Movement, tap-to-move and A* paths (iso view)
+  // ---------------------------------------------------------------------------
+  const WALK_SPEED = 0.105, RUN_SPEED = 0.17;      // world px per ms
+  const BODY_R = 9;
+  const tap = { path: null, idx: 0, target: null, marker: null, stuck: 0, hold: null, holdT: 0, lastRetarget: 0 };
+  const steerVec = { x: 0, y: 0 };
+  function canStand(x, y) {
+    return !solidAt(x + BODY_R, y) && !solidAt(x - BODY_R, y) && !solidAt(x, y + BODY_R) && !solidAt(x, y - BODY_R);
+  }
+  function walkStep(dx, dy, dt) {
+    if (!dx && !dy) { S.moving = false; return; }
+    const len = Math.hypot(dx, dy) || 1;
+    const sp = (S.keys.cancel || (tap.path && tap.run) ? RUN_SPEED : WALK_SPEED) * dt;
+    const vx = dx / len * sp, vy = dy / len * sp;
+    const bx = S.px, by = S.py;
+    if (canStand(S.px + vx, S.py)) S.px += vx;
+    if (canStand(S.px, S.py + vy)) S.py += vy;
+    const mx = S.px - bx, my = S.py - by;
+    const md = Math.hypot(mx, my);
+    // face where we are trying to go, even when blocked
+    const fx = md > 0.01 ? mx : vx, fy = md > 0.01 ? my : vy;
+    const fl = Math.hypot(fx, fy) || 1;
+    S.fx = fx / fl; S.fy = fy / fl;
+    if (Math.abs(fx) > Math.abs(fy)) S.dir = fx < 0 ? "left" : "right"; else S.dir = fy < 0 ? "up" : "down";
+    if (USE_ISO()) { const f = WORLD.facing(fx - fy, (fx + fy) * 0.5); S.yaw = f.yaw; S.flip = f.flip; }
+    if (md > 0.01) {
+      S.moving = true;
+      S.stride = (S.stride || 0) + md;
+      S._trailAcc = (S._trailAcc || 0) + md;
+      if (S._trailAcc >= 2.2) {
+        S._trailAcc = 0;
+        const o = S.trail.length >= 80 ? S.trail.shift() : {};
+        o.x = S.px; o.y = S.py; o.dir = S.dir; o.yaw = S.yaw || 0; o.flip = !!S.flip;
+        S.trail.push(o);
+      }
+      tap.stuck = 0;
+    } else {
+      S.moving = false;
+      if (tap.path) { tap.stuck += dt; if (tap.stuck > 420) arrive(true); }
+    }
+  }
+  function cancelPath() {
+    tap.path = null; tap.target = null; tap.run = false;
+    if (tap.marker) tap.marker.fade = true;
+  }
+  function wpX(i) { return (tap.path[i][0] + 0.5) * T; }
+  function wpY(i) { return (tap.path[i][1] + 0.5) * T; }
+  function lineClear(x0, y0, x1, y1) {
+    const d = Math.hypot(x1 - x0, y1 - y0), n = Math.ceil(d / 6);
+    for (let i = 1; i <= n; i++) {
+      const t = i / n;
+      if (!canStand(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t)) return false;
+    }
+    return true;
+  }
+  function steerPath(dt) {
+    steerVec.x = steerVec.y = 0;
+    // string-pull: skip waypoints we can already walk to in a straight line
+    while (tap.idx + 1 < tap.path.length && lineClear(S.px, S.py, wpX(tap.idx + 1), wpY(tap.idx + 1))) tap.idx++;
+    const tx = wpX(tap.idx), ty = wpY(tap.idx);
+    const ddx = tx - S.px, ddy = ty - S.py, d = Math.hypot(ddx, ddy);
+    if (d < 3) {
+      tap.idx++;
+      if (tap.idx >= tap.path.length) { arrive(false); return steerVec; }
+      return steerPath(dt);
+    }
+    steerVec.x = ddx; steerVec.y = ddy;
+    return steerVec;
+  }
+  function arrive(stuck) {
+    const target = tap.target;
+    tap.path = null; tap.target = null; tap.run = false;
+    if (tap.marker) tap.marker.fade = true;
+    S.moving = false;
+    if (!target) return;
+    // face the target, then use it
+    const ex = (target.x + 0.5) * T - S.px, ey = (target.y + 0.5) * T - S.py;
+    const near = Math.abs(target.x - Math.floor(S.px / T)) <= 1 && Math.abs(target.y - Math.floor(S.py / T)) <= 1;
+    if (!near) return;
+    const l = Math.hypot(ex, ey) || 1;
+    S.fx = ex / l; S.fy = ey / l;
+    if (Math.abs(ex) > Math.abs(ey)) S.dir = ex < 0 ? "left" : "right"; else S.dir = ey < 0 ? "up" : "down";
+    if (USE_ISO()) { const f = WORLD.facing(ex - ey, (ex + ey) * 0.5); S.yaw = f.yaw; S.flip = f.flip; }
+    if (!runEvent(target)) interact();
+  }
+  // Blocked test for A*, memoised per request.
+  let blockMemo = null, blockW = 0;
+  function tileBlocked(tx, ty) {
+    const i = ty * blockW + tx;
+    const v = blockMemo[i];
+    if (v) return v === 2;
+    const b = solidAt(tx * T + T / 2, ty * T + T / 2);
+    blockMemo[i] = b ? 2 : 1;
+    return b;
+  }
+  function pathTo(gx, gy, target) {
+    const m = map();
+    if (!blockMemo || blockMemo.length < m.w * m.h) blockMemo = new Uint8Array(m.w * m.h);
+    else blockMemo.fill(0, 0, m.w * m.h);
+    blockW = m.w;
+    const sx = Math.floor(S.px / T), sy = Math.floor(S.py / T);
+    // tapped a blocked tile with nothing to use: go to the nearest open tile
+    if (!target && (gx < 0 || gy < 0 || gx >= m.w || gy >= m.h || tileBlocked(gx, gy))) {
+      let best = null, bd = 1e9;
+      for (let r = 1; r <= 3 && !best; r++) {
+        for (let y = gy - r; y <= gy + r; y++) for (let x = gx - r; x <= gx + r; x++) {
+          if (x < 0 || y < 0 || x >= m.w || y >= m.h || tileBlocked(x, y)) continue;
+          const d = Math.hypot(x - gx, y - gy) + Math.hypot(x - sx, y - sy) * 0.01;
+          if (d < bd) { bd = d; best = [x, y]; }
+        }
+      }
+      if (!best) return false;
+      gx = best[0]; gy = best[1];
+    }
+    if (gx === sx && gy === sy) {
+      tap.path = [[gx, gy]]; tap.idx = 0; tap.target = target || null;
+      return true;
+    }
+    const path = window.SothWorld.findPath(m.w, m.h, tileBlocked, sx, sy, gx, gy, 30000);
+    if (!path || !path.length) return false;
+    // stop next to solid targets (NPCs, foes) instead of on them
+    if (target && tileBlocked(gx, gy)) path.pop();
+    if (!path.length) { tap.path = null; tap.target = target; arrive(false); return true; }
+    tap.path = path; tap.idx = 0; tap.target = target || null; tap.stuck = 0;
+    return true;
+  }
+  // Flat (classic) view transform, written by drawMap each frame.
+  const flatView = { z: 1, ox: 0, oy: 0 };
+  function worldToScreen(wx, wy, out) {
+    if (USE_ISO()) return WORLD.toScreen(wx, wy, out);
+    out.x = (wx - flatView.ox) * flatView.z; out.y = (wy - flatView.oy) * flatView.z;
+    return out;
+  }
+  function screenToWorld(sx, sy, out) {
+    if (USE_ISO()) return WORLD.toWorld(sx, sy, out);
+    out.x = sx / flatView.z + flatView.ox; out.y = sy / flatView.z + flatView.oy;
+    return out;
+  }
+  function eventScreenHit(ev, sx, sy) {
+    const c = worldToScreen((ev.x + 0.5) * T, (ev.y + 0.5) * T, hitPt);
+    const iso = USE_ISO(), z = iso ? WORLD.view.z : flatView.z;
+    const tall = ev.type === "npc" || ev.type === "encounter";
+    const hw = iso ? (tall ? 30 : 34) : (tall ? 24 : 20);
+    const up = iso ? (tall ? 96 : 48) : (tall ? 44 : 20);
+    const dn = iso ? 16 : 18;
+    if (Math.abs(sx - c.x) <= hw * z && sy >= c.y - up * z && sy <= c.y + dn * z) return -c.y;   // front-most first
+    return null;
+  }
+  const hitPt = { x: 0, y: 0 }, tapW = { x: 0, y: 0 };
+  // Tap / click on the map: walk there (A*), or walk up to what was tapped and use it.
+  function mapTap(sx, sy, quiet) {
+    if (S.state !== "map" || S.fade || S.vista || !TAP_MOVE()) return false;
+    const m = map();
+    let hit = null, hs = Infinity;
+    for (const ev of m.events) {
+      if (!eventVisible(ev) || !TALKABLE.has(ev.type) || quiet) continue;
+      if (ev.type === "chest" && flagOn(ev.id)) continue;
+      const s = eventScreenHit(ev, sx, sy);
+      if (s !== null && s < hs) { hs = s; hit = ev; }
+    }
+    screenToWorld(sx, sy, tapW);
+    let gx = Math.floor(tapW.x / T), gy = Math.floor(tapW.y / T);
+    if (!hit && !quiet) hit = eventsAt(gx, gy).find((ev) => TALKABLE.has(ev.type) && !(ev.type === "chest" && flagOn(ev.id))) || null;
+    if (hit) { gx = hit.x; gy = hit.y; }
+    const here = footTile();
+    if (hit && Math.abs(hit.x - here.x) <= 1 && Math.abs(hit.y - here.y) <= 1) {
+      tap.path = null; tap.target = hit; arrive(false);
+      return true;
+    }
+    const ok = pathTo(gx, gy, hit);
+    const mk = tap.marker || (tap.marker = { x: 0, y: 0, t: 0, fade: false, bad: false, talk: false });
+    mk.t = 0; mk.fade = false; mk.bad = !ok; mk.talk = !!hit;
+    if (ok && tap.path && tap.path.length) {
+      const last = tap.path[tap.path.length - 1];
+      mk.x = hit ? (hit.x + 0.5) * T : (last[0] + 0.5) * T;
+      mk.y = hit ? (hit.y + 0.5) * T : (last[1] + 0.5) * T;
+      tap.run = tap.path.length > 14;
+    } else { mk.x = (gx + 0.5) * T; mk.y = (gy + 0.5) * T; }
+    if (!quiet) sfx(ok ? "ui" : "cancel");
+    return ok;
+  }
+  function canvasPoint(e, out) {
+    const r = canvas.getBoundingClientRect();
+    out.x = (e.clientX - r.left) * (W / r.width);
+    out.y = (e.clientY - r.top) * (H / r.height);
+    return out;
+  }
+  const ptr = { x: 0, y: 0 };
+  canvas.addEventListener("pointerdown", (e) => {
+    if (S.state !== "map" || !TAP_MOVE() || e.button > 0) return;
+    e.preventDefault();
+    if (S.vista || S.fade) { S.just.ok = true; return; }
+    canvasPoint(e, ptr);
+    tap.hold = { id: e.pointerId, x: ptr.x, y: ptr.y, t: performance.now(), steering: false };
+    mapTap(ptr.x, ptr.y, false);
+  });
+  canvas.addEventListener("pointermove", (e) => {
+    const h = tap.hold;
+    if (!h || h.id !== e.pointerId || S.state !== "map") return;
+    canvasPoint(e, ptr);
+    if (!h.steering && Math.hypot(ptr.x - h.x, ptr.y - h.y) > 24) h.steering = true;
+    h.x = ptr.x; h.y = ptr.y;
+  });
+  const ptrEnd = (e) => { if (tap.hold && tap.hold.id === e.pointerId) tap.hold = null; };
+  canvas.addEventListener("pointerup", ptrEnd);
+  canvas.addEventListener("pointercancel", ptrEnd);
+  // Press-and-drag steers: re-target toward the finger a few times a second.
+  function updateHold(now) {
+    const h = tap.hold;
+    if (!h || S.state !== "map") return;
+    if ((h.steering || now - h.t > 380) && now - tap.lastRetarget > 140) {
+      tap.lastRetarget = now;
+      mapTap(h.x, h.y, true);
+    }
   }
 
   // Tile painter
@@ -2141,6 +2420,8 @@
       ox = clamp(S.px - viewW / 2, 0, Math.max(0, m.w * T - viewW));
       oy = clamp(S.py - viewH * (0.5 + 0.24 * vk), 0, Math.max(0, m.h * T - viewH));
     }
+    if (USE_ISO()) { drawIsoMap(m, vk); return; }
+    flatView.z = zoom; flatView.ox = ox; flatView.oy = oy;
     ctx.fillStyle = "#0a0c10";
     ctx.fillRect(0, 0, W, H);
     ctx.save();
@@ -2208,10 +2489,11 @@
         ctx.fillText(ev.name || "!", px, py - (boss ? 26 : 20));
       }
     }
+    drawTapMarkerFlat(ox, oy);
     // followers then leader
     const party = S.party;
     for (let i = party.length - 1; i >= 1; i--) {
-      const idx = Math.max(0, S.trail.length - 1 - i * 12);
+      const idx = Math.max(0, S.trail.length - 1 - i * TRAIL_GAP);
       const tr = S.trail[idx] || { x: S.px, y: S.py, dir: S.dir };
       drawChibi(tr.x - ox, tr.y - oy, party[i], tr.dir, S.moving, S.chars[party[i]]?.armor === "veil_first_oath" ? "gold" : null);
     }
@@ -2238,6 +2520,201 @@
     ctx.globalCompositeOperation = "source-over";
     ctx.restore();
     viewW = W; viewH = H;
+    if (vk > 0) drawVistaSky(vk);
+    drawAmbient();
+    if (vk > 0) drawVistaOverlay();
+  }
+  const TRAIL_GAP = 9;               // trail samples (~2.2 world px apart) between party members
+  function drawTapMarkerFlat(ox, oy) {
+    const mk = tap.marker;
+    if (!mk || mk.t > 900) return;
+    const a = mk.fade ? Math.max(0, 1 - mk.t / 500) : 1;
+    if (a <= 0) return;
+    const px = mk.x - ox, py = mk.y - oy + 6;
+    const r = 10 + Math.sin(S.anim / 120) * 1.5;
+    ctx.globalAlpha = a;
+    ctx.strokeStyle = mk.bad ? "#ff6a6a" : mk.talk ? "#ffe08a" : "#bfe6ff";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(px, py, r, r * 0.5, 0, 0, 6.3); ctx.stroke();
+    ctx.lineWidth = 1; ctx.globalAlpha = 1;
+  }
+
+  // ---------------------------------------------------------------------------
+  // 2.5D map (feature flag visualOverhaul) — js/world.js does the projection,
+  // tiles and lighting; this supplies the entities.
+  // ---------------------------------------------------------------------------
+  const CHAR_K = 0.74;               // character sheet scale relative to the tile atlas
+  const isoP = { x: 0, y: 0 }, isoQ = { x: 0, y: 0 };
+  const isoFace = { yaw: 0, flip: false };
+  let isoChatReady = false;
+  const tagQueue = [];
+  for (let i = 0; i < 24; i++) tagQueue.push({ c: null, x: 0, y: 0 });
+  let nTags = 0;
+  function queueTag(canvasLabel, x, y) {
+    if (nTags >= tagQueue.length) return;
+    const t = tagQueue[nTags++]; t.c = canvasLabel; t.x = x; t.y = y;
+  }
+  function encounterName(ev) {
+    if (ev.name) return ev.name;
+    const b = DATA.BATTLES[ev.battle];
+    const id = b && (b.enemies || [])[0];
+    return (DATA.ENEMIES[typeof id === "string" ? id : id && id.id] || {}).name || "Foe";
+  }
+  const isoState = {
+    S, map: null, mapId: "", anim: 0, night: 0,
+    collect(dyn) {
+      const m = isoState.map;
+      for (const ev of m.events) {
+        if (!eventVisible(ev)) continue;
+        const wx = (ev.x + 0.5) * T, wy = (ev.y + 0.5) * T;
+        if (ev.type === "npc") dyn(3, wx, wy, ev);
+        else if (ev.type === "encounter") dyn(4, wx, wy, ev);
+        else if (ev.type === "chest" && !flagOn(ev.id)) dyn(5, wx, wy, ev);
+        else if (ev.type === "save") dyn(6, wx, wy, ev);
+      }
+      const party = S.party;
+      for (let i = party.length - 1; i >= 1; i--) {
+        const tr = S.trail[Math.max(0, S.trail.length - 1 - i * TRAIL_GAP)];
+        if (tr) dyn(2, tr.x, tr.y, tr, i); else dyn(2, S.px, S.py, null, i);
+      }
+      dyn(1, S.px, S.py, null, 0);
+    },
+    drawDyn(c, e, toScreen, k) {
+      const SW = window.SothWorld;
+      const p = toScreen(e.x, e.y, isoP);
+      const ck = k * CHAR_K;
+      const shadow = SW.frame("shadow");
+      if (e.kind === 1 || e.kind === 2) {
+        const id = S.party[e.kind === 1 ? 0 : e.a];
+        const tr = e.ref;
+        const yaw = tr ? tr.yaw : (S.yaw || 0), flip = tr ? tr.flip : !!S.flip;
+        const frame = S.moving ? Math.floor(S.stride / 9 + e.a * 3) : Math.floor(S.anim / 220 + e.a * 2);
+        SW.drawFrame(c, shadow, p.x, p.y, k * 0.8);
+        if (!SW.drawChar(c, id, S.moving ? "walk" : "idle", yaw, frame, p.x, p.y, ck, flip)) {
+          drawChibi(p.x, p.y - 14, id, S.dir, S.moving, null, 1.6);
+        }
+        return;
+      }
+      const ev = e.ref;
+      if (e.kind === 3) {
+        // face the party when it is close
+        const dx = S.px - e.x, dy = S.py - e.y;
+        let yaw = 0, flip = false;
+        if (dx * dx + dy * dy < (T * 4) * (T * 4)) {
+          const f = SW.facing(dx - dy, (dx + dy) * 0.5, isoFace); yaw = f.yaw; flip = f.flip;
+        }
+        SW.drawFrame(c, shadow, p.x, p.y, k * 0.8);
+        const fr = Math.floor(S.anim / 650 + ev.x * 0.37);
+        if (!SW.drawNpc(c, ev.id, yaw, fr, p.x, p.y, ck, flip)) drawChibi(p.x, p.y - 14, "npc", "down", false, null, 1.6);
+        if (dx * dx + dy * dy < (T * 5) * (T * 5)) queueTag(WORLD.label(ev.name || "", ev.hue), p.x, p.y - 150 * ck);
+        return;
+      }
+      if (e.kind === 4) {
+        const boss = DATA.BATTLES[ev.battle]?.enemies.some((id) => DATA.ENEMIES[id]?.boss);
+        const z = WORLD.view.z, s = (boss ? 1.4 : 1) * z;
+        const bob = Math.sin(S.anim / 380 + ev.y) * 3 * z;
+        c.globalCompositeOperation = "lighter";
+        c.globalAlpha = 0.55 + Math.sin(S.anim / 240 + ev.x) * 0.2;
+        const gr = SW.frame("glow_red");
+        const r = 46 * s;
+        c.drawImage(window.SothWorld._img("world"), gr[0], gr[1], gr[2], gr[3], p.x - r, p.y - r * 0.55 - 6 * z, r * 2, r * 1.1);
+        c.globalAlpha = 1; c.globalCompositeOperation = "source-over";
+        SW.drawFrame(c, shadow, p.x, p.y, k * 0.9 * s / z);
+        // a shadow wraith: tattered cloak, ember eyes
+        const top = p.y - 64 * s + bob, cx = p.x;
+        c.fillStyle = "rgba(14,8,22,0.94)";
+        c.beginPath();
+        c.moveTo(cx, top);
+        c.bezierCurveTo(cx + 24 * s, top + 4 * s, cx + 22 * s, top + 40 * s, cx + 20 * s, top + 58 * s);
+        for (let i = 0; i <= 5; i++) {
+          const tx = cx + 20 * s - i * 8 * s;
+          c.lineTo(tx, top + (i & 1 ? 52 : 62 + Math.sin(S.anim / 160 + i) * 2) * s);
+        }
+        c.bezierCurveTo(cx - 22 * s, top + 40 * s, cx - 24 * s, top + 4 * s, cx, top);
+        c.fill();
+        c.strokeStyle = "rgba(255,80,110,0.55)"; c.lineWidth = 1.5 * z; c.stroke(); c.lineWidth = 1;
+        c.fillStyle = "#ff5a6a";
+        c.beginPath(); c.ellipse(cx - 6 * s, top + 18 * s, 2.6 * s, 1.8 * s, 0, 0, 6.3); c.ellipse(cx + 6 * s, top + 18 * s, 2.6 * s, 1.8 * s, 0, 0, 6.3); c.fill();
+        queueTag(WORLD.label(encounterName(ev), "#ff6a7a"), p.x, top - 14 * z);
+        return;
+      }
+      if (e.kind === 5) { SW.drawFrame(c, SW.frame("chest"), p.x, p.y, k); return; }
+      if (e.kind === 6) {
+        const m = isoState.map;
+        if (m.tiles[ev.y][ev.x] !== 10) SW.drawFrame(c, SW.frame("altar"), p.x, p.y, k);
+        const z = WORLD.view.z;
+        c.globalCompositeOperation = "lighter";
+        c.globalAlpha = 0.55 + Math.sin(S.anim / 300) * 0.25;
+        const gl = SW.frame("glow_cool"), r = 54 * z;
+        c.drawImage(window.SothWorld._img("world"), gl[0], gl[1], gl[2], gl[3], p.x - r, p.y - 40 * z - r, r * 2, r * 2);
+        c.globalAlpha = 1; c.globalCompositeOperation = "source-over";
+        if (isoChatReady) {
+          const bx = p.x, by = p.y - 96 * z + Math.sin(S.anim / 260) * 3 * z;
+          c.fillStyle = "rgba(255,248,232,0.97)";
+          c.beginPath(); c.ellipse(bx, by, 17 * z, 12 * z, 0, 0, 6.3); c.fill();
+          c.beginPath(); c.moveTo(bx - 4 * z, by + 9 * z); c.lineTo(bx + 2 * z, by + 18 * z); c.lineTo(bx + 6 * z, by + 8 * z); c.fill();
+          c.fillStyle = "#3a2a48";
+          for (let d = -1; d <= 1; d++) { c.beginPath(); c.arc(bx + d * 7 * z, by, 2.2 * z, 0, 6.3); c.fill(); }
+        }
+      }
+    },
+    groundFx(c, toScreen, z) {
+      const SW = window.SothWorld, img = SW._img("world");
+      const m = isoState.map;
+      const gl = SW.frame("glow_cool");
+      c.globalCompositeOperation = "lighter";
+      for (const ev of m.events) {
+        if (ev.type !== "warp" || !eventVisible(ev)) continue;
+        const p = toScreen((ev.x + 0.5) * T, (ev.y + 0.5) * T, isoQ);
+        if (p.x < -80 || p.x > W + 80 || p.y < -80 || p.y > H + 80) continue;
+        c.globalAlpha = 0.35 + Math.sin(S.anim / 380 + ev.x) * 0.15;
+        const r = 42 * z;
+        c.drawImage(img, gl[0], gl[1], gl[2], gl[3], p.x - r, p.y - r * 0.5, r * 2, r);
+      }
+      c.globalAlpha = 1;
+      c.globalCompositeOperation = "source-over";
+      // tap marker: a ring that pops in, pulses, and fades on arrival
+      const mk = tap.marker;
+      if (mk && mk.t < 900) {
+        const a = mk.fade ? Math.max(0, 1 - mk.t / 500) : 1;
+        if (a > 0) {
+          const p = toScreen(mk.x, mk.y, isoQ);
+          const pop = Math.min(1, mk.t / 140);
+          const s = (0.6 + 0.4 * pop + Math.sin(S.anim / 140) * 0.05) * z;
+          c.globalAlpha = a;
+          c.strokeStyle = mk.bad ? "#ff6a6a" : mk.talk ? "#ffe08a" : "#c8f0ff";
+          c.lineWidth = 3 * z;
+          c.beginPath(); c.ellipse(p.x, p.y, 26 * s, 13 * s, 0, 0, 6.3); c.stroke();
+          c.lineWidth = 1.5 * z;
+          c.beginPath(); c.ellipse(p.x, p.y, 14 * s, 7 * s, 0, 0, 6.3); c.stroke();
+          c.lineWidth = 1; c.globalAlpha = 1;
+        }
+      }
+    },
+    afterObjects(c, toScreen, k) {
+      // x-ray: the leader shows through anything standing in front of her
+      const SW = window.SothWorld;
+      const p = toScreen(S.px, S.py, isoP);
+      const frame = S.moving ? Math.floor(S.stride / 9) : Math.floor(S.anim / 220);
+      SW.drawChar(c, S.party[0], S.moving ? "walk" : "idle", S.yaw || 0, frame, p.x, p.y, k * CHAR_K, !!S.flip, 0.28);
+      for (let i = 0; i < nTags; i++) {
+        const t = tagQueue[i], lc = t.c;
+        if (!lc || !lc.w) continue;
+        c.drawImage(lc, Math.round(t.x - lc.w / 2), Math.round(t.y - lc.h), lc.w, lc.h);
+      }
+      nTags = 0;
+    }
+  };
+  function drawIsoMap(m, vk) {
+    const v = WORLD.view;
+    v.z = 1 - 0.32 * vk;
+    if (vk > 0) WORLD.updateCamera(16, m, S.px, S.py + 260 * vk, false);
+    if (tap.marker) tap.marker.t += 16;
+    isoState.map = m; isoState.mapId = S.mapId; isoState.anim = S.anim;
+    isoState.night = m.indoors ? 0 : nightAlpha();
+    isoChatReady = !!campChatAvailable();
+    nTags = 0;
+    WORLD.draw(isoState);
     if (vk > 0) drawVistaSky(vk);
     drawAmbient();
     if (vk > 0) drawVistaOverlay();
@@ -2667,7 +3144,7 @@
     if (!text) return;
     const el = $("battle-tutorial");
     el.classList.remove("hidden");
-    el.innerHTML = `<h3>${text.h}</h3><p>${text.p}</p><p style="margin-top:8px;color:var(--gold)">Press Z to continue.</p>`;
+    el.innerHTML = `<h3>${text.h}</h3><p>${text.p}</p><p style="margin-top:8px;color:var(--gold)">${IS_TOUCH ? "Tap to continue." : "Press Z to continue."}</p>`;
     S.battle.phase = "tutorial";
   }
   function blog(s) {
@@ -2850,7 +3327,8 @@
           || (sk.cost === "all" ? false : barHero.res < (sk.cost || 0))
           || (sid === "unseal" && (S.chars.kael?.unsealCd > 0 || barHero.unsealCd > 0));
         const costTxt = sk.cost === "all" ? "ALL" : (sk.cost ? sk.cost + " " + (barHero.resName || "") : "");
-        return `<button class="action-btn${locked ? " locked" : ""}" data-skill="${sid}" title="${sk.desc || sk.name}">
+        return `<button class="action-btn${locked ? " locked" : ""}" data-skill="${sid}" data-fx="${sk.fx || (sk.heal ? "heal" : sk.power ? "hit" : "guard")}" title="${sk.desc || sk.name}">
+          <span class="ab-orb" aria-hidden="true"></span>
           <span class="ab-name">${sk.name}</span>
           ${costTxt ? `<span class="ab-cost">${costTxt}</span>` : ""}
         </button>`;
@@ -2983,7 +3461,7 @@
     b.healingRainAim = { skillId: "healing_rain", radius: 180 };
     requestBattlePointerLock();
     renderBattleHUD();
-    toast("Healing Rain ready — aim, then click or Z. X cancels.");
+    toast(IS_TOUCH ? "Healing Rain ready — tap to aim and cast. ↩ cancels." : "Healing Rain ready — aim, then click or Z. X cancels.");
     sfx("ok");
     return true;
   }
@@ -3100,6 +3578,7 @@
     if (sk.gassed) user.gassed += sk.gassed;
   }
   function resolveSkill(user, sk, target) {
+    if (user.side === "p") { user.actAnim = sk.power || sk.id === "attack" ? "attack" : "cast"; user.actStart = S.anim; }
     sfx(sk.fx === "heal" || sk.fx === "petal" ? "heal" : sk.fx === "unseal" ? "unseal" : "hit");
     const origin = user.side === "p" ? { x: 280, y: 300 } : { x: 900, y: 260 };
     emit(sk.fx || "hit", origin.x, origin.y, 12);
@@ -3633,7 +4112,7 @@
         ctx.beginPath(); ctx.arc(pos.x, pos.y, r, 0, 6.3); ctx.stroke(); ctx.lineWidth = 1;
       }
       const hop = b.phase === "victory" && p.alive ? -Math.abs(Math.sin(b.vT / 170 + b.pals.indexOf(p) * 0.9)) * 16 : 0;
-      drawChibi(pos.x, pos.y + hop, p.id, "right", p.charging > 0 || hop < 0, null, 3.1);
+      if (!drawBattleHero(p, pos.x, pos.y + hop + 40)) drawChibi(pos.x, pos.y + hop, p.id, "right", p.charging > 0 || hop < 0, null, 3.1);
       if (p.flash > 0) {
         ctx.globalAlpha = Math.min(0.7, p.flash / 300);
         ctx.fillStyle = "#fff";
@@ -3682,6 +4161,22 @@
     drawCine();
   }
   // Parallax silhouettes so each arena reads as a place, not a gradient.
+  // Overhaul battle sprite: 3/4 view facing right; acts, flinches, kneels.
+  function drawBattleHero(p, x, feetY) {
+    if (!USE_ISO()) return false;
+    const SW = window.SothWorld;
+    let anim = "bidle", fr = Math.floor(S.anim / 170);
+    if (!p.alive) { anim = "hurt"; fr = 2; }
+    else if (p.actAnim) {
+      const f = Math.floor((S.anim - p.actStart) / 85);
+      if (f >= 6) p.actAnim = null; else { anim = p.actAnim; fr = f; }
+    }
+    if (anim === "bidle" && p.alive) {
+      if (p.flash > 0) { anim = "hurt"; fr = p.flash > 150 ? 0 : 1; }
+      else if (p.charging > 0) { anim = "cast"; fr = 2 + (Math.floor(S.anim / 200) & 1); }
+    }
+    return SW.drawChar(ctx, p.id, anim, 65, fr, x, feetY, 0.62, false);
+  }
   function drawBattleSkyline(bg) {
     const drift = Math.sin(S.anim / 6000) * 8;
     ctx.save();
@@ -4262,6 +4757,8 @@
     if (touch) {
       touch.classList.toggle("on-map", S.state === "map");
       touch.classList.toggle("on-dialog", S.state === "vn");
+      const bb = S.state === "battle" && S.battle;
+      touch.classList.toggle("can-back", !!bb && !S.cine && ((bb.phase === "cmd" && (!!bb.healingRainAim || bb.menu !== "cmd")) || bb.phase === "tutorial"));
     }
     tickMusic(dt);
     updateFx(dt);
@@ -4285,6 +4782,8 @@
         if (S._optFrom === "title") showTitle(); else openMenu();
       }
     } else if (S.state === "map") {
+      updateHold(t);
+      if (!USE_ISO() && tap.marker) tap.marker.t += dt;
       updateMap(dt); drawMap();
     } else if (S.state === "vn") {
       if (S.vn?.def.mode === "talk") drawMap();
@@ -4309,6 +4808,7 @@
     } else if (S.state === "gameover") {
       ctx.fillStyle = "#100808"; ctx.fillRect(0, 0, W, H);
     }
+    if (S.state !== "map" && (tap.path || tap.hold)) { cancelPath(); tap.hold = null; }
     drawFx();
     ctx.restore();
     if (S.state === "map" || S.state === "vn" || S.state === "menu") drawRegionCard(dt);
@@ -4342,6 +4842,19 @@
   window.SOTH_FLAG = setFlag;
   window.SOTH_BATTLE = startBattle;
   window.SOTH_SCENE = startScene;
+  // Dev toggle for the overhaul flags: SOTH_FEATURE("visual"|"tap", true|false|null)
+  window.SOTH_FEATURE = (key, on) => {
+    if (!(key in FEAT_DEF)) return null;
+    if (on === null) Platform.removeItem("soth_dev_" + key); else Platform.setItem("soth_dev_" + key, on ? "1" : "0");
+    delete FEAT[key];
+    const v = feature(key);
+    if (key === "visual" && v && window.SothWorld && !window.SothWorld.Art.ready) window.SothWorld.Art.load().then(() => { if (S.state === "map") snapCamera(); });
+    if (key === "visual" && S.state === "map") snapCamera();
+    return v;
+  };
+  window.SOTH_TAP = (sx, sy) => mapTap(sx, sy, false);
+  window.SOTH_TEST_RESET = () => { if (S.state === "map") snapCamera(); };
+  window.SOTH_DEBUG_W2S = (wx, wy) => { const o = worldToScreen(wx, wy, { x: 0, y: 0 }); return [o.x, o.y]; };
 
   boot();
 })();

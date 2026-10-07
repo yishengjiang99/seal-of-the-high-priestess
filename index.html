@@ -165,18 +165,13 @@
     <!-- TOUCH CONTROLS: outside #app so they stay finger-sized at any game
          scale. Portrait phones get a control deck under the game; landscape
          puts them in the side gutters (or over the edges when there is no room). -->
+    <!-- Touch-first: tap the map to move / tap people and things to use them,
+         tap to advance dialogue. Only context buttons remain on screen. -->
     <div id="touch" class="hidden">
-      <div id="dpad">
-        <button data-dir="up">▲</button>
-        <button data-dir="left">◀</button>
-        <button data-dir="down">▼</button>
-        <button data-dir="right">▶</button>
-      </div>
       <div id="touch-btns">
-        <button data-k="KeyZ">Z</button>
-        <button data-k="KeyX">X</button>
-        <button data-k="KeyC" class="camp-btn" aria-label="Camp at lotus altar">⛺</button>
-        <button data-k="Escape">☰</button>
+        <button data-k="KeyX" class="orb back-btn" aria-label="Back"><span>↩</span></button>
+        <button data-k="KeyC" class="orb camp-btn" aria-label="Camp at lotus altar"><span>⛺</span></button>
+        <button data-k="Escape" class="orb menu-btn" aria-label="Menu"><span>☰</span></button>
       </div>
     </div>
     <p id="rotate-hint" class="hidden">Turn your phone sideways for a bigger view</p>
@@ -190,6 +185,7 @@
   <!-- content.js / maps.js / dialogue.js are the bundled content snapshot; the loader
        applies server-driven content (data only) and then starts js/game.js. -->
   <script src="js/config.js"></script>
+  <script src="js/world.js"></script>
   <script src="js/content-keys.js"></script>
   <script src="js/content-core.js"></script>
   <script src="js/content-loader.js"></script>
