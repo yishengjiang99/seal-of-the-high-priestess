@@ -12,11 +12,18 @@ struct PaywallRequest: Identifiable, Equatable {
 @MainActor
 final class GameModel: NSObject, ObservableObject {
     @Published var webReady = false
-    @Published var showSettings = false
+    @Published var showSettings = false {
+        didSet { if showSettings { controllers?.releaseAll() } }
+    }
     @Published var activeConflict: SaveConflict?
     @Published private(set) var syncStatus = ""
     @Published private(set) var contentStatus = ""
-    @Published var paywall: PaywallRequest?
+    @Published var paywall: PaywallRequest? {
+        didSet { if paywall != nil { controllers?.releaseAll() } }
+    }
+    /// Shown in Settings > Controls.
+    @Published private(set) var inputMode = ControllerInput.Mode.touch
+    @Published private(set) var controllerName: String?
     @Published private(set) var paywallConfig = PaywallConfig()
 
     let webView: WKWebView
@@ -28,7 +35,8 @@ final class GameModel: NSObject, ObservableObject {
     /// -paywallDemo: show the paywall on launch (App Review screenshot of the IAP).
     let paywallDemo = ProcessInfo.processInfo.arguments.contains("-paywallDemo")
     let haptics = Haptics()
-    private var controllers: ControllerInput?
+    let gameCenter = GameCenterManager()
+    private(set) var controllers: ControllerInput?
     private var pendingConflicts: [SaveConflict] = []
 
     override init() {
@@ -58,7 +66,8 @@ final class GameModel: NSObject, ObservableObject {
         #endif
 
         AudioSessionManager.apply()
-        controllers = ControllerInput { [weak self] code, key, down in self?.sendKey(code: code, key: key, down: down) }
+        setUpControllers()
+        gameCenter.authenticate()
 
         sync.onPulled = { [weak self] changes in self?.applyToWeb(changes) }
         sync.onConflicts = { [weak self] list in self?.enqueue(list) }
@@ -114,20 +123,29 @@ final class GameModel: NSObject, ObservableObject {
             guard let key = msg["key"] as? String else { return }
             store.set(key, value: msg["value"] as? String)
         case "haptic":
-            haptics.play(msg["kind"] as? String ?? "")
+            let kind = msg["kind"] as? String ?? ""
+            haptics.play(kind)
+            controllers?.rumble(kind)
         case "event":
             let data = msg["data"] as? [String: Any]
             switch msg["name"] as? String {
             case "battle_won":
                 sync.scheduleSync(after: 1)
+                if let r = GameCenterManager.BattleResult(data) { gameCenter.battle(r) }
+            case "progress":
+                if let flags = data?["flags"] as? [String: Any] {
+                    gameCenter.progress(flags.compactMap { k, v in Self.truthy(v) ? k : nil })
+                }
             case "content":
                 paywallConfig = PaywallConfig(paywall: data?["PAYWALL"] as? [String: Any], flags: data?["FLAGS"] as? [String: Any])
                 analytics.enabled = paywallConfig.flag("funnelEvents")
+                if let names = data?["mapNames"] as? [String: String] { SaveSummary.mapNames = names }
                 if paywallDemo { showPaywall("region1_end") }
             case "flag":
                 if let k = data?["k"] as? String, let region = paywallConfig.regionCompleteFlags[k] {
                     analytics.regionComplete(region)
                 }
+                if let k = data?["k"] as? String, Self.truthy(data?["v"]) { gameCenter.flag(k) }
             default:
                 break
             }
@@ -136,6 +154,55 @@ final class GameModel: NSObject, ObservableObject {
         default:
             break
         }
+    }
+
+    nonisolated static func truthy(_ v: Any?) -> Bool {
+        switch v {
+        case let b as Bool: return b
+        case let n as NSNumber: return n.doubleValue != 0
+        case let s as String: return !s.isEmpty
+        case nil, is NSNull: return false
+        default: return true
+        }
+    }
+
+    // MARK: - Controllers / keyboards
+
+    private func setUpControllers() {
+        let c = ControllerInput { [weak self] code, key, down in self?.sendKey(code: code, key: key, down: down) }
+        c.hapticsEnabled = { [weak self] in self?.haptics.enabled ?? false }
+        c.onModeChange = { [weak self] mode, name in
+            guard let self else { return }
+            inputMode = mode
+            controllerName = name
+            pushInputMode()
+        }
+        // While a native sheet is up the controller drives it (B closes), not the game underneath.
+        c.overlayButton = { [weak self] button in
+            guard let self else { return false }
+            let sheetUp = showSettings || paywall != nil || activeConflict != nil
+            guard sheetUp else { return false }
+            if button == "b" || button == "menu" {
+                if showSettings { showSettings = false }
+                else if paywall != nil, !storeKit.busy { paywall = nil }  // never mid-purchase
+            }
+            return true
+        }
+        inputMode = c.mode
+        controllerName = c.connectedName
+        controllers = c
+    }
+
+    /// Tells the game which input is active so it can show matching prompts (class on <html> only).
+    func pushInputMode() {
+        let info: [String: Any] = ["mode": inputMode.rawValue, "controller": controllerName ?? NSNull()]
+        webView.evaluateJavaScript("window.Platform ? Platform.call('inputMode', \(Self.json(info))) : null", completionHandler: nil)
+    }
+
+    /// The web view should own hardware-keyboard focus whenever no native sheet is up.
+    func focusGame() {
+        guard !showSettings, paywall == nil, activeConflict == nil else { return }
+        if !webView.isFirstResponder { webView.becomeFirstResponder() }
     }
 
     // MARK: - Purchases
@@ -212,6 +279,7 @@ final class GameModel: NSObject, ObservableObject {
     func scenePhaseChanged(_ phase: ScenePhase) {
         switch phase {
         case .inactive, .background:
+            controllers?.releaseAll()
             // Suspend save while exploring, so iOS killing the app never loses progress.
             webView.evaluateJavaScript("window.Platform ? Platform.call('suspend') : null") { [weak self] result, _ in
                 guard let self else { return }
@@ -220,6 +288,8 @@ final class GameModel: NSObject, ObservableObject {
             }
         case .active:
             AudioSessionManager.apply()
+            Task { await gameCenter.flush() }
+            focusGame()
             Task { await sync.sync() }
             Task { await storeKit.fetchServerEntitlements() }
         @unknown default:
@@ -248,10 +318,13 @@ final class GameModel: NSObject, ObservableObject {
         if activeConflict == nil, !pendingConflicts.isEmpty { activeConflict = pendingConflicts.removeFirst() }
     }
 
-    func resolve(_ c: SaveConflict, keepLocal: Bool) {
+    /// Conflicts still waiting behind the one on screen.
+    var queuedConflicts: Int { pendingConflicts.count }
+
+    func resolve(_ c: SaveConflict, _ how: SyncClient.Resolution) {
         activeConflict = nil
         Task {
-            await sync.resolve(c, keepLocal: keepLocal)
+            await sync.resolve(c, how)
             if !pendingConflicts.isEmpty { activeConflict = pendingConflicts.removeFirst() }
         }
     }
@@ -278,6 +351,8 @@ final class GameModel: NSObject, ObservableObject {
 extension GameModel: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         webReady = true
+        pushInputMode()
+        focusGame()
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in self?.refreshContentStatus() }
     }
 

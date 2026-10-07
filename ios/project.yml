@@ -26,6 +26,7 @@ targets:
         excludes:
           - "**/*.md"
           - "Resources/PrivacyInfo.xcprivacy"
+          - "Resources/HighPriestess.entitlements"
       # The web game (index.html, js/, css/, assets/, audio/), copied by scripts/ios-sync-web.sh.
       # Folder reference -> HighPriestess.app/Web/..., served to WKWebView at app://game/.
       - path: WebBundle/Web
@@ -33,6 +34,9 @@ targets:
         buildPhase: resources
     resources:
       - path: HighPriestess/Resources/PrivacyInfo.xcprivacy
+      # Achievement / leaderboard definitions (also pushed to ASC by scripts/asc/game_center.py).
+      # The achievement images in GameCenter/images are ASC-only and stay out of the app.
+      - path: GameCenter/gamecenter.json
     settings:
       base:
         INFOPLIST_FILE: HighPriestess/Resources/Info.plist
@@ -46,6 +50,7 @@ targets:
         ASSETCATALOG_COMPILER_ALTERNATE_APPICON_NAMES: AppIconKael
         ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS: YES
         CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: HighPriestess/Resources/HighPriestess.entitlements
         DEVELOPMENT_TEAM: 83D36RPMUM
         ENABLE_TESTABILITY: YES
   HighPriestessTests:

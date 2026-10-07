@@ -29,6 +29,7 @@ struct RootView: View {
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
+            .keyboardShortcut(",", modifiers: .command)
             .accessibilityLabel("Settings")
             .accessibilityIdentifier("settingsButton")
             .padding(.leading, 2)

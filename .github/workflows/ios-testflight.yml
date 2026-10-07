@@ -166,11 +166,17 @@ jobs:
           bid = os.environ["BUNDLE_ID"]
           want = os.environ["CERT_SHA1"].upper()
           base_name = os.environ.get("CI_PROFILE_NAME", "High Priestess App Store (CI)")
+          def decode(raw):
+              return plistlib.loads(subprocess.run(["security", "cms", "-D"], input=raw, capture_output=True, check=True).stdout)
           def certs_in(raw):
-              xml = subprocess.run(["security", "cms", "-D"], input=raw, capture_output=True, check=True).stdout
-              return [hashlib.sha1(c).hexdigest().upper() for c in plistlib.loads(xml).get("DeveloperCertificates", [])]
+              return [hashlib.sha1(c).hexdigest().upper() for c in decode(raw).get("DeveloperCertificates", [])]
+          # Entitlements the app signs with (HighPriestess.entitlements); a reused profile must grant them.
+          REQUIRED_ENTITLEMENTS = ["com.apple.developer.game-center"]
+          def missing_entitlements(raw):
+              ents = decode(raw).get("Entitlements", {})
+              return [k for k in REQUIRED_ENTITLEMENTS if k not in ents]
 
-          # 1. bundle id (register if missing; the app needs no extra capabilities)
+          # 1. bundle id (register if missing; Game Center is enabled by scripts/asc/game_center.py)
           ids = [b for b in api("GET", f"/v1/bundleIds?filter[identifier]={bid}&filter[platform]=IOS&limit=50")["data"]
                  if b["attributes"]["identifier"] == bid]
           if ids:
@@ -189,11 +195,16 @@ jobs:
               print("profile", a.get("name"), a.get("profileType"), a.get("profileState"), a.get("expirationDate"))
               if a.get("profileType") == "IOS_APP_STORE" and a.get("profileState") == "ACTIVE":
                   raw = base64.b64decode(a["profileContent"])
-                  if want in certs_in(raw):
-                      found = raw
-                      print("  -> reusing")
-                      break
-                  print("  (does not contain the p12 distribution cert)")
+                  if want not in certs_in(raw):
+                      print("  (does not contain the p12 distribution cert)")
+                      continue
+                  miss = missing_entitlements(raw)
+                  if miss:
+                      print("  (missing entitlements:", ", ".join(miss), "- a new profile will be created)")
+                      continue
+                  found = raw
+                  print("  -> reusing")
+                  break
 
           # 3. otherwise create one for the distribution cert matching the p12
           if not found:
@@ -216,6 +227,9 @@ jobs:
               print("created profile", pr["id"], pr["attributes"].get("name"))
               found = base64.b64decode(pr["attributes"]["profileContent"])
               assert want in certs_in(found), "created profile does not contain the p12 cert"
+              miss = missing_entitlements(found)
+              if miss:
+                  raise SystemExit("::error::new profile lacks " + ", ".join(miss) + " - enable the capability on the bundle id (scripts/asc/game_center.py)")
           open(os.path.join(os.environ["RUNNER_TEMP"], "appstore.mobileprovision"), "wb").write(found)
           PY
           fi

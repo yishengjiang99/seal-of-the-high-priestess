@@ -61,6 +61,9 @@ test('save + content API end to end', { skip: !URL_ && 'TEST_MYSQL_URL not set' 
   assert.equal((await call('PUT', '/v1/saves/9', { token: tok, headers: { 'If-Match': '0' }, body: { data: save } })).status, 400)
   assert.equal((await call('GET', '/v1/saves', { token: tok })).body.saves.length, 1)
   assert.equal((await call('GET', '/v1/saves/0/history', { token: tok })).body.history.length, 1)
+  const h1 = (await call('GET', '/v1/saves/0/history/1', { token: tok })).body
+  assert.equal(h1.revision, 1); assert.equal(h1.data, save)
+  assert.equal((await call('GET', '/v1/saves/0/history/7', { token: tok })).status, 404)
   assert.equal((await call('PUT', '/v1/settings', { token: tok, body: { data: '{"vol":0.5}' } })).status, 200)
   assert.equal((await call('GET', '/v1/settings', { token: tok2 })).body.data, '{"vol":0.5}')
 

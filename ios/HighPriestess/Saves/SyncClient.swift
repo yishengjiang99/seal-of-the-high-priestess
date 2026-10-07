@@ -125,6 +125,75 @@ final class SyncClient {
         if !conflicts.isEmpty { onConflicts?(conflicts) }
     }
 
+    enum Resolution { case keepLocal, keepCloud, keepBoth(String) }
+
+    /// First empty manual slot (0-2) on this device, for "Keep both".
+    func freeSlot(excluding slot: String) -> String? {
+        ["0", "1", "2"].first { $0 != slot && store.value(SaveStore.slotKey($0)) == nil }
+    }
+
+    /// Conflict resolution. Whatever isn't kept stays recoverable in the server's save history.
+    func resolve(_ c: SaveConflict, _ how: Resolution) async {
+        switch how {
+        case .keepLocal:
+            await resolve(c, keepLocal: true)
+        case .keepCloud:
+            // Park this iPhone's copy in server history first (PUT it, then put the cloud copy back on top).
+            let key = SaveStore.slotKey(c.slot)
+            if let token = try? await ensureToken(),
+               case .ok(let r1)? = try? await putSave(token, slot: c.slot, data: c.localValue, ifMatch: c.serverRevision),
+               case .ok(let r2)? = try? await putSave(token, slot: c.slot, data: c.serverValue, ifMatch: r1) {
+                store.markSynced(key, revision: r2, value: c.serverValue)
+                onPulled?([key: c.serverValue])
+                onStatus?()
+            } else {
+                await resolve(c, keepLocal: false)
+            }
+        case .keepBoth(let other):
+            // The cloud copy moves to an empty slot on this iPhone; this iPhone's copy stays in place.
+            store.set(SaveStore.slotKey(other), value: c.serverValue)
+            onPulled?([SaveStore.slotKey(other): c.serverValue])
+            await resolve(c, keepLocal: true)
+        }
+    }
+
+    // MARK: - Save history (server keeps the 10 most recent replaced copies per slot)
+
+    struct HistoryItem: Identifiable, Equatable {
+        let slot: String
+        let revision: Int
+        let summary: [String: Any]
+        let replacedAt: Date
+        let thisDevice: Bool
+        var id: String { "\(slot)-\(revision)-\(replacedAt.timeIntervalSince1970)" }
+        static func == (a: HistoryItem, b: HistoryItem) -> Bool { a.id == b.id }
+    }
+
+    func history(slot: String) async throws -> [HistoryItem] {
+        let token = try await ensureToken()
+        let (code, obj) = try await send("GET", "v1/saves/\(slot)/history", token: token)
+        guard code == 200, let list = obj["history"] as? [[String: Any]] else { throw SyncError.http(code) }
+        return list.compactMap { h in
+            guard let rev = h["revision"] as? Int else { return nil }
+            let at = (h["replacedAt"] as? Double).map { Date(timeIntervalSince1970: $0 / 1000) } ?? .distantPast
+            return HistoryItem(slot: slot, revision: rev, summary: h["summary"] as? [String: Any] ?? [:], replacedAt: at,
+                               thisDevice: h["thisDevice"] as? Bool ?? false)
+        }
+    }
+
+    /// Puts an earlier copy back as the current save (the current one moves into history).
+    func restore(_ item: HistoryItem) async throws {
+        let token = try await ensureToken()
+        let (code, obj) = try await send("GET", "v1/saves/\(item.slot)/history/\(item.revision)", token: token)
+        guard code == 200, let data = obj["data"] as? String else { throw SyncError.http(code) }
+        let current = try await listSaves(token)[item.slot] ?? 0
+        guard case .ok(let rev) = try await putSave(token, slot: item.slot, data: data, ifMatch: current) else { throw SyncError.badResponse }
+        let key = SaveStore.slotKey(item.slot)
+        store.markSynced(key, revision: rev, value: data)
+        onPulled?([key: data])
+        onStatus?()
+    }
+
     /// User picked a side in a conflict.
     func resolve(_ c: SaveConflict, keepLocal: Bool) async {
         let key = SaveStore.slotKey(c.slot)

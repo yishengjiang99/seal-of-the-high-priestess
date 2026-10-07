@@ -149,8 +149,19 @@ export function createApp({ db, env = process.env, iap = {} }) {
 
   api.get('/v1/saves/:slot/history', auth, async (req, res) => {
     if (!SLOT_RE.test(req.params.slot)) return void res.status(400).json({ error: 'bad slot' })
-    const [rows] = await db.query('SELECT revision, summary, replaced_at, LENGTH(data) AS bytes FROM save_history WHERE player_id=? AND slot=? ORDER BY id DESC', [req.player.id, req.params.slot])
-    res.json({ history: rows.map((r) => ({ revision: r.revision, summary: r.summary ? JSON.parse(r.summary) : null, replacedAt: new Date(r.replaced_at).getTime(), bytes: Number(r.bytes) })) })
+    const [rows] = await db.query('SELECT revision, summary, replaced_at, device_id, LENGTH(data) AS bytes FROM save_history WHERE player_id=? AND slot=? ORDER BY id DESC', [req.player.id, req.params.slot])
+    res.json({ history: rows.map((r) => ({ revision: r.revision, summary: r.summary ? JSON.parse(r.summary) : null, replacedAt: new Date(r.replaced_at).getTime(), bytes: Number(r.bytes), thisDevice: r.device_id != null && r.device_id === req.player.deviceId })) })
+  })
+
+  // One earlier revision with its data (restore from history: the client PUTs it back with If-Match).
+  api.get('/v1/saves/:slot/history/:revision', auth, async (req, res) => {
+    if (!SLOT_RE.test(req.params.slot)) return void res.status(400).json({ error: 'bad slot' })
+    const rev = Number(req.params.revision)
+    if (!Number.isInteger(rev) || rev < 1) return void res.status(400).json({ error: 'bad revision' })
+    const [rows] = await db.query('SELECT revision, data, summary, replaced_at FROM save_history WHERE player_id=? AND slot=? AND revision=? ORDER BY id DESC LIMIT 1', [req.player.id, req.params.slot, rev])
+    if (!rows.length) return void res.status(404).json({ error: 'no such revision' })
+    const r = rows[0]
+    res.json({ slot: req.params.slot, revision: r.revision, data: r.data, summary: r.summary ? JSON.parse(r.summary) : null, replacedAt: new Date(r.replaced_at).getTime() })
   })
 
   // ---- settings (last write wins) ----

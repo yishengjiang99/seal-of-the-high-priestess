@@ -40,8 +40,23 @@ window.Platform = (() => {
     const p = window.PAYWALL && window.PAYWALL.placements && window.PAYWALL.placements[name];
     return !p || p.enabled !== false;
   }
+  // Active input method (touch / gamepad / keyboard), pushed by the shell when a controller or
+  // keyboard is used; a touch switches back. Exposed as Platform.input and as an input-* class
+  // on <html> so prompts can match the device. No styling is attached here.
+  let input = { mode: "touch", controller: null };
+  function setInput(info) {
+    if (!info || !info.mode) return;
+    input = { mode: String(info.mode), controller: info.controller || null };
+    const cl = document.documentElement.classList;
+    ["touch", "gamepad", "keyboard"].forEach((m) => cl.toggle("input-" + m, m === input.mode));
+    if (hooks.inputChanged) { try { hooks.inputChanged(input); } catch (e) {} }
+  }
+  if (typeof window.addEventListener === "function") {
+    window.addEventListener("touchstart", () => { if (input.mode !== "touch") setInput({ mode: "touch" }); }, { passive: true, capture: true });
+  }
   return {
     native,
+    get input() { return input; },
     name: native ? (host.platform || "native") : "web",
     getItem, setItem, removeItem,
     haptic(kind) { post({ type: "haptic", kind }); },
@@ -50,6 +65,7 @@ window.Platform = (() => {
     on(name, fn) { hooks[name] = fn; },
     call(name, arg) {
       if (name === "entitlements" && arg && typeof arg === "object") ent = arg;
+      if (name === "inputMode") { setInput(arg); return input; }
       try { return hooks[name] ? hooks[name](arg) : null; } catch (e) { return null; }
     },
     entitled(name) { return !!ent[name]; },

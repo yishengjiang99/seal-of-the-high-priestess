@@ -6,6 +6,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("cloudSync") private var cloudSync = true
     @AppStorage("haptics") private var haptics = true
+    @AppStorage("gameCenter") private var useGameCenter = true
     @State private var playInSilent = AudioSessionManager.playInSilentMode
     @State private var confirmDelete = false
     @State private var working = false
@@ -23,6 +24,7 @@ struct SettingsView: View {
                     LabeledContent("Status", value: model.syncStatus)
                     if cloudSync {
                         Button("Sync now") { Task { await model.sync.sync() } }
+                        NavigationLink("Save History") { SaveHistoryView().environmentObject(model) }
                     }
                     if let id = model.sync.playerId {
                         LabeledContent("Player ID") {
@@ -34,7 +36,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Cloud Save")
                 } footer: {
-                    Text("Your saves back up to our server and follow your iCloud Keychain to a new iPhone. Saves on this iPhone are never deleted by sync.")
+                    Text("Your saves back up to our server and follow your iCloud Keychain to a new iPhone. Saves on this iPhone are never deleted by sync. Save History keeps the last 10 replaced copies of each slot.")
                 }
 
                 Section {
@@ -64,6 +66,8 @@ struct SettingsView: View {
                     Text("The prologue and region 1 are free. The Full Game is a one-time purchase shared with Family Sharing. The Supporter Pack is cosmetic only.")
                 }
 
+                GameCenterSection(gameCenter: model.gameCenter, useGameCenter: $useGameCenter)
+
                 Section("Sound & Feel") {
                     Toggle("Play sound in silent mode", isOn: $playInSilent)
                         .onChange(of: playInSilent) { _, v in AudioSessionManager.playInSilentMode = v }
@@ -71,11 +75,14 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    LabeledContent("Touch", value: "D-pad, Z confirm, X cancel, ☰ menu, ⛺ camp")
-                    LabeledContent("Controller", value: "A confirm · B cancel · X camp · Menu")
-                    LabeledContent("Keyboard", value: "Arrows/WASD · Z · X · Esc · C")
+                    LabeledContent("Using", value: model.inputMode == .gamepad ? (model.controllerName ?? "Controller")
+                                   : model.inputMode == .keyboard ? "Keyboard" : "Touch")
+                    LabeledContent("Controller", value: "Stick/D-pad move · A confirm · B cancel · X camp · Y/L/R skip · Menu")
+                    LabeledContent("Keyboard", value: "Arrows/WASD · Z · X · C · F · Esc · ⌘, Settings")
                 } header: {
                     Text("Controls")
+                } footer: {
+                    Text("Bluetooth controllers and keyboards work anywhere in the game. While a menu like this one is open, B closes it.")
                 }
 
                 Section("About") {
@@ -123,6 +130,32 @@ struct SettingsView: View {
             }
             working = false
             model.refreshSyncStatus()
+        }
+    }
+}
+
+/// Settings > Game Center: optional sign-in, achievements, boss-time leaderboards.
+private struct GameCenterSection: View {
+    @ObservedObject var gameCenter: GameCenterManager
+    @Binding var useGameCenter: Bool
+
+    var body: some View {
+        Section {
+            Toggle("Use Game Center", isOn: $useGameCenter)
+                .onChange(of: useGameCenter) { _, on in if on { Task { await gameCenter.flush() } } }
+            if useGameCenter {
+                if gameCenter.authenticated {
+                    LabeledContent("Signed in", value: gameCenter.playerName ?? "Yes")
+                    Button("Achievements") { gameCenter.showDashboard(.achievements) }
+                    Button("Boss Times") { gameCenter.showDashboard(.leaderboards) }
+                } else {
+                    Button("Sign in to Game Center") { gameCenter.signIn() }
+                }
+            }
+        } header: {
+            Text("Game Center")
+        } footer: {
+            Text("Achievements and best boss times are kept on this iPhone and sent to Game Center once you're signed in. Optional.")
         }
     }
 }

@@ -82,31 +82,71 @@ final class SaveStore {
     }
 }
 
-/// Human summary of a save JSON ({when, mapId, ...}) for conflict prompts and the server list.
+/// Human summary of a save JSON (serialize() in js/game.js) for conflict prompts, save history
+/// and the server's slot list.
 struct SaveSummary: Equatable {
+    /// Story milestones in order (same list the game uses for its chapter marks).
+    static let chapterFlags = ["hollow_oak_dead", "lyra_joined", "quest_canal", "warden_dead", "thorn_joined", "court_survived"]
+    /// Map display names from the content (the "content" event); persisted for offline use.
+    static var mapNames: [String: String] {
+        get { UserDefaults.standard.dictionary(forKey: "mapNames") as? [String: String] ?? [:] }
+        set { UserDefaults.standard.set(newValue, forKey: "mapNames") }
+    }
+
     var when: Date?
     var mapId: String?
     var playTime: Double?
+    var chapter = 0
+    var party: [String] = []
+    var questsDone = 0
+    var empty = true
 
     init(json: String?) {
         guard let json, let data = json.data(using: .utf8),
               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+        empty = false
         if let w = obj["when"] as? Double { when = Date(timeIntervalSince1970: w / 1000) }
         mapId = obj["mapId"] as? String
         playTime = obj["playTime"] as? Double
+        let flags = obj["flags"] as? [String: Any] ?? [:]
+        chapter = Self.chapterFlags.filter { Self.truthy(flags[$0]) }.count
+        party = obj["party"] as? [String] ?? []
+        questsDone = (obj["quests"] as? [String: Any] ?? [:]).values.filter { ($0 as? String) == "done" }.count
     }
 
+    private static func truthy(_ v: Any?) -> Bool {
+        if let n = v as? NSNumber { return n.boolValue }
+        if let s = v as? String { return !s.isEmpty }
+        return v != nil && !(v is NSNull)
+    }
+
+    var mapName: String? {
+        guard let mapId else { return nil }
+        return Self.mapNames[mapId] ?? mapId.replacingOccurrences(of: "_", with: " ").capitalized
+    }
+
+    var partyText: String { party.map { $0.capitalized }.joined(separator: ", ") }
+    var progressText: String {
+        var parts = ["Chapter \(min(chapter + 1, Self.chapterFlags.count + 1)) of \(Self.chapterFlags.count + 1)"]
+        if questsDone > 0 { parts.append("\(questsDone) quest\(questsDone == 1 ? "" : "s") done") }
+        return parts.joined(separator: " · ")
+    }
+
+    /// Story progress score for "further along" hints.
+    var progressScore: Int { chapter * 100 + questsDone * 10 + party.count }
+
     var dictionary: [String: Any] {
-        var d: [String: Any] = [:]
+        var d: [String: Any] = ["chapter": chapter, "party": party, "questsDone": questsDone]
         if let when { d["when"] = Int(when.timeIntervalSince1970 * 1000) }
         if let mapId { d["mapId"] = mapId }
+        if let mapName { d["mapName"] = mapName }
         return d
     }
 
     var text: String {
         var parts: [String] = []
         if let when { parts.append(when.formatted(date: .abbreviated, time: .shortened)) }
-        if let mapId { parts.append(mapId.replacingOccurrences(of: "_", with: " ").capitalized) }
+        if let mapName { parts.append(mapName) }
         return parts.isEmpty ? "Unknown save" : parts.joined(separator: " · ")
     }
 }
