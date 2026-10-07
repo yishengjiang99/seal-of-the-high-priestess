@@ -1,0 +1,43 @@
+name: Publish content base
+
+# Publishes the bundled content snapshot (js/content.js, js/maps.js, js/dialogue.js) to the
+# content server as the new "base" so older app builds and the web game pick up story/balance
+# changes. Server-side overrides (edited by the owner) are kept and re-applied on top.
+# Data only (App Review 2.5.2): the server never serves code.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - js/content.js
+      - js/maps.js
+      - js/dialogue.js
+      - js/content-core.js
+      - scripts/build-content.mjs
+  workflow_dispatch:
+
+concurrency:
+  group: content-publish
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Build snapshot
+        run: node scripts/build-content.mjs --out content-snapshot.json
+      - name: Publish base
+        env:
+          TOKEN: ${{ secrets.CONTENT_ADMIN_TOKEN }}
+          API: https://grepawk.com/high-priestess/api
+        run: |
+          set -euo pipefail
+          if [ -z "${TOKEN:-}" ]; then echo "::warning::CONTENT_ADMIN_TOKEN not set; skipping publish"; exit 0; fi
+          code=$(curl -sS -o resp.json -w '%{http_code}' -X PUT "$API/v1/admin/content/base" \
+            -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/json' --data-binary @content-snapshot.json)
+          cat resp.json; echo
+          test "$code" = 200
