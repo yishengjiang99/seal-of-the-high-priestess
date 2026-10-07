@@ -64,3 +64,27 @@ Newest last. Each entry gives the decision, why, and what it affects. Scope: doc
   - The manual submit workflow `asc-submit-review.yml` (dry run by default; needs `confirm=SUBMIT`) attaches the build, re-applies the prerequisites, queues all 3 IAPs with the version (`inAppPurchaseSubmissions`) and submits. **It has not been run.**
 - **(C)** App Privacy click-by-click checklist for the website: `docs/asc/app-privacy-1.0.md`.
 - **(D)** The App Store Server API lookup stays behind its env flag (`ASSA_*`) until an In-App Purchase key exists. JWS chain verification is enough for now.
+
+## 2026-10-07: Phase 3 items 1–3 (Game Center, save conflict UX, controller/keyboard)
+- **Game Center.** Definitions live in `ios/GameCenter/gamecenter.json`: 14 achievements (630 points, 2 hidden) and 5 boss-time leaderboards (`ELAPSED_TIME_CENTISECOND`, ascending, best score, 10 s to 60 min). `scripts/asc/game_center.py` pushes the same file to ASC, and the app bundles it, so the IDs can't drift apart.
+  - Achievements are earned from game flags (`flag` events, plus a loaded save's flags via the `progress` event) and from battle results (`battle_won` now carries `battleResult(b)`: id, boss, ms, unsealed, fallen).
+  - The boss time excludes time spent backgrounded (visibilitychange) and is measured from battle start.
+  - Everything is queued in UserDefaults and reported once the player is signed in.
+  - Sign-in is optional. Authentication is silent at launch, the sign-in sheet only opens from Settings > Game Center, and a "Use Game Center" toggle is there too.
+  - **Deviation:** there is no dedicated achievement art. The 14 images (512 px) are derived from the existing title and portrait art and are uploaded to ASC only, not shipped in the app.
+- **Capability → new profile.** The app now signs with `com.apple.developer.game-center`. The TestFlight profile step reuses an App Store profile only if it contains the p12 cert *and* the required entitlements. Otherwise it creates a new profile (suffixed name). Nothing is deleted or revoked.
+- **Save conflict UX.** The comparison is side by side: place (map display name from content), chapter (story milestones), quests done, party and relative time. It shows "Newer" and "Further in story" badges, "1 of n" when several slots conflict, and is laid out for Dynamic Type (falls back to stacked cards).
+  - **Keep both:** the other device's copy goes to the first empty manual slot on this iPhone. The option only appears when a slot is free.
+  - Nothing is lost:
+    - Keeping this iPhone's copy pushes the cloud copy into server history.
+    - Keeping the cloud copy first PUTs this iPhone's copy and then the cloud copy on top, so this iPhone's copy also lands in history.
+  - Settings > Cloud Save > Save History lists the last 10 replaced copies per slot (from this or another device) and restores one. The restore uses the new `GET /v1/saves/:slot/history/:revision` endpoint and a PUT with If-Match; the replaced current copy goes into history.
+- **Controller/keyboard (native shell only; no touch-controls, renderer, sprite or movement code touched).**
+  - Stick: 0.55 on / 0.35 off hysteresis.
+  - Mapping: triggers and shoulders = F skip; Options = Esc.
+  - Held keys are released when the app goes inactive, a native sheet opens, or the controller disconnects (no stuck movement).
+  - While a native sheet is up, the controller doesn't drive the game, and B/Menu close Settings or the paywall (never mid-purchase).
+  - Controller rumble (CoreHaptics) on hit/flame/unseal/hurt/victory, following the Haptics toggle.
+  - GCKeyboard detection. The web view takes first-responder for hardware keyboards; ⌘, opens Settings.
+  - `Platform.input` / `Platform.call("inputMode")` add an `input-touch|gamepad|keyboard` class on `<html>` plus an `inputChanged` hook, with no CSS attached. A touch switches back to touch.
+  - Settings > Controls shows the active input and connected controller. The touch row was dropped, since the on-screen d-pad is being replaced by the visual workstream.
