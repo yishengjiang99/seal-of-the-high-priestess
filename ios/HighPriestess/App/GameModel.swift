@@ -133,7 +133,10 @@ final class GameModel: NSObject, ObservableObject {
                 sync.scheduleSync(after: 1)
                 if let r = GameCenterManager.BattleResult(data) { gameCenter.battle(r) }
             case "progress":
-                if let flags = data?["flags"] as? [String: Any] {
+                // The game sends the list of set flags; a {flag: value} map is accepted too.
+                if let list = data?["flags"] as? [String] {
+                    gameCenter.progress(list)
+                } else if let flags = data?["flags"] as? [String: Any] {
                     gameCenter.progress(flags.compactMap { k, v in Self.truthy(v) ? k : nil })
                 }
             case "content":
