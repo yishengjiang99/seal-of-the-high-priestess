@@ -1,0 +1,23 @@
+[Unit]
+Description=Temple of the High Priestess API (save sync + server-driven content)
+After=network.target mysql.service
+
+[Service]
+Type=simple
+WorkingDirectory=/var/www/temple-api
+ExecStart=/usr/bin/node src/index.js
+Environment=NODE_ENV=production
+Environment=PORT=8791
+Environment=BASE_PATH=/high-priestess
+EnvironmentFile=/etc/temple.env
+Restart=on-failure
+RestartSec=3
+User=www-data
+Group=www-data
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
