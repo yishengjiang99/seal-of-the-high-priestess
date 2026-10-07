@@ -753,7 +753,7 @@ body.high-contrast-icons .idle-card .row span:first-child { color: #fff7ca; text
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* Touch controls live outside the scaled #app so they stay finger-sized.
-   fit() sets the mode class and the --btn-* / --dpad-* offsets. */
+   fit() sets the mode class and the --btn-* offsets. */
 #touch {
   position: fixed; inset: 0; z-index: 15; pointer-events: none;
   --btn: 52px; --dp: 44px;
@@ -765,58 +765,46 @@ body.high-contrast-icons .idle-card .row span:first-child { color: #fff7ca; text
   font-size: 18px;
   line-height: 1;
 }
-#touch button.held { background: rgba(212,180,106,0.35); color: var(--cream); }
-#dpad {
-  position: absolute;
-  left: var(--dpad-left, 24px); bottom: var(--dpad-bottom, 24px);
-  width: calc(var(--dp) * 3); height: calc(var(--dp) * 3);
+/* Touch-first controls: no d-pad / Z / X. Round context buttons only
+   (Back in battle sub-menus and aiming, Camp + Menu while exploring). */
+#touch .orb {
+  position: relative;
+  width: var(--btn); height: var(--btn);
+  border-radius: 50%;
+  border: 0;
+  color: #fff8e6;
+  font-size: 22px;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255,255,255,0.55), rgba(255,255,255,0) 38%),
+    radial-gradient(circle at 50% 60%, #3d5bd6, #1a2370 70%, #0c1036);
+  box-shadow: 0 0 0 3px #e6c57a, 0 0 0 5px #5a3e16, 0 6px 14px rgba(0,0,0,0.55), inset 0 -6px 12px rgba(0,0,0,0.45);
+  text-shadow: 0 2px 2px rgba(0,0,0,0.6);
+  transition: transform 90ms ease, filter 90ms ease;
 }
-/* D-pad only while exploring. During dialogue it sat on the text box. */
-#touch:not(.on-map) #dpad { display: none; }
-#dpad button {
-  position: absolute;
-  width: var(--dp); height: var(--dp);
-  background: rgba(10,8,18,0.6);
-  color: var(--gold);
-  border: 1px solid var(--gold-dim);
-  border-radius: 8px;
-}
-#dpad [data-dir=up] { left: var(--dp); top: 0; }
-#dpad [data-dir=down] { left: var(--dp); bottom: 0; }
-#dpad [data-dir=left] { left: 0; top: var(--dp); }
-#dpad [data-dir=right] { right: 0; top: var(--dp); }
+#touch .orb span { position: relative; top: 1px; }
+#touch .orb.held { transform: scale(0.92); filter: brightness(1.25); }
+#touch .camp-btn { background:
+    radial-gradient(circle at 34% 28%, rgba(255,255,255,0.55), rgba(255,255,255,0) 38%),
+    radial-gradient(circle at 50% 60%, #f2a640, #a2501a 70%, #4a1e08); }
+#touch .back-btn { background:
+    radial-gradient(circle at 34% 28%, rgba(255,255,255,0.5), rgba(255,255,255,0) 38%),
+    radial-gradient(circle at 50% 60%, #8a6ad8, #44288a 70%, #1c0e40); }
 #touch-btns {
   position: absolute;
   right: var(--btn-right, 24px); bottom: var(--btn-bottom, 24px);
-  display: flex; gap: 12px;
+  display: flex; gap: 16px;
 }
-#touch-btns button {
-  width: var(--btn); height: var(--btn);
-  border-radius: 50%;
-  background: rgba(10,8,18,0.6);
-  color: var(--gold);
-  border: 1px solid var(--gold);
-}
-/* Portrait phone: a control deck in the empty band under the game. */
-#touch.mode-deck { --btn: 56px; --dp: 46px; }
-#touch.mode-deck #touch-btns {
-  display: grid;
-  grid-template-columns: auto auto;
-  grid-template-areas: ". menu" "x z";
-  align-items: end; justify-items: end;
-  gap: 12px;
-}
-#touch.mode-deck #touch-btns [data-k=KeyZ] { grid-area: z; width: 68px; height: 68px; font-size: 22px; }
-#touch.mode-deck #touch-btns [data-k=KeyX] { grid-area: x; }
-#touch.mode-deck #touch-btns [data-k=Escape] { grid-area: menu; width: 46px; height: 46px; }
-/* Landscape phone: buttons stacked in the right gutter, d-pad bottom-left. */
+/* What shows when: Camp + Menu on the map, Back only when there is something to back out of. */
+#touch:not(.on-map) .camp-btn, #touch:not(.on-map) .menu-btn { display: none; }
+#touch:not(.can-back) .back-btn { display: none; }
+#touch.mode-deck { --btn: 60px; }
+#touch.mode-overlay { --btn: 58px; }
 #touch.mode-overlay #touch-btns {
   flex-direction: column;
   bottom: auto;
   top: var(--btn-top, 50%);
   transform: translateY(-50%);
 }
-#touch.mode-overlay #dpad button, #touch.mode-overlay #touch-btns button { background: rgba(10,8,18,0.45); }
 #rotate-hint {
   position: fixed;
   left: 0; right: 0;
@@ -829,13 +817,35 @@ body.high-contrast-icons .idle-card .row span:first-child { color: #fff7ca; text
   z-index: 14;
 }
 #rotate-hint::before { content: "⟳ "; color: var(--gold); }
-/* Camp (C) only matters while exploring; smaller so the Z/X pair stays dominant. */
-#touch:not(.on-map) .camp-btn { display: none; }
-#touch-btns .camp-btn { width: 46px; height: 46px; align-self: center; font-size: 16px; }
-#touch.mode-deck #touch-btns {
-  grid-template-areas: "camp menu" "x z";
+/* Battle skills on touch: round spell orbs with a gold rim and the skill name under them. */
+body.touch #battle-action-bar { height: 72px; gap: 12px; align-items: flex-end; bottom: 4px; }
+body.touch .action-btn {
+  flex: 0 0 76px; height: 72px; padding: 0;
+  background: none; border: 0;
+  justify-content: flex-start; gap: 4px;
 }
-#touch.mode-deck #touch-btns .camp-btn { grid-area: camp; }
+body.touch .action-btn .ab-orb {
+  width: 52px; height: 52px; border-radius: 50%; flex: none;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255,255,255,0.6), rgba(255,255,255,0) 36%),
+    radial-gradient(circle at 50% 58%, var(--orb1, #4a74ff), var(--orb2, #1a2a8a) 68%, #0a0e2a);
+  box-shadow: 0 0 0 3px #e6c57a, 0 0 0 5px #4a3210, 0 6px 12px rgba(0,0,0,0.5), inset 0 -8px 14px rgba(0,0,0,0.45), 0 0 18px var(--orb1, #4a74ff);
+}
+body.touch .action-btn .ab-name { font-size: 11px; font-weight: 700; color: #fff6e0; text-shadow: 0 1px 0 #000, 0 0 4px #000; white-space: nowrap; }
+body.touch .action-btn .ab-cost { position: absolute; top: 34px; right: 2px; font-size: 10px; font-weight: 800; color: #fff; background: #1a1430; border: 2px solid #e6c57a; border-radius: 10px; padding: 1px 5px; }
+body.touch .action-btn.locked .ab-orb { filter: grayscale(0.85) brightness(0.55); box-shadow: 0 0 0 3px #6a6458, 0 0 0 5px #2a2418; }
+body.touch .action-btn.locked .ab-name { color: #8a8494; }
+.action-btn[data-fx=heal] { --orb1: #4fe08a; --orb2: #0e7a3a; }
+.action-btn[data-fx=petal] { --orb1: #ff9ad0; --orb2: #a02a78; }
+.action-btn[data-fx=guard] { --orb1: #6ad4ff; --orb2: #1a5aa8; }
+.action-btn[data-fx=unseal] { --orb1: #ff5a4a; --orb2: #7a0e10; }
+.action-btn[data-fx=hit] { --orb1: #ffb44a; --orb2: #a2420e; }
+.action-btn[data-fx=holy], .action-btn[data-fx=light] { --orb1: #ffe27a; --orb2: #b07a10; }
+.action-btn[data-fx=dark], .action-btn[data-fx=curse], .action-btn[data-fx=mock] { --orb1: #b07aff; --orb2: #4a1a9a; }
+.action-btn[data-fx=flame] { --orb1: #ff7a3a; --orb2: #8a1a0a; }
+.action-btn[data-fx=blood] { --orb1: #ff4a6a; --orb2: #6a0a1a; }
+.action-btn[data-fx=arrow] { --orb1: #b8e06a; --orb2: #4a6a1a; }
+.action-btn[data-fx=smoke] { --orb1: #b8b8c8; --orb2: #3a3a4a; }
 /* Keyboard hints mean nothing on a phone. */
 body.touch .title-hint, body.touch #map-hint { display: none; }
 

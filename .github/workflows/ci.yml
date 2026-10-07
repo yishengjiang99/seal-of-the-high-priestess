@@ -45,6 +45,7 @@ jobs:
           node --check js/dialogue.js
           node --check js/game.js
           node --check js/maps.js
+          node --check js/world.js
           node --check js/voice-lines.js
           node --check scripts/generate-voice.mjs
           node --check scripts/voice-lib.mjs

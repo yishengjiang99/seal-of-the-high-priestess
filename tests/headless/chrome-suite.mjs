@@ -127,7 +127,7 @@ async function mobileViewportChecks(browser) {
       assert.ok(Math.abs(m.app.w / m.app.h - 16 / 9) < 0.01, `${tag}: keeps 16:9`);
       assert.ok(m.app.w >= 1280 * scale - 1 && m.app.l >= -0.5 && m.app.t >= -0.5 && m.app.r <= m.vw + 0.5 && m.app.b <= m.vh + 0.5, `${tag}: game inside viewport ${JSON.stringify(m.app)}`);
       assert.ok(m.scroll.w <= m.vw && m.scroll.h <= m.vh, `${tag}: no page scroll`);
-      const want = Math.min(2, m.app.w / 1280 * m.dpr);
+      const want = Math.min(2.5, m.app.w / 1280 * m.dpr);
       assert.ok(Math.abs(m.canvas.w - Math.round(1280 * want)) <= 2, `${tag}: canvas backing store is DPR-aware (${m.canvas.w})`);
       assert.ok(m.touchShown, `${tag}: touch controls shown`);
       for (const b of m.buttons) {
@@ -143,7 +143,7 @@ async function mobileViewportChecks(browser) {
       }
     };
     await check("title");
-    // Map (d-pad visible) and battle screens.
+    // Map (camp + menu buttons) and battle screens.
     await page.evaluate(() => {
       const S = window.SOTH; S.settings.voice = false; window.SOTH_NEW();
       S.vn = null; document.getElementById("screen-vn").classList.add("hidden");
@@ -153,16 +153,20 @@ async function mobileViewportChecks(browser) {
     await check("map");
     await page.evaluate(() => window.SOTH_BATTLE("hollow_oak"));
     await check("battle");
-    // The d-pad drives the party on touch.
+    // Touch-first: no d-pad / Z / X on screen; tapping the map walks the party there.
+    assert.equal(await page.locator("#dpad, #touch [data-k=KeyZ]").count(), 0, `${name}: no d-pad or Z button`);
     await page.evaluate(() => { window.SOTH.battle = null; window.SOTH.state = "map"; document.getElementById("battle-hud").classList.add("hidden"); });
     await page.waitForFunction(() => document.querySelector("#touch.on-map"));
-    const x0 = await page.evaluate(() => window.SOTH.px);
-    const right = page.locator("#dpad [data-dir=right]");
-    const bb = await right.boundingBox();
-    await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
-    await page.mouse.down(); await page.waitForTimeout(400); await page.mouse.up();
-    assert.ok(await page.evaluate(() => !window.SOTH.keys.right), `${name}: d-pad releases`);
-    assert.ok(await page.evaluate((x) => window.SOTH.px !== x || window.SOTH.state !== "map", x0), `${name}: d-pad moves the party`);
+    await page.waitForTimeout(300);
+    const p0 = await page.evaluate(() => [window.SOTH.px, window.SOTH.py]);
+    const cb = await page.locator("#game").boundingBox();
+    // a free floor tile two tiles to the right of the leader, in screen space
+    const tgt = await page.evaluate(() => { const S = window.SOTH; return [S.px + 64 - S.camX, S.py - S.camY]; });
+    await page.mouse.click(cb.x + tgt[0] * cb.width / 1280, cb.y + tgt[1] * cb.height / 720);
+    await page.waitForTimeout(900);
+    const p1 = await page.evaluate(() => [window.SOTH.px, window.SOTH.py]);
+    assert.ok(p1[0] > p0[0] + 20, `${name}: tap-to-move walks the party (${p0} -> ${p1})`);
+    assert.ok(await page.evaluate(() => !window.SOTH.keys.right && !window.SOTH.just.ok), `${name}: tap does not leave keys held`);
     assert.deepEqual(errors, [], `${name}: no page errors`);
     await ctx.close();
   }
