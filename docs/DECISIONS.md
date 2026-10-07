@@ -49,3 +49,18 @@ Newest last. Each entry gives the decision, why, and what it affects. Scope: doc
 ## 2026-10-07: Phase 2 shipped to TestFlight (build 2)
 - ASC IAPs were created by `asc-iap-products.yml`: fullgame (6819990393), fullgame.b (6819990112), supporter (6819990691). All are non-consumable with Family Sharing, have an en-US localization, a USD base price (4.99 / 6.99 / 2.99), 175 territories plus new ones, and a review screenshot. State: **READY_TO_SUBMIT**. ASSN v2 production and sandbox URLs → `https://grepawk.com/high-priestess/api/v1/iap/notifications`. Nothing was blocked by the API.
 - The ASC API can't show whether the Paid Apps Agreement, tax and banking are active. If sandbox `Product.products` comes back empty on TestFlight, that agreement is the cause. The IAPs must also be submitted together with the first app version that uses them (left for Yisheng, along with the rest of the submission).
+
+## 2026-10-07: Chief of Staff decisions (A–D)
+- **(A) Price test** between `fullgame` ($4.99) and `fullgame.b` ($6.99), 50/50, with **no intro discount**.
+  - Config: `PAYWALL.offerVariants` 500/500, plus a kill switch `FLAGS.priceTest`. Both are server content (`temple-content offer-split …`, `temple-content flag priceTest false`).
+  - The arm is an FNV-1a hash of the **player ID** (install ID only before the first server contact). It's remembered on the device per split, so a player never changes arm unless the split itself changes.
+  - `paywall_shown` and `purchase` events carry `product`, `variant`, `env`, and for purchases the StoreKit `price` + `currency`. Admin metrics (`/v1/admin/metrics` → `priceTest`) compute views, verified purchases, refunds and revenue per arm from the signed transactions' `price`, and report USD revenue per paywall view. Production only by default; `?env=all` includes sandbox.
+  - **Decision rule:** the winner is the arm with the higher USD revenue per paywall view, called once total production paywall views reach **300** or **3 weeks** after the first view, whichever comes first. Then set `offer` to the winner and clear `offerVariants`.
+  - **Reviewer path:** any non-production install (TestFlight and App Review use sandbox receipts; Xcode and simulator builds too) always gets `fullgame` ($4.99), no matter the split. The review notes say so.
+  - The Supporter Pack stays $2.99.
+  - **Offer codes later:** after approval, create 100 Full Game offer codes for press (one-time-use codes, non-consumable). Not now.
+- **(B) ASC submission prerequisites** (`asc-app-review-setup.yml` → `scripts/asc/app_review_setup.py`): age rating from `docs/asc/age-rating.json` (rationale in age-rating.md), content rights `DOES_NOT_USE_THIRD_PARTY_CONTENT`, review contact Yisheng Jiang / yisheng.jiang@gmail.com / +1 669 251 7789, and notes from `docs/asc/review-notes.txt`.
+  - Content rights note: the voices are ElevenLabs output that we own commercially, the "design inspiration" credit isn't licensed content, and the reference image `assets/lina-ref.jpg` is excluded from the app (a test enforces this).
+  - The manual submit workflow `asc-submit-review.yml` (dry run by default; needs `confirm=SUBMIT`) attaches the build, re-applies the prerequisites, queues all 3 IAPs with the version (`inAppPurchaseSubmissions`) and submits. **It has not been run.**
+- **(C)** App Privacy click-by-click checklist for the website: `docs/asc/app-privacy-1.0.md`.
+- **(D)** The App Store Server API lookup stays behind its env flag (`ASSA_*`) until an In-App Purchase key exists. JWS chain verification is enough for now.

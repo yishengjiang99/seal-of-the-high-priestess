@@ -140,14 +140,37 @@ final class GameModel: NSObject, ObservableObject {
 
     // MARK: - Purchases
 
-    /// Full Game product id offered to this install (server price test; price itself from StoreKit).
-    var offeredFullGame: String { paywallConfig.offeredProduct(bucketKey: Identity.install().installId).product }
+    /// Full Game product id offered to this player (server price test; price itself from StoreKit).
+    var offeredFullGame: String { priceArm.product }
+
+    /// Stable price-test arm: hash of the player ID (install ID until the first server contact),
+    /// remembered per split so a player never switches arms mid-test.
+    var priceArm: (product: String, variant: String) {
+        let env = StoreManager.environment
+        guard env == "production", paywallConfig.flag("priceTest", default: false), !paywallConfig.variants.isEmpty else {
+            return paywallConfig.priceArm(bucketKey: "", environment: env)
+        }
+        let d = UserDefaults.standard
+        let sig = paywallConfig.splitSignature
+        if d.string(forKey: "priceArm.split") == sig, let p = d.string(forKey: "priceArm.product"),
+           let v = d.string(forKey: "priceArm.variant"), StoreManager.fullGameIDs.contains(p) {
+            return (p, v)
+        }
+        let arm = paywallConfig.priceArm(bucketKey: api.playerId ?? Identity.install().installId, environment: env)
+        d.set(sig, forKey: "priceArm.split")
+        d.set(arm.product, forKey: "priceArm.product")
+        d.set(arm.variant, forKey: "priceArm.variant")
+        return arm
+    }
 
     func showPaywall(_ placement: String) {
         guard paywallDemo || (paywallConfig.flag("paywall") && !storeKit.entitlements.full) else { return }
         guard paywall == nil else { return }
-        let offer = paywallConfig.offeredProduct(bucketKey: Identity.install().installId)
-        if !paywallDemo { analytics.track("paywall_shown", ["placement": placement, "product": offer.product, "variant": offer.variant]) }
+        let offer = priceArm
+        if !paywallDemo {
+            analytics.track("paywall_shown", ["placement": placement, "product": offer.product, "variant": offer.variant,
+                                              "env": StoreManager.environment])
+        }
         let req = PaywallRequest(placement: placement)
         if showSettings {
             // Let the settings sheet finish dismissing before covering the screen.
@@ -159,7 +182,8 @@ final class GameModel: NSObject, ObservableObject {
     }
 
     func purchaseFullGame(placement: String) async {
-        await storeKit.purchase(offeredFullGame, placement: placement)
+        let arm = priceArm
+        await storeKit.purchase(arm.product, placement: placement, context: ["variant": arm.variant])
     }
 
     private func pushEntitlements(_ e: StoreManager.Entitlements) {

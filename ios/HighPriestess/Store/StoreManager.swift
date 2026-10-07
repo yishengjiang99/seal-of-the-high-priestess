@@ -33,6 +33,16 @@ final class StoreManager: ObservableObject {
 
     var entitlements: Entitlements { Self.combine(owned: owned, server: server) }
 
+    /// "production" only for App Store installs. TestFlight, App Review (both sandbox receipts),
+    /// Xcode and simulator builds are "sandbox": they always get the default $4.99 Full Game product.
+    nonisolated static let environment: String = {
+        #if DEBUG || targetEnvironment(simulator)
+        return "sandbox"
+        #else
+        return Bundle.main.appStoreReceiptURL?.lastPathComponent == "receipt" ? "production" : "sandbox"
+        #endif
+    }()
+
     nonisolated static func combine(owned: Set<String>, server: Entitlements) -> Entitlements {
         Entitlements(full: server.full || !owned.isDisjoint(with: fullGameIDs),
                      supporter: server.supporter || owned.contains(supporterID))
@@ -88,7 +98,7 @@ final class StoreManager: ObservableObject {
     }
 
     @discardableResult
-    func purchase(_ productID: String, placement: String) async -> Bool {
+    func purchase(_ productID: String, placement: String, context: [String: Any] = [:]) async -> Bool {
         await loadProducts()
         guard let product = products[productID] else {
             message = "The App Store is unavailable right now. Please try again later."
@@ -105,7 +115,10 @@ final class StoreManager: ObservableObject {
         do {
             switch try await product.purchase(options: options) {
             case .success(let result):
-                let ok = await handle(result, placement: placement)
+                var props = context
+                props["price"] = NSDecimalNumber(decimal: product.price).doubleValue
+                props["currency"] = product.priceFormatStyle.currencyCode
+                let ok = await handle(result, placement: placement, props: props)
                 if !ok { message = "The purchase couldn't be verified." }
                 return ok
             case .pending:
@@ -137,13 +150,17 @@ final class StoreManager: ObservableObject {
     }
 
     @discardableResult
-    private func handle(_ result: VerificationResult<Transaction>, placement: String?) async -> Bool {
+    private func handle(_ result: VerificationResult<Transaction>, placement: String?, props: [String: Any] = [:]) async -> Bool {
         guard case .verified(let t) = result else { return false }
         if t.revocationDate == nil { owned.insert(t.productID) } else { owned.remove(t.productID) }
         await upload(result)
         await t.finish()
         if let placement, t.revocationDate == nil {
-            analytics?.track("purchase", ["product": t.productID, "placement": placement])
+            var p = props
+            p["product"] = t.productID
+            p["placement"] = placement
+            p["env"] = Self.environment
+            analytics?.track("purchase", p)
         }
         publish()
         return t.revocationDate == nil

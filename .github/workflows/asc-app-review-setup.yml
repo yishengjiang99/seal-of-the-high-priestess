@@ -1,0 +1,26 @@
+name: ASC review prerequisites
+
+# Age rating declaration (docs/asc/age-rating.json), content rights, App Review contact + notes
+# (docs/asc/review-notes.txt). Idempotent. Never submits.
+on:
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          ASC_APP_ID: "6819973123"
+          REVIEW_FIRST: Yisheng
+          REVIEW_LAST: Jiang
+          REVIEW_EMAIL: yisheng.jiang@gmail.com
+          REVIEW_PHONE: "+1 669 251 7789"
+        run: |
+          set -euo pipefail
+          pip install -q PyJWT cryptography
+          cd scripts/asc && python3 app_review_setup.py

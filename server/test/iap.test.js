@@ -105,6 +105,16 @@ test('IAP transactions, entitlements, ASSN v2 refund, funnel events', { skip: !U
   assert.equal(ev.body.accepted, 2)
   const m = await call('GET', '/v1/admin/metrics', { token: ADMIN })
   assert.ok(m.body.events.some((e) => e.name === 'paywall_shown'))
+  // price test: sandbox data is excluded by default, included with env=all; revenue from the JWS price
+  await call('POST', '/v1/iap/transactions', { token: tok, body: { signedTransaction: ch.sign({ ...tx, transactionId: otx + '9', originalTransactionId: otx + '9', productId: 'com.ragnus.weather.fullgame.b', price: 6990, currency: 'USD' }) } })
+  await call('POST', '/v1/events', { token: tok, body: { events: [
+    { name: 'paywall_shown', props: { placement: 'region1_end', product: 'com.ragnus.weather.fullgame.b', variant: 'v1', env: 'sandbox' } },
+    { name: 'paywall_shown', props: { placement: 'menu', product: 'com.ragnus.weather.fullgame.b', variant: 'v1', env: 'sandbox' } }] } })
+  assert.equal(m.body.priceTest.totalViews, 0)
+  const pt = (await call('GET', '/v1/admin/metrics?env=all', { token: ADMIN })).body.priceTest
+  const b = pt.arms.find((x) => x.product === 'com.ragnus.weather.fullgame.b')
+  assert.equal(b.views, 2); assert.equal(b.verifiedPurchases, 1); assert.equal(b.revenue.USD, 6.99); assert.equal(b.usdRevenuePerView, 3.495)
+  assert.equal(pt.ready, false); assert.match(pt.rule, /300/)
   assert.equal((await call('GET', '/v1/admin/metrics')).status, 401)
 
   // delete my data removes purchases + events too

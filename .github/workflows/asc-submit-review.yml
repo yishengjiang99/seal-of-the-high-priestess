@@ -1,0 +1,49 @@
+name: ASC submit for App Review (manual)
+
+# MANUAL ONLY. Attaches the build, re-applies review prerequisites, queues all 3 in-app purchases
+# (Full Game, Full Game B, Supporter Pack) with the version and submits it for App Review.
+# Defaults to a dry run; a real submission needs dry_run=false AND confirm=SUBMIT.
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: Build number (CFBundleVersion); empty = latest VALID
+        required: false
+        type: string
+      version_string:
+        description: App Store version
+        required: false
+        default: "1.0"
+        type: string
+      dry_run:
+        description: Dry run (print only)
+        type: boolean
+        default: true
+      confirm:
+        description: Type SUBMIT to really submit (with dry_run unchecked)
+        required: false
+        type: string
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          ASC_APP_ID: "6819973123"
+          BUILD_NUMBER: ${{ inputs.build_number }}
+          VERSION_STRING: ${{ inputs.version_string }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+          CONFIRM: ${{ inputs.confirm }}
+          REVIEW_FIRST: Yisheng
+          REVIEW_LAST: Jiang
+          REVIEW_EMAIL: yisheng.jiang@gmail.com
+          REVIEW_PHONE: "+1 669 251 7789"
+        run: |
+          set -euo pipefail
+          pip install -q PyJWT cryptography
+          cd scripts/asc && python3 submit_review.py

@@ -5,10 +5,14 @@
    always come from the App Store. Only the iOS app shows a paywall (Platform.gate).
    ============================================================================= */
 window.PAYWALL = {
-  // Full Game product offered. offerVariants (if non-empty) splits players by weight
-  // (price test between App Store price tiers); each player stays in one bucket.
+  // Full Game product offered. offerVariants (if non-empty and FLAGS.priceTest) splits players by
+  // weight using a stable hash of the player ID (price test between App Store price tiers; each
+  // player stays in one arm). Sandbox / TestFlight / App Review always get `offer` ($4.99 tier).
   offer: "com.ragnus.weather.fullgame",
-  offerVariants: [],
+  offerVariants: [
+    { product: "com.ragnus.weather.fullgame", weight: 500 },
+    { product: "com.ragnus.weather.fullgame.b", weight: 500 }
+  ],
   // Prologue (temple) + region 1 (village, forest and their interiors) are free.
   gatedMaps: ["wilderness", "meridia", "ashen", "ruins", "throne"],
   // Story flags that complete a region (funnel: region_complete).
@@ -46,6 +50,7 @@ window.PAYWALL = {
 
 window.FLAGS = {
   paywall: true,
+  priceTest: true,
   supporterPack: true,
   voiceGallery: true,
   funnelEvents: true

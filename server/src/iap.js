@@ -12,6 +12,7 @@ export const PRODUCTS = {
   'com.ragnus.weather.fullgame.b': 'full',
   'com.ragnus.weather.supporter': 'supporter',
 }
+export const FULL_GAME_IDS = ['com.ragnus.weather.fullgame', 'com.ragnus.weather.fullgame.b']
 export const EVENT_NAMES = new Set(['paywall_shown', 'purchase', 'restore', 'region_complete'])
 
 const ms = (v) => (Number.isFinite(Number(v)) && Number(v) > 0 ? new Date(Number(v)) : null)
@@ -115,15 +116,78 @@ export function mountIap(api, { db, auth, admin, env = process.env, verifier, se
 
   api.get('/v1/admin/metrics', admin, async (req, res) => {
     const days = Math.min(365, Math.max(1, Number(req.query.days) || 30))
+    const allEnv = req.query.env === 'all'
     const [ev] = await db.query(
       `SELECT DATE(created_at) AS day, name, COUNT(*) AS n, COUNT(DISTINCT player_id) AS players
        FROM events WHERE created_at >= NOW() - INTERVAL ? DAY GROUP BY day, name ORDER BY day, name`, [days])
     const [ent] = await db.query(
       `SELECT product_id, environment, COUNT(*) AS total, SUM(revoked_at IS NOT NULL) AS revoked FROM entitlements GROUP BY product_id, environment`)
     const [asn] = await db.query(`SELECT notification_type, COUNT(*) AS n FROM asn_notifications GROUP BY notification_type`)
-    res.json({ days, events: ev.map((r) => ({ ...r, day: new Date(r.day).toISOString().slice(0, 10), n: Number(r.n), players: Number(r.players) })),
-      entitlements: ent.map((r) => ({ ...r, total: Number(r.total), revoked: Number(r.revoked) })), notifications: asn.map((r) => ({ ...r, n: Number(r.n) })) })
+    res.json({ days, env: allEnv ? 'all' : 'production',
+      events: ev.map((r) => ({ ...r, day: new Date(r.day).toISOString().slice(0, 10), n: Number(r.n), players: Number(r.players) })),
+      entitlements: ent.map((r) => ({ ...r, total: Number(r.total), revoked: Number(r.revoked) })),
+      notifications: asn.map((r) => ({ ...r, n: Number(r.n) })),
+      priceTest: await priceTest({ allEnv }),
+      funnel: await funnel({ days, allEnv }) })
   })
 
+  // Price test (docs/DECISIONS.md): arms = Full Game product ids. Revenue per paywall view per arm,
+  // views from paywall_shown events, revenue from verified, non-revoked transactions (JWS price).
+  const PRICE_TEST = { arms: FULL_GAME_IDS, minViews: 300, maxDays: 21 }
+  async function priceTest({ allEnv }) {
+    const envSql = allEnv ? '' : ` AND JSON_UNQUOTE(JSON_EXTRACT(props, '$.env')) = 'production'`
+    const [views] = await db.query(
+      `SELECT JSON_UNQUOTE(JSON_EXTRACT(props, '$.product')) AS product, COUNT(*) AS views, COUNT(DISTINCT player_id) AS viewers,
+              MIN(created_at) AS first_at
+       FROM events WHERE name = 'paywall_shown'${envSql} GROUP BY product`)
+    const [buys] = await db.query(
+      `SELECT JSON_UNQUOTE(JSON_EXTRACT(props, '$.product')) AS product, COUNT(*) AS n FROM events WHERE name = 'purchase'${envSql} GROUP BY product`)
+    const [txs] = await db.query(
+      `SELECT product_id, environment, signed_transaction, revoked_at FROM entitlements WHERE product_id IN (?)${allEnv ? '' : " AND environment = 'Production'"}`,
+      [PRICE_TEST.arms])
+    const arms = PRICE_TEST.arms.map((product) => {
+      const v = views.find((r) => r.product === product) || {}
+      const revenue = {}
+      let verified = 0, refunded = 0
+      for (const t of txs.filter((x) => x.product_id === product)) {
+        if (t.revoked_at) { refunded++; continue }
+        verified++
+        const p = decodeJws(t.signed_transaction)
+        if (p && typeof p.price === 'number' && p.currency) revenue[p.currency] = (revenue[p.currency] || 0) + p.price / 1000
+      }
+      const nViews = Number(v.views || 0)
+      const usd = revenue.USD || 0
+      return { product, views: nViews, viewers: Number(v.viewers || 0), purchaseEvents: Number((buys.find((r) => r.product === product) || {}).n || 0),
+        verifiedPurchases: verified, refunded, revenue, conversion: nViews ? verified / nViews : null,
+        usdRevenuePerView: nViews ? Math.round((usd / nViews) * 10000) / 10000 : null, firstViewAt: v.first_at || null }
+    })
+    const totalViews = arms.reduce((n, a) => n + a.views, 0)
+    const starts = arms.map((a) => a.firstViewAt).filter(Boolean).map((d) => new Date(d).getTime())
+    const startedAt = starts.length ? new Date(Math.min(...starts)).toISOString() : null
+    const daysRunning = startedAt ? (Date.now() - Date.parse(startedAt)) / 86400000 : 0
+    const ready = totalViews >= PRICE_TEST.minViews || daysRunning >= PRICE_TEST.maxDays
+    const ranked = [...arms].filter((a) => a.usdRevenuePerView != null).sort((a, b) => b.usdRevenuePerView - a.usdRevenuePerView)
+    return { rule: `winner = higher USD revenue per paywall view once total views >= ${PRICE_TEST.minViews} or after ${PRICE_TEST.maxDays} days`,
+      arms, totalViews, startedAt, daysRunning: Math.round(daysRunning * 10) / 10, ready, leader: ranked[0]?.product || null,
+      winner: ready ? ranked[0]?.product || null : null }
+  }
+
+  async function funnel({ days, allEnv }) {
+    const envSql = allEnv ? '' : ` AND (props IS NULL OR JSON_EXTRACT(props, '$.env') IS NULL OR JSON_UNQUOTE(JSON_EXTRACT(props, '$.env')) = 'production')`
+    const [rows] = await db.query(
+      `SELECT name, COUNT(*) AS n, COUNT(DISTINCT player_id) AS players FROM events
+       WHERE created_at >= NOW() - INTERVAL ? DAY${envSql} GROUP BY name`, [days])
+    const get = (n) => rows.find((r) => r.name === n) || { n: 0, players: 0 }
+    const steps = ['region_complete', 'paywall_shown', 'purchase', 'restore'].map((name) => ({ name, events: Number(get(name).n), players: Number(get(name).players) }))
+    const [placements] = await db.query(
+      `SELECT JSON_UNQUOTE(JSON_EXTRACT(props, '$.placement')) AS placement, name, COUNT(*) AS n FROM events
+       WHERE name IN ('paywall_shown', 'purchase') AND created_at >= NOW() - INTERVAL ? DAY${envSql} GROUP BY placement, name`, [days])
+    return { steps, placements: placements.map((r) => ({ ...r, n: Number(r.n) })) }
+  }
+
   return { entitlementsOf }
+}
+
+function decodeJws(jws) {
+  try { return JSON.parse(Buffer.from(String(jws).split('.')[1], 'base64url').toString('utf8')) } catch { return null }
 }

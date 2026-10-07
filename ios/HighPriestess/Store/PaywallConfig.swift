@@ -56,8 +56,19 @@ struct PaywallConfig {
 
     func flag(_ name: String, default def: Bool = true) -> Bool { flags[name] as? Bool ?? def }
 
-    /// Full Game product to offer this install: a stable weighted bucket over offerVariants
-    /// (FNV-1a of the install id), else `offer`.
+    /// Price-test arm. Sandbox (TestFlight / App Review / Xcode) always gets the default Full Game
+    /// product ($4.99) so review is deterministic; FLAGS.priceTest=false turns the split off.
+    func priceArm(bucketKey: String, environment: String) -> (product: String, variant: String) {
+        if environment != "production" { return (StoreManager.fullGameIDs[0], "review") }
+        if !flag("priceTest", default: false) { return (offer, "default") }
+        return offeredProduct(bucketKey: bucketKey)
+    }
+
+    /// Identifies the split, so a changed split re-buckets but an unchanged one never does.
+    var splitSignature: String { variants.map { "\($0.product)=\($0.weight)" }.joined(separator: ",") }
+
+    /// Full Game product for a bucket key (the player ID): a stable weighted bucket over
+    /// offerVariants (FNV-1a), else `offer`.
     func offeredProduct(bucketKey: String) -> (product: String, variant: String) {
         let total = variants.reduce(0) { $0 + $1.weight }
         guard total > 0 else { return (offer, "default") }

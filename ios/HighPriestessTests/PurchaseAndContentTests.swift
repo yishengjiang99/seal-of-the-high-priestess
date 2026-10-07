@@ -80,6 +80,25 @@ final class PaywallConfigTests: XCTestCase {
                        "com.ragnus.weather.fullgame.b")
     }
 
+    func testPriceArmReviewPathAndFlag() {
+        let split: [String: Any] = ["offer": "com.ragnus.weather.fullgame",
+                                    "offerVariants": [["product": "com.ragnus.weather.fullgame", "weight": 500],
+                                                      ["product": "com.ragnus.weather.fullgame.b", "weight": 500]]]
+        let on = PaywallConfig(paywall: split, flags: ["priceTest": true])
+        // Sandbox (TestFlight / App Review / Xcode) is always the $4.99 product.
+        for i in 0..<50 {
+            XCTAssertEqual(on.priceArm(bucketKey: "player-\(i)", environment: "sandbox").product, "com.ragnus.weather.fullgame")
+        }
+        var arms = [String: Int]()
+        for _ in 0..<1000 { arms[on.priceArm(bucketKey: UUID().uuidString, environment: "production").product, default: 0] += 1 }
+        XCTAssertEqual(arms.count, 2)
+        XCTAssertGreaterThan(arms["com.ragnus.weather.fullgame.b"] ?? 0, 400) // ~50/50
+        XCTAssertGreaterThan(arms["com.ragnus.weather.fullgame"] ?? 0, 400)
+        let off = PaywallConfig(paywall: split, flags: ["priceTest": false])
+        XCTAssertEqual(off.priceArm(bucketKey: "x", environment: "production").product, "com.ragnus.weather.fullgame")
+        XCTAssertEqual(StoreManager.environment, "sandbox") // simulator / debug builds
+    }
+
     func testEntitlementsCombine() {
         XCTAssertFalse(StoreManager.combine(owned: [], server: .init()).full)
         XCTAssertTrue(StoreManager.combine(owned: ["com.ragnus.weather.fullgame.b"], server: .init()).full)

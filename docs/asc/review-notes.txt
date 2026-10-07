@@ -1,0 +1,14 @@
+No login or account is needed. The game starts immediately; tap New Game on the title screen.
+
+IN-APP PURCHASES
+- The prologue and region 1 (the temple, the village, the Whispering Forest) are free. "Full Game" is a one-time non-consumable that unlocks the remaining regions.
+- Fastest way to the Full Game paywall: tap the gear icon (top-left) > Purchases > "Unlock the Full Game...". It is also in the in-game Menu > System tab ("Unlock the Full Game..."). In the story, the paywall appears when the player tries to leave the Whispering Forest after defeating the Hollow Oak (end of region 1).
+- Two Full Game products exist (com.ragnus.weather.fullgame at $4.99 and com.ragnus.weather.fullgame.b at $6.99) for a price test in production. Only one is ever offered to a given player. Sandbox / App Review builds always offer com.ragnus.weather.fullgame ($4.99), so you will see that one. Both unlock exactly the same content.
+- Supporter Pack (com.ragnus.weather.supporter, $2.99) is optional and cosmetic only (a Voice Gallery, an alternate app icon and a supporter badge; no gameplay effect): gear icon > Purchases > Supporter Pack.
+- Restore Purchases: gear icon > Purchases > Restore Purchases, and on the Full Game paywall.
+- Prices shown in the app always come from the App Store. Purchases are verified on our server (App Store Server Notifications v2) and are shared through Family Sharing.
+
+OTHER NOTES
+- Cloud save is anonymous (a random player ID in the iCloud Keychain). It can be turned off and deleted in Settings > Cloud Save > Delete cloud data.
+- The game is fully playable offline. All game code, art and voices are bundled. The only things downloaded are data-only text/balance updates (signed JSON, no executable code; guideline 2.5.2).
+- Controls: on-screen d-pad, Z = confirm/talk, X = cancel, the menu button, and the camp button. A game controller or hardware keyboard also works.
