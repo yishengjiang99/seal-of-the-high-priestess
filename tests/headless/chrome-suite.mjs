@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { spawn } from "node:child_process";
 import { setTimeout as sleep } from "node:timers/promises";
-import { chromium } from "playwright";
+import { chromium, devices } from "playwright";
 import { mkdir } from "node:fs/promises";
 import path from "node:path";
 
@@ -78,6 +78,7 @@ async function main() {
     assert.equal(await page.evaluate(() => typeof window.MAPS === "object" && !!window.MAPS.wilderness), true);
     assert.deepEqual(pageErrors, []);
 
+    await mobileViewportChecks(browser);
     await voiceChecks(browser);
     await gameplayChecks(browser);
 
@@ -85,6 +86,93 @@ async function main() {
   } finally {
     await cleanup();
   }
+}
+
+// Phones: the 1280x720 game must scale to the largest 16:9 box that fits the
+// visible viewport (it used to shrink to a ~120x220 sliver on iPhone), stay
+// DPR-crisp, and keep finger-sized touch controls off the game's own UI.
+async function mobileViewportChecks(browser) {
+  const cases = [
+    ["iPhone 13", "portrait"], ["iPhone 13 landscape", "landscape"],
+    ["iPhone SE", "portrait"], ["Pixel 7 landscape", "landscape"],
+  ];
+  for (const [name, orient] of cases) {
+    const { defaultBrowserType, ...dev } = devices[name];
+    const ctx = await browser.newContext(dev);
+    const page = await ctx.newPage();
+    const errors = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.route("**/audio/voice/**", (route) => route.fulfill({ status: 404, body: "" }));
+    await page.goto(`${BASE}/index.html`, { waitUntil: "networkidle" });
+    await page.waitForSelector("#screen-title:not(.hidden)");
+    const measure = () => page.evaluate(() => {
+      const r = (el) => { const q = el.getBoundingClientRect(); return { l: q.left, t: q.top, r: q.right, b: q.bottom, w: q.width, h: q.height }; };
+      const c = document.getElementById("game");
+      return {
+        vw: window.innerWidth, vh: window.innerHeight, dpr: window.devicePixelRatio,
+        app: r(document.getElementById("app")),
+        canvas: { w: c.width, h: c.height },
+        scroll: { w: document.documentElement.scrollWidth, h: document.documentElement.scrollHeight },
+        touchShown: !document.getElementById("touch").classList.contains("hidden"),
+        buttons: [...document.querySelectorAll("#touch button")].filter((b) => b.offsetParent).map((b) => r(b)),
+      };
+    });
+    const check = async (label) => {
+      const m = await measure();
+      const tag = `${name} ${label}`;
+      const scale = Math.min(m.vw / 1280, m.vh / 720);
+      // Largest fit: bound by width in portrait, by height in landscape.
+      if (orient === "portrait") assert.ok(Math.abs(m.app.w - m.vw) <= 1, `${tag}: game fills width (${m.app.w} vs ${m.vw})`);
+      else assert.ok(Math.abs(m.app.h - m.vh) <= 1, `${tag}: game fills height (${m.app.h} vs ${m.vh})`);
+      assert.ok(Math.abs(m.app.w / m.app.h - 16 / 9) < 0.01, `${tag}: keeps 16:9`);
+      assert.ok(m.app.w >= 1280 * scale - 1 && m.app.l >= -0.5 && m.app.t >= -0.5 && m.app.r <= m.vw + 0.5 && m.app.b <= m.vh + 0.5, `${tag}: game inside viewport ${JSON.stringify(m.app)}`);
+      assert.ok(m.scroll.w <= m.vw && m.scroll.h <= m.vh, `${tag}: no page scroll`);
+      const want = Math.min(2, m.app.w / 1280 * m.dpr);
+      assert.ok(Math.abs(m.canvas.w - Math.round(1280 * want)) <= 2, `${tag}: canvas backing store is DPR-aware (${m.canvas.w})`);
+      assert.ok(m.touchShown, `${tag}: touch controls shown`);
+      for (const b of m.buttons) {
+        assert.ok(b.w >= 44 && b.h >= 44, `${tag}: touch target >= 44px (${b.w}x${b.h})`);
+        assert.ok(b.l >= 0 && b.t >= 0 && b.r <= m.vw && b.b <= m.vh, `${tag}: touch control on screen`);
+      }
+      if (orient === "portrait") {
+        for (const b of m.buttons) assert.ok(b.t >= m.app.b, `${tag}: portrait controls sit below the game`);
+      }
+      for (let i = 0; i < m.buttons.length; i++) for (let j = i + 1; j < m.buttons.length; j++) {
+        const a = m.buttons[i], c = m.buttons[j];
+        assert.ok(a.r <= c.l || c.r <= a.l || a.b <= c.t || c.b <= a.t, `${tag}: touch controls do not overlap each other`);
+      }
+    };
+    await check("title");
+    // Map (d-pad visible) and battle screens.
+    await page.evaluate(() => {
+      const S = window.SOTH; S.settings.voice = false; window.SOTH_NEW();
+      S.vn = null; document.getElementById("screen-vn").classList.add("hidden");
+      S.state = "map"; S.mapId = "temple"; document.getElementById("map-hud").classList.remove("hidden");
+    });
+    await page.waitForFunction(() => document.querySelector("#touch.on-map"));
+    await check("map");
+    await page.evaluate(() => window.SOTH_BATTLE("hollow_oak"));
+    await check("battle");
+    // The d-pad drives the party on touch.
+    await page.evaluate(() => { window.SOTH.battle = null; window.SOTH.state = "map"; document.getElementById("battle-hud").classList.add("hidden"); });
+    await page.waitForFunction(() => document.querySelector("#touch.on-map"));
+    const x0 = await page.evaluate(() => window.SOTH.px);
+    const right = page.locator("#dpad [data-dir=right]");
+    const bb = await right.boundingBox();
+    await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+    await page.mouse.down(); await page.waitForTimeout(400); await page.mouse.up();
+    assert.ok(await page.evaluate(() => !window.SOTH.keys.right), `${name}: d-pad releases`);
+    assert.ok(await page.evaluate((x) => window.SOTH.px !== x || window.SOTH.state !== "map", x0), `${name}: d-pad moves the party`);
+    assert.deepEqual(errors, [], `${name}: no page errors`);
+    await ctx.close();
+  }
+  // Desktop is unchanged: plain letterboxed 16:9, no touch controls.
+  const page = await browser.newPage({ viewport: { width: 1440, height: 900 } });
+  await page.goto(`${BASE}/index.html`, { waitUntil: "networkidle" });
+  await page.waitForSelector("#screen-title:not(.hidden)");
+  const d = await page.evaluate(() => { const q = document.getElementById("app").getBoundingClientRect(); return [q.left, q.top, q.width, q.height, document.getElementById("touch").classList.contains("hidden")]; });
+  assert.deepEqual(d.map((v) => typeof v === "number" ? Math.round(v) : v), [0, 45, 1440, 810, true]);
+  await page.close();
 }
 
 // Voice clips: the client looks up the line in its scene bundle, requests the
