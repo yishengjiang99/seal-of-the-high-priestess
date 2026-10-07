@@ -1,5 +1,5 @@
 /* =============================================================================
-   Seal of the High Priestess — engine
+   Temple of the High Priestess — engine
    States: title, vn, map, battle, menu, gameover, credits, saves, options
    Battle implements LinaHua's loop: Mana spend / Meditate / Unseal berserk /
    charge-up turns / gassed-out turns. No XP. Named gear only.
@@ -123,6 +123,7 @@
     if (b.dataset.k === "KeyZ") { S.just.ok = true; S.keys.ok = true; }
     if (b.dataset.k === "KeyX") { S.just.cancel = true; S.keys.cancel = true; }
     if (b.dataset.k === "Escape") { S.just.menu = true; }
+    if (b.dataset.k === "KeyC") { S.just.camp = true; }
   }
   function touchRelease(b) {
     b.classList.remove("held");
@@ -192,7 +193,7 @@
   function setVol(v) {
     S.settings.vol = v;
     if (master) master.gain.value = v;
-    try { localStorage.setItem("soth_settings", JSON.stringify(S.settings)); } catch (e) {}
+    try { Platform.setItem("soth_settings", JSON.stringify(S.settings)); } catch (e) {}
   }
   let noiseBuf = null;
   function noiseBurst(dur, gain, hp, at) {
@@ -246,6 +247,7 @@
     }
   }
   function sfx(kind) {
+    Platform.haptic(kind);
     if (!actx || S.settings.vol <= 0) return;
     const o = actx.createOscillator();
     const g = actx.createGain();
@@ -821,6 +823,7 @@
   function setFlag(k, v) {
     if (v === undefined) v = 1;
     S.flags[k] = v;
+    Platform.event("flag", { k, v });
     if (k === "lyra_joined" && !S.party.includes("lyra")) {
       S.chars.lyra = makeChar("lyra"); S.party.push("lyra"); applyGrowth(S.chars.lyra);
     }
@@ -1276,12 +1279,12 @@
     idleApplyOffline(elapsed, "load");
   }
   function saveSlot(n) {
-    try { localStorage.setItem("soth_slot_" + n, JSON.stringify(serialize())); sfx("save"); toast("Saved to slot " + (n + 1)); }
+    try { Platform.setItem("soth_slot_" + n, JSON.stringify(serialize())); sfx("save"); toast("Saved to slot " + (n + 1)); }
     catch (e) { toast("Save failed"); }
   }
   function loadSlot(n) {
     try {
-      const d = JSON.parse(localStorage.getItem("soth_slot_" + n) || "null");
+      const d = JSON.parse(Platform.getItem("soth_slot_" + n) || "null");
       if (!d) return false;
       deserialize(d);
       hideAllScreens();
@@ -1289,15 +1292,25 @@
       return true;
     } catch (e) { return false; }
   }
+  // Suspend save ("auto" slot): written when the app/tab goes to the background while the
+  // player is free on the map, so iOS killing a backgrounded app never loses progress.
+  function suspendSave() {
+    if (S.state !== "map" && !(S.state === "menu" && S._return === "map")) return null;
+    try { const json = JSON.stringify(serialize()); Platform.setItem("soth_slot_auto", json); return json; }
+    catch (e) { return null; }
+  }
+  Platform.on("suspend", suspendSave);
+  Platform.on("savesChanged", () => { if (S.state === "title") $("btn-continue").disabled = !hasAnySave(); });
+  document.addEventListener("visibilitychange", () => { if (document.hidden && !Platform.native) suspendSave(); });
+  const SLOT_IDS = [0, 1, 2, "auto"];
   function hasAnySave() {
-    for (let i = 0; i < 3; i++) if (localStorage.getItem("soth_slot_" + i)) return true;
-    return false;
+    return SLOT_IDS.some((i) => !!Platform.getItem("soth_slot_" + i));
   }
   function latestSave() {
     let best = -1, t = 0;
-    for (let i = 0; i < 3; i++) {
+    for (const i of SLOT_IDS) {
       try {
-        const d = JSON.parse(localStorage.getItem("soth_slot_" + i) || "null");
+        const d = JSON.parse(Platform.getItem("soth_slot_" + i) || "null");
         if (d && d.when > t) { t = d.when; best = i; }
       } catch (e) {}
     }
@@ -1336,7 +1349,7 @@
     if (act === "continue") {
       ensureAudio();
       const n = latestSave();
-      if (n >= 0) loadSlot(n);
+      if (n !== -1) loadSlot(n);
     }
     if (act === "options") showOptions(true);
     if (act === "credits") {
@@ -1391,7 +1404,7 @@
     if (S.state === "vn") S.just.ok = true;
   });
   function persistSettings() {
-    try { localStorage.setItem("soth_settings", JSON.stringify(S.settings)); } catch (e) {}
+    try { Platform.setItem("soth_settings", JSON.stringify(S.settings)); } catch (e) {}
   }
   document.body.addEventListener("click", (e) => {
     const b = e.target.closest("button");
@@ -3520,6 +3533,8 @@
   }
   function winBattle() {
     const b = S.battle;
+    Platform.haptic("victory");
+    Platform.event("battle_won", { id: b.def && b.def.id });
     cancelHealingRainAim(true);
     $("battle-hud").classList.remove("cinematic");
     if (S.idle) idleSimulate(120, "battleReward");
@@ -3982,10 +3997,22 @@
     $("save-title").textContent = mode === "save" ? "Save" : "Load";
     const box = $("save-slots");
     box.innerHTML = "";
+    if (mode === "load") {
+      try {
+        const d = JSON.parse(Platform.getItem("soth_slot_auto") || "null");
+        if (d) {
+          const btn = document.createElement("button");
+          btn.className = "save-slot";
+          btn.innerHTML = `<div>Suspend save — ${MAPS[d.mapId]?.name || d.mapId}</div><div class="when">${new Date(d.when).toLocaleString()}</div>`;
+          btn.addEventListener("click", () => loadSlot("auto"));
+          box.appendChild(btn);
+        }
+      } catch (e) {}
+    }
     for (let i = 0; i < 3; i++) {
       let label = "Empty slot " + (i + 1);
       try {
-        const d = JSON.parse(localStorage.getItem("soth_slot_" + i) || "null");
+        const d = JSON.parse(Platform.getItem("soth_slot_" + i) || "null");
         if (d) {
           const loc = MAPS[d.mapId]?.name || d.mapId;
           label = `${loc} — party of ${d.party.length}`;
@@ -4267,7 +4294,7 @@
   async function boot() {
     fit();
     try {
-      const st = JSON.parse(localStorage.getItem("soth_settings") || "null");
+      const st = JSON.parse(Platform.getItem("soth_settings") || "null");
       if (st) Object.assign(S.settings, st);
     } catch (e) {}
     ensureIdleState();

@@ -829,6 +829,13 @@ body.high-contrast-icons .idle-card .row span:first-child { color: #fff7ca; text
   z-index: 14;
 }
 #rotate-hint::before { content: "⟳ "; color: var(--gold); }
+/* Camp (C) only matters while exploring; smaller so the Z/X pair stays dominant. */
+#touch:not(.on-map) .camp-btn { display: none; }
+#touch-btns .camp-btn { width: 46px; height: 46px; align-self: center; font-size: 16px; }
+#touch.mode-deck #touch-btns {
+  grid-template-areas: "camp menu" "x z";
+}
+#touch.mode-deck #touch-btns .camp-btn { grid-area: camp; }
 /* Keyboard hints mean nothing on a phone. */
 body.touch .title-hint, body.touch #map-hint { display: none; }
 

@@ -4,11 +4,19 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - 'ios/**'
+      - 'server/**'
+      - 'docs/**'
   pull_request:
     types:
       - opened
       - synchronize
       - reopened
+    paths-ignore:
+      - 'ios/**'
+      - 'server/**'
+      - 'docs/**'
 
 permissions:
   contents: read
@@ -95,7 +103,7 @@ jobs:
 
           cp assets/screenshots/*.png artifacts/ 2>/dev/null || true
 
-          if ! grep -q "Seal of the High Priestess" artifacts/dom.html; then
+          if ! grep -q "Temple of the High Priestess" artifacts/dom.html; then
             echo "Expected title text was not found in DOM output"
             exit 1
           fi
