@@ -101,7 +101,7 @@ final class StoreManager: ObservableObject {
     func purchase(_ productID: String, placement: String, context: [String: Any] = [:]) async -> Bool {
         await loadProducts()
         guard let product = products[productID] else {
-            message = "The App Store is unavailable right now. Please try again later."
+            message = String(localized: "The App Store is unavailable right now. Please try again later.")
             return false
         }
         busy = true
@@ -119,10 +119,10 @@ final class StoreManager: ObservableObject {
                 props["price"] = NSDecimalNumber(decimal: product.price).doubleValue
                 props["currency"] = product.priceFormatStyle.currencyCode
                 let ok = await handle(result, placement: placement, props: props)
-                if !ok { message = "The purchase couldn't be verified." }
+                if !ok { message = String(localized: "The purchase couldn't be verified.") }
                 return ok
             case .pending:
-                message = "Your purchase is pending approval. It will unlock automatically."
+                message = String(localized: "Your purchase is pending approval. It will unlock automatically.")
                 return false
             case .userCancelled:
                 return false
@@ -130,7 +130,7 @@ final class StoreManager: ObservableObject {
                 return false
             }
         } catch {
-            message = "Purchase failed: \(error.localizedDescription)"
+            message = String(localized: "Purchase failed: \(error.localizedDescription)")
             return false
         }
     }
@@ -140,7 +140,7 @@ final class StoreManager: ObservableObject {
         defer { busy = false }
         do { try await AppStore.sync() } catch {
             if let e = error as? StoreKitError, case .userCancelled = e { return }
-            message = "Couldn't reach the App Store: \(error.localizedDescription)"
+            message = String(localized: "Couldn't reach the App Store: \(error.localizedDescription)")
         }
         await refresh()
         await fetchServerEntitlements()

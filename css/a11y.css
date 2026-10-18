@@ -1,0 +1,45 @@
+/* Accessibility overrides (loaded after game.css). Driven by Platform.a11y (js/platform.js):
+   --subtitle-scale, html.a11y-reduce-motion, html.a11y-cues. No layout, renderer or touch-control rules here. */
+
+/* Subtitle size: dialogue text, choices and the speaker name scale together. */
+#vn-text { font-size: calc(23px * var(--subtitle-scale, 1)); }
+#vn-choices button { font-size: calc(17px * var(--subtitle-scale, 1)); }
+#vn-name { font-size: calc(1em * var(--subtitle-scale, 1)); }
+#battle-log { font-size: calc(1em * var(--subtitle-scale, 1)); }
+
+/* Reduce motion: no CSS animation or transition motion; blinking tags stay visible. */
+html.a11y-reduce-motion *,
+html.a11y-reduce-motion *::before,
+html.a11y-reduce-motion *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+html.a11y-reduce-motion #vn-text .ch { opacity: 1; color: var(--cream); }
+
+/* Colour-safe cues: resource and health bars differ by pattern, not only by hue. */
+html.a11y-cues .bar > i { background-blend-mode: normal; }
+html.a11y-cues .bar.hp > i {
+  background-image: repeating-linear-gradient(135deg, rgba(255,255,255,0.55) 0 2px, transparent 2px 6px), linear-gradient(90deg, #6d2b38, #d45a6a);
+}
+html.a11y-cues .bar.res > i, html.a11y-cues .bar.mana > i {
+  background-image: repeating-linear-gradient(0deg, rgba(255,255,255,0.5) 0 1px, transparent 1px 3px), linear-gradient(90deg, #2a4a7a, #7eb8d4);
+}
+html.a11y-cues .bar.fury > i {
+  background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.55) 0 2px, transparent 2px 6px), linear-gradient(90deg, #5a1a1a, #c23b4a);
+}
+html.a11y-cues .bar.focus > i {
+  background-image: radial-gradient(circle, rgba(255,255,255,0.6) 0 1px, transparent 1.5px), linear-gradient(90deg, #3a5a2a, #9bc47b);
+  background-size: 5px 5px, 100% 100%;
+}
+html.a11y-cues .bar.blood > i {
+  background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.5) 0 2px, transparent 2px 5px), linear-gradient(90deg, #4a1a3a, #c47bb0);
+}
+html.a11y-cues .bar { height: 12px; }
+html.a11y-cues .bar-label { font-size: 12px; }
+html.a11y-cues .battler-card .nm .tag { text-decoration: underline; }
+
+/* Options rows added by js/a11y-ui.js (web only; the iOS app uses native Settings). */
+#opt-a11y { margin-top: 10px; }
+#opt-a11y h3 { margin: 6px 0; }

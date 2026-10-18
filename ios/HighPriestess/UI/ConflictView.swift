@@ -35,7 +35,7 @@ struct ConflictView: View {
                     Button {
                         model.resolve(conflict, .keepBoth(slot))
                     } label: {
-                        Label("Keep both (other device's copy goes to Slot \((Int(slot) ?? 0) + 1))", systemImage: "square.on.square")
+                        Label("Keep both (other device's copy goes to \(SaveStore.slotLabel(slot)))", systemImage: "square.on.square")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.bordered)
@@ -48,11 +48,11 @@ struct ConflictView: View {
     }
 
     @ViewBuilder private var cards: some View {
-        card(title: "This iPhone", icon: "iphone", summary: local, other: cloud) { model.resolve(conflict, .keepLocal) }
-        card(title: "Other device", icon: "icloud", summary: cloud, other: local) { model.resolve(conflict, .keepCloud) }
+        card(title: "This iPhone", isLocal: true, icon: "iphone", summary: local, other: cloud) { model.resolve(conflict, .keepLocal) }
+        card(title: "Other device", isLocal: false, icon: "icloud", summary: cloud, other: local) { model.resolve(conflict, .keepCloud) }
     }
 
-    private func card(title: String, icon: String, summary s: SaveSummary, other: SaveSummary, action: @escaping () -> Void) -> some View {
+    private func card(title: LocalizedStringKey, isLocal: Bool, icon: String, summary s: SaveSummary, other: SaveSummary, action: @escaping () -> Void) -> some View {
         let newer = (s.when ?? .distantPast) > (other.when ?? .distantPast)
         let further = s.progressScore > other.progressScore
         return Button(action: action) {
@@ -69,7 +69,7 @@ struct ConflictView: View {
                     Text("Saved \(when.formatted(.relative(presentation: .named)))")
                         .font(.footnote).foregroundStyle(.secondary)
                 }
-                Text("Keep \(title == "This iPhone" ? "this iPhone's" : "the other device's") save")
+                Text(LocalizedStringKey(isLocal ? "Keep this iPhone's save" : "Keep the other device's save"))
                     .font(.callout.weight(.semibold))
                     .frame(maxWidth: .infinity, minHeight: 44)
                     .background(Color.accentColor.opacity(0.18), in: RoundedRectangle(cornerRadius: 10))
@@ -80,11 +80,14 @@ struct ConflictView: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("\(title): \(s.mapName ?? "unknown place"), \(s.progressText)\(newer ? ", newer" : "")\(further ? ", further in the story" : "")")
+        .accessibilityLabel(Text(verbatim: [isLocal ? String(localized: "This iPhone") : String(localized: "Other device"),
+                                            s.mapName ?? String(localized: "Unknown place"), s.progressText,
+                                            newer ? String(localized: "Newer") : nil,
+                                            further ? String(localized: "Further in story") : nil].compactMap { $0 }.joined(separator: ", ")))
         .accessibilityHint("Keeps this copy")
     }
 
-    private func badge(_ text: String, _ icon: String) -> some View {
+    private func badge(_ text: LocalizedStringKey, _ icon: String) -> some View {
         Label(text, systemImage: icon)
             .font(.caption2.weight(.semibold))
             .padding(.horizontal, 8).padding(.vertical, 3)
@@ -105,7 +108,7 @@ struct SaveHistoryView: View {
         List {
             if let error { Text(error).foregroundStyle(.secondary) }
             ForEach(SaveStore.slotIDs, id: \.self) { slot in
-                Section(slot == "auto" ? "Suspend save" : "Slot \((Int(slot) ?? 0) + 1)") {
+                Section(SaveStore.slotLabel(slot)) {
                     let list = items[slot] ?? []
                     if list.isEmpty {
                         Text(loading ? "Loading…" : "No earlier copies").foregroundStyle(.secondary)
@@ -132,11 +135,12 @@ struct SaveHistoryView: View {
 
     private func row(_ item: SyncClient.HistoryItem) -> some View {
         let s = item.summary
-        let map = (s["mapName"] as? String) ?? (s["mapId"] as? String).map { SaveSummary.mapNames[$0] ?? $0 } ?? "Unknown place"
-        let chapter = (s["chapter"] as? Int).map { "Chapter \($0 + 1)" }
+        let map = (s["mapName"] as? String) ?? (s["mapId"] as? String).map { SaveSummary.mapNames[$0] ?? $0 } ?? String(localized: "Unknown place")
+        let chapter = (s["chapter"] as? Int).map { String(localized: "Chapter \($0 + 1)") }
         return VStack(alignment: .leading, spacing: 2) {
             Text(map).font(.body)
-            Text([chapter, "replaced \(item.replacedAt.formatted(.relative(presentation: .named)))", item.thisDevice ? "from this iPhone" : "from another device"]
+            Text([chapter, String(localized: "replaced \(item.replacedAt.formatted(.relative(presentation: .named)))"),
+                  item.thisDevice ? String(localized: "from this iPhone") : String(localized: "from another device")]
                     .compactMap { $0 }.joined(separator: " · "))
                 .font(.footnote).foregroundStyle(.secondary)
         }
@@ -159,10 +163,10 @@ struct SaveHistoryView: View {
     private func restore(_ item: SyncClient.HistoryItem) async {
         do {
             try await model.sync.restore(item)
-            message = "Restored."
+            message = String(localized: "Restored.")
             await load()
         } catch {
-            message = "Couldn't restore: \(error.localizedDescription)"
+            message = String(localized: "Couldn't restore: \(error.localizedDescription)")
         }
     }
 }

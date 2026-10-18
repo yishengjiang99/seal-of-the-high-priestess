@@ -105,6 +105,7 @@ test('IAP transactions, entitlements, ASSN v2 refund, funnel events', { skip: !U
   assert.equal(ev.body.accepted, 2)
   const m = await call('GET', '/v1/admin/metrics', { token: ADMIN })
   assert.ok(m.body.events.some((e) => e.name === 'paywall_shown'))
+  assert.ok(m.body.players.total >= 1 && m.body.players.new >= 1 && Array.isArray(m.body.versions) && m.body.generatedAt)
   // price test: sandbox data is excluded by default, included with env=all; revenue from the JWS price
   await call('POST', '/v1/iap/transactions', { token: tok, body: { signedTransaction: ch.sign({ ...tx, transactionId: otx + '9', originalTransactionId: otx + '9', productId: 'com.ragnus.weather.fullgame.b', price: 6990, currency: 'USD' }) } })
   await call('POST', '/v1/events', { token: tok, body: { events: [

@@ -7,7 +7,7 @@ struct SaveConflict: Identifiable, Equatable {
     let serverValue: String
     let serverRevision: Int
     var id: String { slot }
-    var slotName: String { slot == "auto" ? "Suspend save" : "Slot \((Int(slot) ?? 0) + 1)" }
+    var slotName: String { SaveStore.slotLabel(slot) }
 }
 
 /// Cloud save sync against the temple API (see server/README.md); HTTP via APIClient.
@@ -204,7 +204,7 @@ final class SyncClient {
                     store.markSynced(key, revision: rev, value: c.localValue)
                 }
             } catch {
-                lastError = "Couldn't upload: \(error.localizedDescription)"
+                lastError = String(localized: "Couldn't upload: \(error.localizedDescription)")
             }
             await sync()
         } else {

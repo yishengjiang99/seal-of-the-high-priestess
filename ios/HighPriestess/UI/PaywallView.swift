@@ -6,6 +6,7 @@ struct PaywallView: View {
     @EnvironmentObject private var model: GameModel
     @EnvironmentObject private var store: StoreManager
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.dynamicTypeSize) private var typeSize
     let placement: String
 
     private var config: PaywallConfig { model.paywallConfig }
@@ -14,13 +15,17 @@ struct PaywallView: View {
     var body: some View {
         GeometryReader { geo in
             HStack(spacing: 0) {
-                art
-                    .frame(width: geo.size.width * 0.38)
-                    .clipped()
+                if !typeSize.isAccessibilitySize {
+                    art
+                        .frame(width: geo.size.width * 0.38)
+                        .clipped()
+                        .accessibilityHidden(true)
+                }
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(config.title)
                             .font(.system(.title, design: .serif).weight(.semibold))
+                            .accessibilityAddTraits(.isHeader)
                         if !config.subtitle.isEmpty {
                             Text(config.subtitle).font(.headline).foregroundStyle(.secondary)
                         }
@@ -76,12 +81,12 @@ struct PaywallView: View {
         store.displayPrice(productID) ?? (model.paywallDemo ? "$4.99" : nil)
     }
 
-    private var purchaseButton: some View {
+    @ViewBuilder private var purchaseButton: some View {
         Button {
             Task { await model.purchaseFullGame(placement: placement) }
         } label: {
             HStack {
-                if store.busy { ProgressView().tint(.black) }
+                if store.busy { ProgressView().tint(.black).accessibilityLabel("Working") }
                 Text(priceText.map { "\(config.cta) · \($0)" } ?? config.cta)
                     .font(.headline)
             }
@@ -92,11 +97,10 @@ struct PaywallView: View {
         .foregroundStyle(.black)
         .disabled(store.busy || (priceText == nil))
         .accessibilityIdentifier("buyFullGame")
-        .overlay(alignment: .bottom) {
-            if priceText == nil {
-                Text("Connecting to the App Store…").font(.caption2).foregroundStyle(.secondary).offset(y: 18)
-            }
-        }
+        .accessibilityHint(priceText == nil ? "Waiting for the App Store price" : "One-time purchase")
         .padding(.vertical, 6)
+        if priceText == nil {
+            Text("Connecting to the App Store…").font(.caption).foregroundStyle(.secondary)
+        }
     }
 }

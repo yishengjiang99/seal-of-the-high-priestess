@@ -54,8 +54,38 @@ window.Platform = (() => {
   if (typeof window.addEventListener === "function") {
     window.addEventListener("touchstart", () => { if (input.mode !== "touch") setInput({ mode: "touch" }); }, { passive: true, capture: true });
   }
+  // Accessibility preferences. iOS: pushed by the shell (SOTH_HOST.a11y at start, Platform.call("a11y", p)
+  // later) from its Settings + the system Reduce Motion switch. Web: stored in localStorage
+  // ("soth_a11y", edited in Options) with prefers-reduced-motion as the default.
+  //   subtitleScale  dialogue text size multiplier (1 = default)
+  //   reduceMotion   no screen shake / flashes, CSS animations off
+  //   colorCues      extra non-colour cues (patterned bars, shape markers)
+  const a11y = { subtitleScale: 1, reduceMotion: false, colorCues: false };
+  function applyA11y(p) {
+    if (!p || typeof p !== "object") return;
+    if (p.subtitleScale != null) a11y.subtitleScale = Math.min(2, Math.max(0.8, +p.subtitleScale || 1));
+    if (p.reduceMotion != null) a11y.reduceMotion = !!p.reduceMotion;
+    if (p.colorCues != null) a11y.colorCues = !!p.colorCues;
+    const el = document.documentElement;
+    el.style.setProperty("--subtitle-scale", String(a11y.subtitleScale));
+    el.classList.toggle("a11y-reduce-motion", a11y.reduceMotion);
+    el.classList.toggle("a11y-cues", a11y.colorCues);
+    if (hooks.a11yChanged) { try { hooks.a11yChanged(a11y); } catch (e) {} }
+  }
+  (function initA11y() {
+    let saved = null;
+    try { saved = JSON.parse(getItem("soth_a11y") || "null"); } catch (e) {}
+    const mq = typeof window.matchMedia === "function" ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+    applyA11y({ reduceMotion: !!(mq && mq.matches), ...(saved || {}), ...((host && host.a11y) || {}) });
+  })();
   return {
     native,
+    a11y,
+    // Web Options: change and remember a preference (the iOS shell owns these on iOS).
+    setA11y(p) {
+      applyA11y(p);
+      try { setItem("soth_a11y", JSON.stringify(a11y)); } catch (e) {}
+    },
     get input() { return input; },
     name: native ? (host.platform || "native") : "web",
     getItem, setItem, removeItem,
@@ -66,6 +96,7 @@ window.Platform = (() => {
     call(name, arg) {
       if (name === "entitlements" && arg && typeof arg === "object") ent = arg;
       if (name === "inputMode") { setInput(arg); return input; }
+      if (name === "a11y") { applyA11y(arg); return a11y; }
       try { return hooks[name] ? hooks[name](arg) : null; } catch (e) { return null; }
     },
     entitled(name) { return !!ent[name]; },

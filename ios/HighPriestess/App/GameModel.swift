@@ -67,6 +67,7 @@ final class GameModel: NSObject, ObservableObject {
 
         AudioSessionManager.apply()
         setUpControllers()
+        observeAccessibility()
         gameCenter.authenticate()
 
         sync.onPulled = { [weak self] changes in self?.applyToWeb(changes) }
@@ -87,6 +88,7 @@ final class GameModel: NSObject, ObservableObject {
     private func bootstrapScript() -> String {
         let host: [String: Any] = [
             "platform": "ios",
+            "locale": Locale.current.language.languageCode?.identifier ?? "en",
             "appVersion": Bundle.main.appVersion,
             "assets": WebBundle.assetList(),
             // Content goes through the native proxy (CryptoKit-verified, cached in Application Support).
@@ -95,6 +97,7 @@ final class GameModel: NSObject, ObservableObject {
             "contentCache": false,
             "contentTimeoutMs": 2500,
             "entitlements": StoreManager.cached.dictionary,
+            "a11y": AccessibilityPrefs.payload,
         ]
         return """
         window.SOTH_HOST = \(Self.json(host));
@@ -167,6 +170,27 @@ final class GameModel: NSObject, ObservableObject {
         case nil, is NSNull: return false
         default: return true
         }
+    }
+
+    // MARK: - Accessibility
+
+    private var a11yObservers: [NSObjectProtocol] = []
+    private var lastA11y: [String: Any] = [:]
+
+    /// Pushes Settings > Accessibility and the system Reduce Motion switch to the game, live.
+    private func observeAccessibility() {
+        lastA11y = AccessibilityPrefs.payload
+        let nc = NotificationCenter.default
+        let push: (Notification) -> Void = { [weak self] _ in MainActor.assumeIsolated { self?.pushAccessibility() } }
+        a11yObservers.append(nc.addObserver(forName: UIAccessibility.reduceMotionStatusDidChangeNotification, object: nil, queue: .main, using: push))
+        a11yObservers.append(nc.addObserver(forName: UserDefaults.didChangeNotification, object: nil, queue: .main, using: push))
+    }
+
+    func pushAccessibility() {
+        let p = AccessibilityPrefs.payload
+        guard NSDictionary(dictionary: p) != NSDictionary(dictionary: lastA11y) else { return }
+        lastA11y = p
+        webView.evaluateJavaScript("window.Platform ? Platform.call('a11y', \(Self.json(p))) : null", completionHandler: nil)
     }
 
     // MARK: - Controllers / keyboards
@@ -333,10 +357,10 @@ final class GameModel: NSObject, ObservableObject {
     }
 
     func refreshSyncStatus() {
-        if !sync.enabled { syncStatus = "Off. Saves stay on this iPhone." }
+        if !sync.enabled { syncStatus = String(localized: "Off. Saves stay on this iPhone.") }
         else if let e = sync.lastError { syncStatus = e }
-        else if let t = sync.lastSync { syncStatus = "Synced \(t.formatted(date: .omitted, time: .shortened))" }
-        else { syncStatus = "Waiting to sync…" }
+        else if let t = sync.lastSync { syncStatus = String(localized: "Synced \(t.formatted(date: .omitted, time: .shortened))") }
+        else { syncStatus = String(localized: "Waiting to sync…") }
         objectWillChange.send()
     }
 
@@ -355,6 +379,8 @@ extension GameModel: WKNavigationDelegate {
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         webReady = true
         pushInputMode()
+        lastA11y = [:]
+        pushAccessibility()
         focusGame()
         DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in self?.refreshContentStatus() }
     }

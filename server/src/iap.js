@@ -123,7 +123,15 @@ export function mountIap(api, { db, auth, admin, env = process.env, verifier, se
     const [ent] = await db.query(
       `SELECT product_id, environment, COUNT(*) AS total, SUM(revoked_at IS NOT NULL) AS revoked FROM entitlements GROUP BY product_id, environment`)
     const [asn] = await db.query(`SELECT notification_type, COUNT(*) AS n FROM asn_notifications GROUP BY notification_type`)
-    res.json({ days, env: allEnv ? 'all' : 'production',
+    const [[pl]] = await db.query(
+      `SELECT COUNT(*) AS total, SUM(created_at >= NOW() - INTERVAL ? DAY) AS new_players, SUM(last_seen_at >= NOW() - INTERVAL ? DAY) AS active
+       FROM players`, [days, days])
+    const [ver] = await db.query(
+      `SELECT COALESCE(app_version, 'unknown') AS version, COUNT(*) AS devices FROM devices WHERE last_seen_at >= NOW() - INTERVAL ? DAY GROUP BY version ORDER BY devices DESC LIMIT 12`, [days])
+    const [[sv]] = await db.query('SELECT COUNT(DISTINCT player_id) AS players, COUNT(*) AS slots FROM saves')
+    res.json({ days, env: allEnv ? 'all' : 'production', generatedAt: new Date().toISOString(),
+      players: { total: Number(pl.total || 0), new: Number(pl.new_players || 0), active: Number(pl.active || 0), withCloudSaves: Number(sv.players || 0), saveSlots: Number(sv.slots || 0) },
+      versions: ver.map((r) => ({ version: r.version, devices: Number(r.devices) })),
       events: ev.map((r) => ({ ...r, day: new Date(r.day).toISOString().slice(0, 10), n: Number(r.n), players: Number(r.players) })),
       entitlements: ent.map((r) => ({ ...r, total: Number(r.total), revoked: Number(r.revoked) })),
       notifications: asn.map((r) => ({ ...r, n: Number(r.n) })),

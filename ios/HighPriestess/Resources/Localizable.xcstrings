@@ -1,0 +1,344 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "%@ changed on two devices": {
+      "extractionState": "manual"
+    },
+    "%lld quests done": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld quest done"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld quests done"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "1 of %lld": {
+      "extractionState": "manual"
+    },
+    "About": {
+      "extractionState": "manual"
+    },
+    "Accessibility": {
+      "extractionState": "manual"
+    },
+    "Achievements": {
+      "extractionState": "manual"
+    },
+    "Achievements and best boss times are kept on this iPhone and sent to Game Center once you're signed in. Optional.": {
+      "extractionState": "manual"
+    },
+    "App Icon": {
+      "extractionState": "manual"
+    },
+    "Arrows/WASD · Z · X · C · F · Esc · ⌘, Settings": {
+      "extractionState": "manual"
+    },
+    "Bluetooth controllers and keyboards work anywhere in the game. While a menu like this one is open, B closes it.": {
+      "extractionState": "manual"
+    },
+    "Boss Times": {
+      "extractionState": "manual"
+    },
+    "Chapter %lld": {
+      "extractionState": "manual"
+    },
+    "Chapter %lld of %lld": {
+      "extractionState": "manual"
+    },
+    "Cloud Save": {
+      "extractionState": "manual"
+    },
+    "Cloud data deleted.": {
+      "extractionState": "manual"
+    },
+    "Cloud save": {
+      "extractionState": "manual"
+    },
+    "Colour-safe cues": {
+      "extractionState": "manual"
+    },
+    "Connecting to the App Store…": {
+      "extractionState": "manual"
+    },
+    "Contains lines from the whole story, including later regions.": {
+      "extractionState": "manual"
+    },
+    "Controller": {
+      "extractionState": "manual"
+    },
+    "Controls": {
+      "extractionState": "manual"
+    },
+    "Couldn't reach the App Store: %@": {
+      "extractionState": "manual"
+    },
+    "Couldn't reach the server. Try again when you're online.": {
+      "extractionState": "manual"
+    },
+    "Couldn't restore: %@": {
+      "extractionState": "manual"
+    },
+    "Couldn't upload: %@": {
+      "extractionState": "manual"
+    },
+    "Delete cloud data": {
+      "extractionState": "manual"
+    },
+    "Delete cloud data?": {
+      "extractionState": "manual"
+    },
+    "Delete from server": {
+      "extractionState": "manual"
+    },
+    "Design inspiration: LinaHua (@Linahuaa). Voices generated with ElevenLabs.": {
+      "extractionState": "manual"
+    },
+    "Done": {
+      "extractionState": "manual"
+    },
+    "Elara (default)": {
+      "extractionState": "manual"
+    },
+    "Full Game": {
+      "extractionState": "manual"
+    },
+    "Further in story": {
+      "extractionState": "manual"
+    },
+    "Game Center": {
+      "extractionState": "manual"
+    },
+    "Game content": {
+      "extractionState": "manual"
+    },
+    "Haptics": {
+      "extractionState": "manual"
+    },
+    "It becomes the current save for that slot on all your devices. The current copy moves into history.": {
+      "extractionState": "manual"
+    },
+    "Kael, unchained": {
+      "extractionState": "manual"
+    },
+    "Keep both (other device's copy goes to %@)": {
+      "extractionState": "manual"
+    },
+    "Keep the other device's save": {
+      "extractionState": "manual"
+    },
+    "Keep this iPhone's save": {
+      "extractionState": "manual"
+    },
+    "Keeps this copy": {
+      "extractionState": "manual"
+    },
+    "Keeps this iPhone's save here and copies the other device's save to an empty slot.": {
+      "extractionState": "manual"
+    },
+    "Keyboard": {
+      "extractionState": "manual"
+    },
+    "Newer": {
+      "extractionState": "manual"
+    },
+    "Not Now": {
+      "extractionState": "manual"
+    },
+    "OK": {
+      "extractionState": "manual"
+    },
+    "Off. Saves stay on this iPhone.": {
+      "extractionState": "manual"
+    },
+    "One-time purchase. Prologue and region 1 stay free. Shared with Family Sharing.": {
+      "extractionState": "manual"
+    },
+    "Opens cloud save, purchases, accessibility and controls": {
+      "extractionState": "manual"
+    },
+    "Optional": {
+      "extractionState": "manual"
+    },
+    "Other device": {
+      "extractionState": "manual"
+    },
+    "Pick the copy to continue with. The other one stays in Save History in Settings.": {
+      "extractionState": "manual"
+    },
+    "Play sound in silent mode": {
+      "extractionState": "manual"
+    },
+    "Player ID": {
+      "extractionState": "manual"
+    },
+    "Privacy Policy": {
+      "extractionState": "manual"
+    },
+    "Purchase failed: %@": {
+      "extractionState": "manual"
+    },
+    "Purchases": {
+      "extractionState": "manual"
+    },
+    "Reduce Motion is on in iOS Settings, so the game already skips screen shake and flashes.": {
+      "extractionState": "manual"
+    },
+    "Reduce motion": {
+      "extractionState": "manual"
+    },
+    "Reduce motion turns off screen shake, full-screen flashes and menu animation. Colour-safe cues add patterns to health and resource bars. Text in this app follows your Dynamic Type size.": {
+      "extractionState": "manual"
+    },
+    "Restore": {
+      "extractionState": "manual"
+    },
+    "Restore Purchases": {
+      "extractionState": "manual"
+    },
+    "Restore this save?": {
+      "extractionState": "manual"
+    },
+    "Restored.": {
+      "extractionState": "manual"
+    },
+    "Save History": {
+      "extractionState": "manual"
+    },
+    "Saved %@": {
+      "extractionState": "manual"
+    },
+    "Settings": {
+      "extractionState": "manual"
+    },
+    "Sign in to Game Center": {
+      "extractionState": "manual"
+    },
+    "Signed in": {
+      "extractionState": "manual"
+    },
+    "Slot %lld": {
+      "extractionState": "manual"
+    },
+    "Sound & Feel": {
+      "extractionState": "manual"
+    },
+    "Status": {
+      "extractionState": "manual"
+    },
+    "Stick/D-pad move · A confirm · B cancel · X camp · Y/L/R skip · Menu": {
+      "extractionState": "manual"
+    },
+    "Subtitle size": {
+      "extractionState": "manual"
+    },
+    "Support": {
+      "extractionState": "manual"
+    },
+    "Supporter": {
+      "extractionState": "manual"
+    },
+    "Suspend save": {
+      "extractionState": "manual"
+    },
+    "Sync now": {
+      "extractionState": "manual"
+    },
+    "Synced %@": {
+      "extractionState": "manual"
+    },
+    "Temple of the High Priestess": {
+      "extractionState": "manual"
+    },
+    "Terms of Use": {
+      "extractionState": "manual"
+    },
+    "Thank you!": {
+      "extractionState": "manual"
+    },
+    "Thank you, Supporter!": {
+      "extractionState": "manual"
+    },
+    "The App Store is unavailable right now. Please try again later.": {
+      "extractionState": "manual"
+    },
+    "The prologue and region 1 are free. The Full Game is a one-time purchase shared with Family Sharing. The Supporter Pack is cosmetic only.": {
+      "extractionState": "manual"
+    },
+    "The purchase couldn't be verified.": {
+      "extractionState": "manual"
+    },
+    "This iPhone": {
+      "extractionState": "manual"
+    },
+    "This permanently removes your player ID, cloud saves, save history, settings and purchase records from our server and turns cloud save off. Saves on this iPhone stay, and purchases can be restored any time with Restore Purchases.": {
+      "extractionState": "manual"
+    },
+    "Touch": {
+      "extractionState": "manual"
+    },
+    "Unknown place": {
+      "extractionState": "manual"
+    },
+    "Unknown save": {
+      "extractionState": "manual"
+    },
+    "Unlock the Full Game…": {
+      "extractionState": "manual"
+    },
+    "Unlocked": {
+      "extractionState": "manual"
+    },
+    "Use Game Center": {
+      "extractionState": "manual"
+    },
+    "Using": {
+      "extractionState": "manual"
+    },
+    "Version": {
+      "extractionState": "manual"
+    },
+    "Voice Gallery": {
+      "extractionState": "manual"
+    },
+    "Waiting to sync…": {
+      "extractionState": "manual"
+    },
+    "Wherever the story lets you read: the quick brown fox jumps over the lazy dog.": {
+      "extractionState": "manual"
+    },
+    "Working": {
+      "extractionState": "manual"
+    },
+    "Your purchase is pending approval. It will unlock automatically.": {
+      "extractionState": "manual"
+    },
+    "Your saves back up to our server and follow your iCloud Keychain to a new iPhone. Saves on this iPhone are never deleted by sync. Save History keeps the last 10 replaced copies of each slot.": {
+      "extractionState": "manual"
+    },
+    "from another device": {
+      "extractionState": "manual"
+    },
+    "from this iPhone": {
+      "extractionState": "manual"
+    },
+    "replaced %@": {
+      "extractionState": "manual"
+    }
+  },
+  "version": "1.0"
+}

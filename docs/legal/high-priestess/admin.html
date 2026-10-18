@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex,nofollow" />
+  <meta name="referrer" content="no-referrer" />
+  <title>High Priestess — admin</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; max-width: 62rem; margin: 1.5rem auto; padding: 0 1rem; line-height: 1.45; background: #fbf9f4; color: #1a1622; }
+    @media (prefers-color-scheme: dark) { body { background: #15121c; color: #ece7f5; } table td, table th { border-color: #3a3348 !important; } .card { background: #1d1927 !important; border-color: #3a3348 !important; } input, select, button { background: #241f31; color: inherit; border-color: #4a4160 !important; } }
+    h1 { font-size: 1.3rem; margin: 0 0 .25rem; } h2 { font-size: 1.05rem; margin: 1.4rem 0 .5rem; }
+    .muted { color: #7a7388; font-size: .85rem; }
+    .row { display: flex; flex-wrap: wrap; gap: .6rem; align-items: center; margin: .6rem 0; }
+    input, select, button { font: inherit; padding: .4rem .6rem; border: 1px solid #c9bfa8; border-radius: 6px; }
+    button { cursor: pointer; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: .6rem; }
+    .card { background: #fff; border: 1px solid #ddd5c4; border-radius: 8px; padding: .6rem .8rem; }
+    .card b { display: block; font-size: 1.4rem; } .card span { font-size: .8rem; color: #7a7388; }
+    table { border-collapse: collapse; width: 100%; font-size: .9rem; } td, th { border: 1px solid #ddd5c4; padding: .3rem .5rem; text-align: left; } td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; }
+    .good { color: #1d7a3a; font-weight: 600; } .warn { color: #b25a00; font-weight: 600; }
+    #err { color: #b3261e; } svg { width: 100%; height: 90px; display: block; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Temple of the High Priestess — admin</h1>
+  <p class="muted">Funnel, price test and IAP metrics. Read-only. The data endpoint requires the admin token; it is kept in this tab only and sent only to this site's API.</p>
+
+  <form id="login" class="row" autocomplete="off">
+    <input id="token" type="password" placeholder="Admin token" size="34" autocomplete="off" required />
+    <button type="submit">Load</button>
+    <span id="err" role="alert"></span>
+  </form>
+
+  <div id="app" class="hidden">
+    <div class="row">
+      <label>Window <select id="days"><option value="7">7 days</option><option value="30" selected>30 days</option><option value="90">90 days</option><option value="365">365 days</option></select></label>
+      <label><input id="all" type="checkbox" /> include sandbox / TestFlight</label>
+      <button id="refresh" type="button">Refresh</button>
+      <button id="logout" type="button">Forget token</button>
+      <span id="stamp" class="muted"></span>
+    </div>
+
+    <h2>Players</h2>
+    <div class="grid" id="players"></div>
+
+    <h2>Funnel</h2>
+    <table id="funnel"><thead><tr><th>Step</th><th class="n">Events</th><th class="n">Players</th><th class="n">Players vs previous</th></tr></thead><tbody></tbody></table>
+    <p class="muted">By placement</p>
+    <table id="placements"><thead><tr><th>Placement</th><th class="n">Paywall views</th><th class="n">Purchases</th><th class="n">Rate</th></tr></thead><tbody></tbody></table>
+
+    <h2>Price test</h2>
+    <p id="rule" class="muted"></p>
+    <div id="verdict"></div>
+    <table id="arms"><thead><tr><th>Arm</th><th class="n">Paywall views</th><th class="n">Viewers</th><th class="n">Verified purchases</th><th class="n">Refunds</th><th class="n">Conversion</th><th class="n">Revenue</th><th class="n">USD / view</th></tr></thead><tbody></tbody></table>
+
+    <h2>Entitlements and App Store notifications</h2>
+    <table id="ents"><thead><tr><th>Product</th><th>Environment</th><th class="n">Total</th><th class="n">Revoked</th></tr></thead><tbody></tbody></table>
+    <p class="muted">Notifications (all time)</p>
+    <table id="asn"><thead><tr><th>Type</th><th class="n">Count</th></tr></thead><tbody></tbody></table>
+
+    <h2>App versions seen</h2>
+    <table id="versions"><thead><tr><th>Version</th><th class="n">Devices</th></tr></thead><tbody></tbody></table>
+
+    <h2>Events per day</h2>
+    <svg id="chart" viewBox="0 0 600 90" preserveAspectRatio="none" role="img" aria-label="Events per day"></svg>
+    <table id="events"><thead><tr><th>Day</th><th>Event</th><th class="n">Count</th><th class="n">Players</th></tr></thead><tbody></tbody></table>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var KEY = "hp-admin-token";
+  var api = "api/v1/admin/metrics"; // relative: /high-priestess/api/v1/admin/metrics
+
+  function el(tag, text, cls) { var e = document.createElement(tag); if (text != null) e.textContent = text; if (cls) e.className = cls; return e; }
+  function rows(id, list) {
+    var tb = $(id).querySelector("tbody"); tb.textContent = "";
+    list.forEach(function (cells) {
+      var tr = document.createElement("tr");
+      cells.forEach(function (c, i) {
+        var o = (c && typeof c === "object") ? c : { t: c };
+        var td = el("td", o.t == null ? "–" : String(o.t), (o.n || (typeof o.t === "number")) ? "n" : "");
+        if (o.cls) td.className += " " + o.cls;
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    });
+    if (!list.length) { var tr = document.createElement("tr"); var td = el("td", "No data yet", "muted"); td.colSpan = $(id).querySelectorAll("th").length; tr.appendChild(td); tb.appendChild(tr); }
+  }
+  var pct = function (a, b) { return b ? (100 * a / b).toFixed(1) + "%" : "–"; };
+  var money = function (m) { var k = Object.keys(m || {}); return k.length ? k.map(function (c) { return c + " " + m[c].toFixed(2); }).join(", ") : "–"; };
+  var armName = function (p) { return p ? p.replace("com.ragnus.weather.", "") + (p.indexOf(".b") > 0 ? " ($6.99)" : " ($4.99)") : "–"; };
+
+  function render(m) {
+    $("stamp").textContent = "Updated " + new Date(m.generatedAt || Date.now()).toLocaleString() + " · " + (m.env === "all" ? "all environments" : "production only");
+    var p = m.players || {};
+    var g = $("players"); g.textContent = "";
+    [["Players", p.total], ["New (" + m.days + "d)", p.new], ["Active (" + m.days + "d)", p.active], ["With cloud saves", p.withCloudSaves], ["Save slots", p.saveSlots]].forEach(function (c) {
+      var d = el("div", null, "card"); d.appendChild(el("b", c[1] == null ? "–" : c[1])); d.appendChild(el("span", c[0])); g.appendChild(d);
+    });
+
+    var steps = (m.funnel && m.funnel.steps) || [], prev = null;
+    rows("funnel", steps.map(function (s) { var r = [s.name, s.events, s.players, prev == null ? "–" : pct(s.players, prev)]; prev = s.players; return r; }));
+    var by = {};
+    ((m.funnel && m.funnel.placements) || []).forEach(function (r) { var k = r.placement || "(none)"; by[k] = by[k] || { v: 0, b: 0 }; if (r.name === "paywall_shown") by[k].v += r.n; else by[k].b += r.n; });
+    rows("placements", Object.keys(by).map(function (k) { return [k, by[k].v, by[k].b, pct(by[k].b, by[k].v)]; }));
+
+    var pt = m.priceTest || { arms: [] };
+    $("rule").textContent = pt.rule || "";
+    var v = $("verdict"); v.textContent = "";
+    var line = pt.totalViews + " paywall views" + (pt.startedAt ? " since " + pt.startedAt.slice(0, 10) + " (" + pt.daysRunning + " days)" : "") + ". ";
+    if (pt.winner) line += "Decision ready: winner " + armName(pt.winner) + ".";
+    else if (pt.leader) line += "Not decided yet; leading: " + armName(pt.leader) + ".";
+    else line += "No data yet.";
+    v.appendChild(el("p", line, pt.winner ? "good" : "warn"));
+    rows("arms", pt.arms.map(function (a) {
+      return [armName(a.product), a.views, a.viewers, a.verifiedPurchases, a.refunded, a.conversion == null ? "–" : (a.conversion * 100).toFixed(1) + "%", { t: money(a.revenue), n: true }, a.usdRevenuePerView == null ? "–" : "$" + a.usdRevenuePerView.toFixed(4)];
+    }));
+
+    rows("ents", (m.entitlements || []).map(function (r) { return [r.product_id, r.environment, r.total, r.revoked]; }));
+    rows("asn", (m.notifications || []).map(function (r) { return [r.notification_type, r.n]; }));
+    rows("versions", (m.versions || []).map(function (r) { return [r.version, r.devices]; }));
+    rows("events", (m.events || []).slice().reverse().slice(0, 200).map(function (r) { return [r.day, r.name, r.n, r.players]; }));
+
+    var perDay = {}; (m.events || []).forEach(function (r) { perDay[r.day] = (perDay[r.day] || 0) + r.n; });
+    var days = Object.keys(perDay).sort(), max = Math.max.apply(null, days.map(function (d) { return perDay[d]; }).concat([1]));
+    var svg = $("chart"); svg.textContent = "";
+    var ns = "http://www.w3.org/2000/svg", bw = 600 / Math.max(days.length, 1);
+    days.forEach(function (d, i) {
+      var h = 80 * perDay[d] / max, r = document.createElementNS(ns, "rect");
+      r.setAttribute("x", i * bw + 1); r.setAttribute("y", 85 - h); r.setAttribute("width", Math.max(bw - 2, 1)); r.setAttribute("height", h); r.setAttribute("fill", "#b8923a");
+      var t = document.createElementNS(ns, "title"); t.textContent = d + ": " + perDay[d]; r.appendChild(t); svg.appendChild(r);
+    });
+  }
+
+  function load() {
+    var token = sessionStorage.getItem(KEY);
+    if (!token) return;
+    var url = api + "?days=" + encodeURIComponent($("days").value) + ($("all").checked ? "&env=all" : "");
+    $("err").textContent = "";
+    fetch(url, { headers: { Authorization: "Bearer " + token }, cache: "no-store", referrerPolicy: "no-referrer" })
+      .then(function (r) {
+        if (r.status === 401) { sessionStorage.removeItem(KEY); throw new Error("Wrong or missing admin token."); }
+        if (!r.ok) throw new Error("Server error " + r.status);
+        return r.json();
+      })
+      .then(function (m) { $("login").classList.add("hidden"); $("app").classList.remove("hidden"); render(m); })
+      .catch(function (e) { $("login").classList.remove("hidden"); $("app").classList.add("hidden"); $("err").textContent = e.message; });
+  }
+
+  $("login").addEventListener("submit", function (e) { e.preventDefault(); sessionStorage.setItem(KEY, $("token").value.trim()); $("token").value = ""; load(); });
+  $("refresh").addEventListener("click", load);
+  $("days").addEventListener("change", load);
+  $("all").addEventListener("change", load);
+  $("logout").addEventListener("click", function () { sessionStorage.removeItem(KEY); location.reload(); });
+  load();
+})();
+</script>
+</body>
+</html>

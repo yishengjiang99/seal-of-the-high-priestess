@@ -77,6 +77,8 @@ struct VoiceGalleryView: View {
                         }
                     }
                     .foregroundStyle(.primary)
+                    .accessibilityLabel("\(line.speaker.capitalized): \(line.text)")
+                    .accessibilityHint(playing == line.id ? "Playing" : "Plays the voice clip")
                 }
             }
         }

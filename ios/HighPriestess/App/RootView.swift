@@ -2,6 +2,7 @@ import SwiftUI
 
 struct RootView: View {
     @EnvironmentObject private var model: GameModel
+    @ScaledMetric(relativeTo: .body) private var gearSize: CGFloat = 14
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -22,7 +23,7 @@ struct RootView: View {
                 model.showSettings = true
             } label: {
                 Image(systemName: "gearshape.fill")
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: gearSize, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.7))
                     .frame(width: 32, height: 32)
                     .background(.black.opacity(0.35), in: Circle())
@@ -31,6 +32,7 @@ struct RootView: View {
             }
             .keyboardShortcut(",", modifiers: .command)
             .accessibilityLabel("Settings")
+            .accessibilityHint("Opens cloud save, purchases, accessibility and controls")
             .accessibilityIdentifier("settingsButton")
             .padding(.leading, 2)
         }

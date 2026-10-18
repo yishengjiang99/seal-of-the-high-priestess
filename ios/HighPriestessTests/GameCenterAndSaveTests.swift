@@ -93,3 +93,31 @@ final class SaveSummaryTests: XCTestCase {
         XCTAssertTrue(SaveSummary(json: "not json").empty)
     }
 }
+
+final class AccessibilityAndLocalizationTests: XCTestCase {
+    func testAccessibilityPayload() throws {
+        let d = try XCTUnwrap(UserDefaults(suiteName: "a11y-test"))
+        d.removePersistentDomain(forName: "a11y-test")
+        var p = AccessibilityPrefs.payload(defaults: d, systemReduceMotion: false)
+        XCTAssertEqual(p["subtitleScale"] as? Double, 1.0)
+        XCTAssertEqual(p["reduceMotion"] as? Bool, false)
+        XCTAssertEqual(p["colorCues"] as? Bool, false)
+        d.set(1.7, forKey: AccessibilityPrefs.subtitleKey)
+        d.set(true, forKey: AccessibilityPrefs.colorCuesKey)
+        p = AccessibilityPrefs.payload(defaults: d, systemReduceMotion: true)
+        XCTAssertEqual(p["subtitleScale"] as? Double, 1.7)
+        XCTAssertEqual(p["reduceMotion"] as? Bool, true, "system Reduce Motion always wins")
+        XCTAssertEqual(p["colorCues"] as? Bool, true)
+        d.set(9.0, forKey: AccessibilityPrefs.subtitleKey)
+        XCTAssertEqual(AccessibilityPrefs.payload(defaults: d, systemReduceMotion: false)["subtitleScale"] as? Double, 2.0)
+        d.removePersistentDomain(forName: "a11y-test")
+    }
+
+    func testLocalizedStringsFallBackToEnglish() {
+        XCTAssertEqual(String(localized: "Restored."), "Restored.")
+        XCTAssertEqual(SaveStore.slotLabel("1"), "Slot 2")
+        XCTAssertEqual(SaveStore.slotLabel("auto"), "Suspend save")
+        XCTAssertEqual(SaveSummary(json: #"{"quests":{"a":"done","b":"done"}}"#).progressText, "Chapter 1 of 7 · 2 quests done")
+        XCTAssertEqual(SaveSummary(json: #"{"quests":{"a":"done"}}"#).progressText, "Chapter 1 of 7 · 1 quest done")
+    }
+}

@@ -7,6 +7,10 @@ struct SettingsView: View {
     @AppStorage("cloudSync") private var cloudSync = true
     @AppStorage("haptics") private var haptics = true
     @AppStorage("gameCenter") private var useGameCenter = true
+    @AppStorage(AccessibilityPrefs.subtitleKey) private var subtitleScale = 1.0
+    @AppStorage(AccessibilityPrefs.reduceMotionKey) private var reduceMotionGame = false
+    @AppStorage(AccessibilityPrefs.colorCuesKey) private var colorCues = false
+    @Environment(\.accessibilityReduceMotion) private var systemReduceMotion
     @State private var playInSilent = AudioSessionManager.playInSilentMode
     @State private var confirmDelete = false
     @State private var working = false
@@ -41,7 +45,7 @@ struct SettingsView: View {
 
                 Section {
                     if storeKit.entitlements.full {
-                        LabeledContent("Full Game", value: "Unlocked")
+                        LabeledContent("Full Game", value: String(localized: "Unlocked"))
                     } else {
                         Button("Unlock the Full Game…") { model.showPaywall("settings") }
                             .disabled(!model.paywallConfig.flag("paywall"))
@@ -50,7 +54,7 @@ struct SettingsView: View {
                         NavigationLink {
                             SupporterView().environmentObject(model).environmentObject(storeKit)
                         } label: {
-                            LabeledContent(model.paywallConfig.supporterTitle, value: storeKit.entitlements.supporter ? "Thank you!" : "Optional")
+                            LabeledContent(model.paywallConfig.supporterTitle, value: storeKit.entitlements.supporter ? String(localized: "Thank you!") : String(localized: "Optional"))
                         }
                     }
                     Button("Restore Purchases") { Task { await storeKit.restore() } }
@@ -68,6 +72,26 @@ struct SettingsView: View {
 
                 GameCenterSection(gameCenter: model.gameCenter, useGameCenter: $useGameCenter)
 
+                Section {
+                    Picker("Subtitle size", selection: $subtitleScale) {
+                        ForEach(AccessibilityPrefs.subtitleSteps) { Text($0.label).tag($0.scale) }
+                    }
+                    Text("Wherever the story lets you read: the quick brown fox jumps over the lazy dog.")
+                        .font(.system(size: 14 * subtitleScale, design: .serif))
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                    Toggle("Reduce motion", isOn: Binding(get: { reduceMotionGame || systemReduceMotion },
+                                                         set: { reduceMotionGame = $0 }))
+                        .disabled(systemReduceMotion)
+                    Toggle("Colour-safe cues", isOn: $colorCues)
+                } header: {
+                    Text("Accessibility")
+                } footer: {
+                    Text(LocalizedStringKey(systemReduceMotion
+                         ? "Reduce Motion is on in iOS Settings, so the game already skips screen shake and flashes."
+                         : "Reduce motion turns off screen shake, full-screen flashes and menu animation. Colour-safe cues add patterns to health and resource bars. Text in this app follows your Dynamic Type size."))
+                }
+
                 Section("Sound & Feel") {
                     Toggle("Play sound in silent mode", isOn: $playInSilent)
                         .onChange(of: playInSilent) { _, v in AudioSessionManager.playInSilentMode = v }
@@ -75,10 +99,10 @@ struct SettingsView: View {
                 }
 
                 Section {
-                    LabeledContent("Using", value: model.inputMode == .gamepad ? (model.controllerName ?? "Controller")
-                                   : model.inputMode == .keyboard ? "Keyboard" : "Touch")
-                    LabeledContent("Controller", value: "Stick/D-pad move · A confirm · B cancel · X camp · Y/L/R skip · Menu")
-                    LabeledContent("Keyboard", value: "Arrows/WASD · Z · X · C · F · Esc · ⌘, Settings")
+                    LabeledContent("Using", value: model.inputMode == .gamepad ? (model.controllerName ?? String(localized: "Controller"))
+                                   : model.inputMode == .keyboard ? String(localized: "Keyboard") : String(localized: "Touch"))
+                    LabeledContent("Controller", value: String(localized: "Stick/D-pad move · A confirm · B cancel · X camp · Y/L/R skip · Menu"))
+                    LabeledContent("Keyboard", value: String(localized: "Arrows/WASD · Z · X · C · F · Esc · ⌘, Settings"))
                 } header: {
                     Text("Controls")
                 } footer: {
@@ -124,9 +148,9 @@ struct SettingsView: View {
                 try await model.sync.deleteCloudData()
                 model.analytics.clear()
                 cloudSync = false
-                message = "Cloud data deleted."
+                message = String(localized: "Cloud data deleted.")
             } catch {
-                message = "Couldn't reach the server. Try again when you're online."
+                message = String(localized: "Couldn't reach the server. Try again when you're online.")
             }
             working = false
             model.refreshSyncStatus()

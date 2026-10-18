@@ -15,6 +15,10 @@ struct SaveEntry: Codable, Equatable {
 @MainActor
 final class SaveStore {
     static let slotIDs = ["0", "1", "2", "auto"]
+    /// "Slot 1" … / "Suspend save" (localized).
+    static func slotLabel(_ slot: String) -> String {
+        slot == "auto" ? String(localized: "Suspend save") : String(localized: "Slot \((Int(slot) ?? 0) + 1)")
+    }
     static let settingsKey = "soth_settings"
     static func slotKey(_ slot: String) -> String { "soth_slot_" + slot }
     static var syncedKeys: [String] { slotIDs.map(slotKey) + [settingsKey] }
@@ -127,8 +131,8 @@ struct SaveSummary: Equatable {
 
     var partyText: String { party.map { $0.capitalized }.joined(separator: ", ") }
     var progressText: String {
-        var parts = ["Chapter \(min(chapter + 1, Self.chapterFlags.count + 1)) of \(Self.chapterFlags.count + 1)"]
-        if questsDone > 0 { parts.append("\(questsDone) quest\(questsDone == 1 ? "" : "s") done") }
+        var parts = [String(localized: "Chapter \(min(chapter + 1, Self.chapterFlags.count + 1)) of \(Self.chapterFlags.count + 1)")]
+        if questsDone > 0 { parts.append(String(localized: "\(questsDone) quests done")) }
         return parts.joined(separator: " · ")
     }
 
@@ -147,6 +151,6 @@ struct SaveSummary: Equatable {
         var parts: [String] = []
         if let when { parts.append(when.formatted(date: .abbreviated, time: .shortened)) }
         if let mapName { parts.append(mapName) }
-        return parts.isEmpty ? "Unknown save" : parts.joined(separator: " · ")
+        return parts.isEmpty ? String(localized: "Unknown save") : parts.joined(separator: " · ")
     }
 }
