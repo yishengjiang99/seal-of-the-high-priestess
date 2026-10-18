@@ -6,6 +6,7 @@
 #   - nginx:   location blocks inserted once into /etc/nginx/sites-available/finalcut before "# Serve static files"
 #              (backup in /root, nginx -t before reload; restored automatically if the test fails)
 # Usage: server/deploy/deploy-grepawk.sh [--bootstrap]
+# Env: TEMPLE_API_HOST (default root@grepawk.com; use root@<ip> if DNS is wrong), CURL_OPTS (extra curl flags, e.g. "--resolve grepawk.com:443:<ip>")
 set -euo pipefail
 HOST="${TEMPLE_API_HOST:-root@grepawk.com}"
 DEST=/var/www/temple-api
@@ -39,4 +40,5 @@ fi
 rm -f /tmp/nginx-temple-api.conf
 systemctl daemon-reload && systemctl enable -q temple-api && systemctl restart temple-api
 sleep 2; systemctl is-active temple-api'
-curl -fsS https://grepawk.com/high-priestess/api/health; echo
+# shellcheck disable=SC2086
+curl -fsS ${CURL_OPTS:-} https://grepawk.com/high-priestess/api/health; echo
