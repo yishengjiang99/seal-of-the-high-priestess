@@ -53,5 +53,11 @@ window.FLAGS = {
   priceTest: true,
   supporterPack: true,
   voiceGallery: true,
-  funnelEvents: true
+  funnelEvents: true,
+  // 2.5D painted map renderer (js/world.js). Kill switch: `temple-content.mjs flag visualOverhaul false`
+  // (no build needed). visualMaps = comma list of map ids that use it ("temple", or "all").
+  visualOverhaul: true,
+  visualMaps: "temple",
+  // first-party frame-time samples (event perf_sample); false stops them
+  perfTelemetry: true
 };
