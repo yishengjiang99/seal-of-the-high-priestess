@@ -169,8 +169,8 @@ def save_tex(name, im, period):
     im.save(os.path.join(TER, name + ".jpg"), quality=86, optimize=True)
 
 plaza = mirror_tile(crop_c(S("tex_plaza"), 440, 0.5, 0.5))          # 880, mirror-tiled (grid keeps its look)
-save_tex("slab", plaza, 1320)
-save_tex("inlay", grade(plaza, 1.12, 1.03, (232, 196, 120), 0.14), 1320)
+save_tex("slab", grade(plaza, 1.0, 0.92, (226, 178, 120), 0.10), 1320)
+save_tex("inlay", grade(plaza, 1.12, 0.98, (232, 190, 110), 0.18), 1320)
 save_tex("plaza", grade(plaza, 0.95, 0.96), 1320)
 border = seamless_cross(crop_c(S("tex_rock"), 640)); save_tex("border", grade(border, 0.9, 0.9), 640)
 save_tex("cobble", seamless_cross(crop_c(S("tex_rock"), 640, 0.5, 0.5)), 640)
