@@ -257,7 +257,7 @@
   MAT_NAMES.forEach((n, i) => { MAT_ID[n] = i; });
   const NONE = 255;
   const THEMES = {
-    temple: { hero: true, wall: "stone", roof: "roof_slate", trees: ["tree_blossom0", "tree_blossom1", "tree_oak0", "tree_blossom0", "tree_pine0"], grass: "grass_dusk", path: "slab", floor: "slab", gold: "inlay", carpet: "inlay", hedge: "flowerbed", rim: "rim", oob: "grass_dusk", lamp: "lantern", column: "column_red", wwall: "wall_pavilion", bg: "#7a6652", dusk: 0.24, stonePond: true, courtyard: true },
+    temple: { hero: true, wall: "stone", roof: "roof_slate", trees: ["tree_blossom0", "tree_blossom1", "tree_oak0", "tree_blossom0", "tree_pine0"], grass: "grass_dusk", path: "slab", floor: "slab", gold: "inlay", carpet: "inlay", hedge: "flowerbed", rim: "rim", oob: "grass_dusk", lamp: "lantern", column: "column_red", wwall: "wall_pavilion", bg: "#7a6652", dusk: 0.34, stonePond: true, courtyard: true },
     village: { wall: "plaster", roof: "roof_green", trees: ["tree_oak0", "tree_oak1", "tree_oak2", "tree_blossom0"], grass: "grass", path: "cobble", floor: "wood", rim: "dirt", oob: "grass", bg: "#1d3219", dusk: 0 },
     forest: { wall: "stone", roof: "roof_green", trees: ["tree_oak0", "tree_pine0", "tree_oak1", "tree_pine1", "tree_oak2"], grass: "grass_dark", path: "dirt", floor: "wood", rim: "dirt", oob: "grass_dark", bg: "#142414", dusk: 0.12 },
     wilderness: { wall: "stone", roof: "roof_green", trees: ["tree_oak0", "tree_pine0", "tree_oak1", "tree_pine1"], grass: "grass", path: "dirt", floor: "wood", rim: "dirt", oob: "grass", bg: "#172a16", dusk: 0 },
@@ -337,7 +337,12 @@
   function buildDecor(m, th, obj, water) {
     const out = [], W = m.w, H = m.h, t = m.tiles;
     const add = (name, x, y, ground) => { const f = hfr(name); if (f) out.push({ f, x, y, g: !!ground, key: x + y }); };
-    if (m.id === "temple") { add("stairs", 26.2, 6.2, true); add("pavilion", 25.5, 4.4); }
+    if (m.id === "temple") { add("stairs", 26.2, 6.2, true); add("pavilion", 25.5, 4.4);
+      // stone lanterns along the plaza edge (glow + light pool), visual only
+      const lan = (x, y) => { add("lantern", x, y); out[out.length - 1].light = true; };
+      lan(28.4, 5.0); lan(30.6, 4.7); lan(36.5, 4.7); lan(42.5, 4.7); lan(48.5, 4.7);
+      lan(24.7, 9.5); lan(24.7, 13.5); lan(24.7, 17.5); lan(50.3, 9.5); lan(50.3, 13.5); lan(50.3, 17.5);
+    }
     const seen = new Uint8Array(W * H);
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       if (t[y][x] !== 8 || seen[y * W + x]) continue;
@@ -414,7 +419,7 @@
       if (stats.q < 2 && stats.ema > (stats.q ? 33 : 23)) { if (++govBad > 120) { stats.q++; govBad = 0; if (stats.q === 2) bakeCap = 1.8; } }
       else govBad = Math.max(0, govBad - 1);
     }
-    let lightCanvas = null, lightCtx = null, vignette = null, skyGrad = null;
+    let lightCanvas = null, lightCtx = null, vignette = null, vignetteH = null, skyGrad = null;
     const labels = new Map();
     // bake scratch
     const tmp = document.createElement("canvas"); tmp.width = CS; tmp.height = CS;
@@ -498,6 +503,7 @@
         ? ["cherry", "oak", "cherry", "oak", "rocks", "bush_purple", "bush_white", "oak"].map(hfr).filter(Boolean)
         : theme.trees.map(fr).filter(Boolean));
       const decor = theme.hero && HF.pavilion ? buildDecor(m, theme, obj, water) : null;
+      if (decor) for (const d of decor) if (d.light) lights.push(d.x - 0.5, d.y - 0.5, 0);
       const oobMat = theme.oob && MAT_ID[theme.oob] != null ? MAT_ID[theme.oob] : NONE;
       p = { id, tiles: m.tiles, theme, indoor, decor, mandalas, mat, obj, water, occ, nearW, lights, oobTree, oobMat, w: m.w, h: m.h };
       prepCache.set(m, p);
@@ -855,6 +861,12 @@
       const g = v.createRadialGradient(160, 100, 50, 160, 90, 210);
       g.addColorStop(0, "rgba(0,0,0,0)"); g.addColorStop(0.55, "rgba(10,6,20,0.12)"); g.addColorStop(1, "rgba(10,6,20,0.62)");
       v.fillStyle = g; v.fillRect(0, 0, 320, 180);
+      vignetteH = document.createElement("canvas");
+      vignetteH.width = 320; vignetteH.height = 180;
+      const vh = vignetteH.getContext("2d");
+      const gh = vh.createRadialGradient(160, 105, 40, 160, 95, 205);
+      gh.addColorStop(0, "rgba(0,0,0,0)"); gh.addColorStop(0.5, "rgba(24,10,28,0.20)"); gh.addColorStop(1, "rgba(14,6,24,0.80)");
+      vh.fillStyle = gh; vh.fillRect(0, 0, 320, 180);
       skyGrad = lightCtx.createLinearGradient(0, 0, 0, 180);
       skyGrad.addColorStop(0, "rgba(255,150,110,0.16)"); skyGrad.addColorStop(0.35, "rgba(200,120,160,0.05)"); skyGrad.addColorStop(1, "rgba(40,30,80,0.10)");
     }
@@ -1100,7 +1112,7 @@
         // fold the sky tint and vignette into the same low-res layer: one full-screen pass
         lc.globalCompositeOperation = "source-over";
         if (dusk > 0.05 && night < 0.2) { lc.fillStyle = skyGrad; lc.fillRect(0, 0, 320, 180); }
-        lc.drawImage(vignette, 0, 0);
+        lc.drawImage(p.theme.hero ? vignetteH : vignette, 0, 0);
         ctx.drawImage(lightCanvas, 0, 0, W, H);
         // warm bloom on lamp heads
         ctx.globalCompositeOperation = "lighter";
@@ -1117,7 +1129,7 @@
         ctx.globalAlpha = 1;
         ctx.globalCompositeOperation = "source-over";
       }
-      else ctx.drawImage(vignette, 0, 0, W, H);
+      else ctx.drawImage(p.theme.hero ? vignetteH : vignette, 0, 0, W, H);
     }
 
     return { stats, view, draw, toScreen, toWorld, iso, updateCamera, prepare, facing: (vx, vy) => facing(vx, vy, tmpFace), label };
