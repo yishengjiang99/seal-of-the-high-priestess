@@ -147,6 +147,12 @@ final class GameModel: NSObject, ObservableObject {
                 analytics.enabled = paywallConfig.flag("funnelEvents")
                 if let names = data?["mapNames"] as? [String: String] { SaveSummary.mapNames = names }
                 if paywallDemo { showPaywall("region1_end") }
+            case "perf_sample":
+                var props = data ?? [:]
+                props["device"] = Analytics.deviceModel
+                props["lowPower"] = ProcessInfo.processInfo.isLowPowerModeEnabled
+                props["thermal"] = ProcessInfo.processInfo.thermalState.rawValue
+                analytics.track("perf_sample", props)
             case "flag":
                 if let k = data?["k"] as? String, let region = paywallConfig.regionCompleteFlags[k] {
                     analytics.regionComplete(region)

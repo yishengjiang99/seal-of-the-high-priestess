@@ -13,7 +13,7 @@ export const PRODUCTS = {
   'com.ragnus.weather.supporter': 'supporter',
 }
 export const FULL_GAME_IDS = ['com.ragnus.weather.fullgame', 'com.ragnus.weather.fullgame.b']
-export const EVENT_NAMES = new Set(['paywall_shown', 'purchase', 'restore', 'region_complete'])
+export const EVENT_NAMES = new Set(['paywall_shown', 'purchase', 'restore', 'region_complete', 'perf_sample'])
 
 const ms = (v) => (Number.isFinite(Number(v)) && Number(v) > 0 ? new Date(Number(v)) : null)
 

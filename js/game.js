@@ -4823,8 +4823,72 @@
     if (pressed("ok")) titleAct(btns[S.titleIdx].dataset.act);
   }
 
+  // ---------------------------------------------------------------------------
+  // Frame-time readout + telemetry. Hidden gesture: 5 taps within 3 s on the top-left corner
+  // (or ?perf=1) toggles the overlay. Map frames are always sampled (a 900-frame ring, ~0.1 us each);
+  // after 600 frames of a renderer/map the median is sent once as the first-party "perf_sample"
+  // event (max 3 per session, FLAGS.perfTelemetry=false turns it off). No identifiers are sent.
+  // ---------------------------------------------------------------------------
+  const perf = { on: false, ring: new Float32Array(900), n: 0, key: "", el: null, next: 0, taps: [], sent: 0, lastSend: 0, lastT: 0, tmp: [] };
+  function perfStats() {
+    const m = Math.min(perf.n, 900);
+    if (m < 30) return null;
+    const a = perf.tmp; a.length = m;
+    let sum = 0;
+    for (let i = 0; i < m; i++) { a[i] = perf.ring[i]; sum += a[i]; }
+    a.sort((x, y) => x - y);
+    return { n: m, med: a[m >> 1], p95: a[Math.floor(m * 0.95)], fps: 1000 / (sum / m) };
+  }
+  function perfTick(t) {
+    const d = t - perf.lastT; perf.lastT = t;
+    if (S.state !== "map" || document.hidden) return;
+    if (d <= 0 || d > 250) return;
+    const iso = USE_ISO(), key = (iso ? "iso:" : "flat:") + S.mapId;
+    if (key !== perf.key) { perf.key = key; perf.n = 0; }
+    perf.ring[perf.n++ % 900] = d;
+    if (perf.on && t >= perf.next) perfShow(t, iso);
+    if (perf.n >= 600 && perf.sent < 3 && t - perf.lastSend > 120000) perfSend(iso);
+  }
+  function perfShow(t, iso) {
+    perf.next = t + 500;
+    if (!perf.el) {
+      perf.el = document.createElement("div");
+      perf.el.style.cssText = "position:absolute;left:8px;bottom:8px;z-index:60;padding:3px 8px;border-radius:6px;background:rgba(0,0,0,.62);color:#9dffb0;font:600 12px ui-monospace,Menlo,monospace;pointer-events:none;white-space:pre";
+      $("app").appendChild(perf.el);
+    }
+    const s = perfStats();
+    const q = WORLD ? WORLD.stats.q : 0;
+    perf.el.textContent = s ? `${s.fps.toFixed(0)} fps  med ${s.med.toFixed(1)} ms  p95 ${s.p95.toFixed(1)} ms\n${iso ? "2.5D q" + q : "classic"}  ${S.mapId}  canvas ${canvas.width}px  n=${s.n}` : "sampling…";
+  }
+  function perfSend(iso) {
+    const s = perfStats();
+    if (!s || (window.FLAGS && window.FLAGS.perfTelemetry === false)) return;
+    perf.sent++; perf.lastSend = perf.lastT;
+    Platform.event("perf_sample", {
+      map: S.mapId, renderer: iso ? "iso" : "flat", n: s.n,
+      med: Math.round(s.med * 10) / 10, p95: Math.round(s.p95 * 10) / 10, fps: Math.round(s.fps * 10) / 10,
+      q: WORLD ? WORLD.stats.q : 0, canvasW: canvas.width, dpr: Math.round((window.devicePixelRatio || 1) * 100) / 100,
+      viewW: window.innerWidth, viewH: window.innerHeight
+    });
+  }
+  function perfToggle(on) {
+    perf.on = on == null ? !perf.on : !!on;
+    if (!perf.on && perf.el) { perf.el.remove(); perf.el = null; }
+    toast("Frame readout " + (perf.on ? "on" : "off"));
+  }
+  window.SOTH_PERF = (on) => { perfToggle(on); return perfStats(); };
+  try { if (new URLSearchParams(location.search).get("perf") === "1") perf.on = true; } catch (e) {}
+  window.addEventListener("pointerdown", (e) => {
+    const r = $("app").getBoundingClientRect();
+    if ((e.clientX - r.left) / r.width > 0.08 || (e.clientY - r.top) / r.height > 0.14) return;
+    const now = performance.now();
+    perf.taps = perf.taps.filter((x) => now - x < 3000); perf.taps.push(now);
+    if (perf.taps.length >= 5) { perf.taps.length = 0; perfToggle(); }
+  }, { passive: true, capture: true });
+
   let last = 0;
   function frame(t) {
+    perfTick(t);
     const dt = Math.min(40, t - last || 16);
     last = t;
     const touch = $("touch");

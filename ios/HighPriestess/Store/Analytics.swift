@@ -1,11 +1,17 @@
 import Foundation
 
-/// First-party funnel events only (paywall_shown, purchase, restore, region_complete), batched to
+/// First-party funnel events only (paywall_shown, purchase, restore, region_complete, plus perf_sample frame-time medians), batched to
 /// POST /v1/events on our own server. No third-party SDKs, no device identifiers, no tracking.
 /// Server config can switch it off with FLAGS.funnelEvents = false.
 @MainActor
 final class Analytics {
-    static let names: Set<String> = ["paywall_shown", "purchase", "restore", "region_complete"]
+    static let names: Set<String> = ["paywall_shown", "purchase", "restore", "region_complete", "perf_sample"]
+
+    /// Hardware model string (e.g. "iPhone13,2"). It names a device class, not a device, so it is not an identifier.
+    static var deviceModel: String {
+        var u = utsname(); _ = uname(&u)
+        return withUnsafePointer(to: &u.machine) { $0.withMemoryRebound(to: CChar.self, capacity: 256) { String(cString: $0) } }
+    }
 
     var enabled = true
     private let api: APIClient
