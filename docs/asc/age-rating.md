@@ -24,4 +24,4 @@ Set through the API by `scripts/asc/app_review_setup.py` from `docs/asc/age-rati
 | Parental Controls / Age Assurance | No | The game has neither. Purchases follow Apple's Ask to Buy. |
 | Health or Wellness Topics | No | |
 
-After the API update to Infrequent/Mild fantasy violence, App Store Connect recomputes the rating. The recomputed value is recorded in the listing-upload run output. Made for Kids: no.
+After the API update to Infrequent/Mild fantasy violence, App Store Connect recomputes the rating. After the 2026-10-18 upload ASC still computes **12+** (`appStoreAgeRating: TWELVE_PLUS`; Brazil self-rated 12, Korea 12). Lowering fantasy violence did not change it: Infrequent/Mild realistic violence, horror/fear and mature/suggestive themes are each enough for 12+ on their own. Getting to 9+ would need all of those at None, which would not be honest for the story text. Made for Kids: no.
