@@ -121,3 +121,7 @@ Newest last. Each entry gives the decision, why, and what it affects. Scope: doc
 - **Visited maps:** `flags.seen_<map>` is written on entry (saves carry it); `region_*` flags also count.
 - **Not done:** no A* dotted trail on the map itself (ring/arrow only); no gamepad navigation inside the world-map overlay (touch, mouse and keyboard Tab/Enter work; Escape closes).
 - **Strings:** all UI text is under `quest.*` in `js/strings.en.js`; story text untouched.
+
+## 2026-10-18: TestFlight build 4
+- Build 4 (version 1.0, run 39169129520 from main 7aae367): archive, export, ASC validate, upload, processing VALID, attached to the Internal group (tester state INSTALLED). Not submitted for review. Contains phase 3 items 1-7 plus quest guidance and the forest soft-lock fix.
+- Server/site deploy to grepawk.com is still blocked: SSH (port 22) times out from the box, so the metrics additions (`players`, `versions`) and the static admin dashboard / support FAQ are not live. HTTPS works. Not worked around.
