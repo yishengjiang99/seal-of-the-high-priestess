@@ -902,3 +902,14 @@ body.hd .hd-bar span {
 }
 body.hd #map-hud { left: 0; right: 0; top: 0; }
 body.hd #map-hint { display: none; }
+
+/* 2.5D map: painted orb buttons (original art, assets/ui) replace the CSS orbs */
+body.hd #touch .orb.camp-btn, body.hd #touch .orb.menu-btn, body.hd #touch .orb.back-btn {
+  background-color: transparent; background-repeat: no-repeat; background-position: center; background-size: contain;
+  border: 0; box-shadow: none; filter: drop-shadow(0 5px 8px rgba(0,0,0,0.5));
+}
+body.hd #touch .orb.camp-btn { background-image: url(../assets/ui/btn_camp.png); }
+body.hd #touch .orb.menu-btn { background-image: url(../assets/ui/btn_menu.png); }
+body.hd #touch .orb.back-btn { background-image: url(../assets/ui/btn_back.png); }
+body.hd #touch .orb.camp-btn span, body.hd #touch .orb.menu-btn span, body.hd #touch .orb.back-btn span { opacity: 0; }
+body.hd #touch .orb.held { transform: scale(0.92); filter: brightness(1.2) drop-shadow(0 5px 8px rgba(0,0,0,0.5)); }

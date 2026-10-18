@@ -19,7 +19,10 @@
       if (ART.terrain) {
         for (const k of Object.keys(ART.terrain.materials)) list.push(["t:" + k, ART.terrain.materials[k]]);
         if (ART.terrain.caustics) list.push(["caustics", ART.terrain.caustics]);
+        if (ART.terrain.medallion) list.push(["medallion", ART.terrain.medallion]);
       }
+      if (ART.hero) list.push(["hero", ART.hero.src]);
+      if (ART.fx) list.push(["fx", ART.fx.src]);
       return Promise.all(list.map(([k, src]) => new Promise((res) => {
         const im = new Image();
         im.onload = () => { images[k] = im; res(true); };
@@ -31,6 +34,62 @@
   };
   const F = ART ? ART.world.frames : {};
   const fr = (n) => F[n] || null;
+  // Hero atlas (generated painted sprites). Frames: [x, y, w, h, ax, ay, s, 1] where s = world
+  // units per atlas px (a tile diamond is 80 units wide) so every sprite carries its own scale.
+  const HF = ART && ART.hero ? ART.hero.frames : {};
+  const hcache = {};
+  const hfr = (n) => { let f = hcache[n]; if (f === undefined) { const a = HF[n]; f = hcache[n] = a ? a.concat([1]) : null; } return f; };
+  function drawHeroFrame(ctx, f, x, y, z, flip, alpha) {
+    const im = images.hero;
+    if (!f || !im) return false;
+    const k = z * f[6];
+    if (alpha != null) ctx.globalAlpha = alpha;
+    if (flip) {
+      ctx.save(); ctx.translate(x, y); ctx.scale(-1, 1);
+      ctx.drawImage(im, f[0], f[1], f[2], f[3], -f[4] * k, -f[5] * k, f[2] * k, f[3] * k);
+      ctx.restore();
+    } else ctx.drawImage(im, f[0], f[1], f[2], f[3], x - f[4] * k, y - f[5] * k, f[2] * k, f[3] * k);
+    if (alpha != null) ctx.globalAlpha = 1;
+    return true;
+  }
+  const HERO_CHAR = { elara: "elara", kael: "kael" };
+  const WALK_SEQ = [1, 0, 2, 0];
+  // yaw/flip come from facing(); sheets are authored walking toward the lower-left (front)
+  // and the upper-right (back). tick: stride phase (moving) or animation ms (idle).
+  function drawHeroChar(ctx, id, yaw, flip, moving, tick, x, y, z, alpha, cast) {
+    const base = HERO_CHAR[id];
+    if (!base || !images.hero) return false;
+    const back = yaw >= 135;
+    let name, mirror;
+    if (cast && base === "elara") { name = "elara_cast_" + (cast.i | 0); mirror = !flip; }
+    else {
+      const idx = moving ? WALK_SEQ[((tick % 4) + 4) % 4] : 0;
+      name = base + (back ? "_ne_" : "_sw_") + idx;
+      mirror = back ? !flip : flip;
+    }
+    const f = hfr(name);
+    if (!f) return false;
+    let yy = y, zz = z;
+    if (moving) yy -= Math.abs(Math.sin(tick * 0.8)) * 2.2 * z;
+    else zz = z * (1 + Math.sin(tick / 520) * 0.008);
+    return drawHeroFrame(ctx, f, x, yy, zz, mirror, alpha);
+  }
+  const HERO_NPC = { suyin: "abbess", ren: "acolyte", mira: "acolyte", monk: "monk", wen: "elder", shen: "elder", keeper: "elder", granny: "elder", pilgrim: "pilgrim", hana: "villagerf", hana_out: "villagerf", florist: "villagerf", herbalist: "villagerf", sera: "villagerf" };
+  function drawHeroNpc(ctx, id, yaw, flip, x, y, z) {
+    const v = HERO_NPC[id];
+    if (!v || !images.hero) return false;
+    return drawHeroFrame(ctx, hfr("npc_" + v), x, y, z, flip);
+  }
+  function drawHeroFx(ctx, name, x, y, w, alpha, rot) {
+    const im = images.fx, m = ART && ART.fx && ART.fx.frames[name];
+    if (!im || !m) return false;
+    const h = w * m[3] / m[2];
+    const g = ctx.globalAlpha, o = ctx.globalCompositeOperation;
+    ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = g * alpha;
+    ctx.drawImage(im, m[0], m[1], m[2], m[3], x - w / 2, y - h / 2, w, h);
+    ctx.globalAlpha = g; ctx.globalCompositeOperation = o;
+    return true;
+  }
 
   // ---------------------------------------------------------------------------
   // Characters
@@ -198,7 +257,7 @@
   MAT_NAMES.forEach((n, i) => { MAT_ID[n] = i; });
   const NONE = 255;
   const THEMES = {
-    temple: { wall: "stone", roof: "roof_slate", trees: ["tree_blossom0", "tree_blossom1", "tree_oak0", "tree_blossom0", "tree_pine0"], grass: "grass_dusk", path: "slab", floor: "slab", gold: "inlay", carpet: "border", hedge: "flowerbed", rim: "rim", oob: "grass_dusk", lamp: "lantern", column: "column_red", wwall: "wall_pavilion", bg: "#1b2418", dusk: 0.24, stonePond: true, courtyard: true },
+    temple: { hero: true, wall: "stone", roof: "roof_slate", trees: ["tree_blossom0", "tree_blossom1", "tree_oak0", "tree_blossom0", "tree_pine0"], grass: "grass_dusk", path: "slab", floor: "slab", gold: "inlay", carpet: "inlay", hedge: "flowerbed", rim: "rim", oob: "grass_dusk", lamp: "lantern", column: "column_red", wwall: "wall_pavilion", bg: "#7a6652", dusk: 0.24, stonePond: true, courtyard: true },
     village: { wall: "plaster", roof: "roof_green", trees: ["tree_oak0", "tree_oak1", "tree_oak2", "tree_blossom0"], grass: "grass", path: "cobble", floor: "wood", rim: "dirt", oob: "grass", bg: "#1d3219", dusk: 0 },
     forest: { wall: "stone", roof: "roof_green", trees: ["tree_oak0", "tree_pine0", "tree_oak1", "tree_pine1", "tree_oak2"], grass: "grass_dark", path: "dirt", floor: "wood", rim: "dirt", oob: "grass_dark", bg: "#142414", dusk: 0.12 },
     wilderness: { wall: "stone", roof: "roof_green", trees: ["tree_oak0", "tree_pine0", "tree_oak1", "tree_pine1"], grass: "grass", path: "dirt", floor: "wood", rim: "dirt", oob: "grass", bg: "#172a16", dusk: 0 },
@@ -213,10 +272,23 @@
   function pick(list, x, y) { return list[hash(x, y) % list.length]; }
 
   // returns [groundMaterial, objectFrame, water(0 none / 1 / 2 deep)]
+  const PERIM = ["cherry", "oak", "rocks", "bush_purple", "oak", "bush_white", "cherry", "bush_green"];
+  const HEDGE = ["bush_green", "bush_white", "bush_green", "bush_purple"];
   function classify(m, id, x, y, th, indoor) {
     const t = m.tiles[y][x];
     const g = th.grass, p = th.path, f = th.floor;
     const W = th.wall;
+    if (th.hero) {
+      switch (t) {
+        case 4: return [g, "@" + pick(PERIM, x, y), 0];
+        case 12: return [p, "@lantern", 0];
+        case 22: return [f, "@pillar", 0];
+        case 19: return [th.rim, "@lotus", 1];
+        case 20: return [g, "@" + pick(HEDGE, x, y), 0];
+        case 7: return [g, "@" + pick(["cherry", "oak"], x, y), 0];
+        default: break;
+      }
+    }
     switch (t) {
       case 0: return [indoor ? null : th.oob, null, 0];
       case 1: return [g, null, 0];
@@ -260,6 +332,41 @@
     }
   }
 
+  // Visual-only dressing for hero themes (never affects collision): pavilion beyond the north
+  // wall, bridge decks over bridge tiles, lotus clusters and shore rocks on ponds.
+  function buildDecor(m, th, obj, water) {
+    const out = [], W = m.w, H = m.h, t = m.tiles;
+    const add = (name, x, y, ground) => { const f = hfr(name); if (f) out.push({ f, x, y, g: !!ground, key: x + y }); };
+    if (m.id === "temple") { add("stairs", 26.2, 6.2, true); add("pavilion", 25.5, 4.4); }
+    const seen = new Uint8Array(W * H);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      if (t[y][x] !== 8 || seen[y * W + x]) continue;
+      let x0 = x, x1 = x, y0 = y, y1 = y; const st = [[x, y]]; seen[y * W + x] = 1;
+      while (st.length) {
+        const [a, b] = st.pop(); x0 = Math.min(x0, a); x1 = Math.max(x1, a); y0 = Math.min(y0, b); y1 = Math.max(y1, b);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const xx = a + dx, yy = b + dy;
+          if (xx >= 0 && yy >= 0 && xx < W && yy < H && t[yy][xx] === 8 && !seen[yy * W + xx]) { seen[yy * W + xx] = 1; st.push([xx, yy]); }
+        }
+      }
+      add((x1 - x0) >= (y1 - y0) ? "bridge_m" : "bridge", (x0 + x1 + 1) / 2, (y0 + y1 + 1) / 2, true);
+    }
+    const isW = (x, y) => x >= 0 && y >= 0 && x < W && y < H && (t[y][x] === 3 || t[y][x] === 32 || t[y][x] === 19);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const tt = t[y][x];
+      if ((tt !== 3 && tt !== 32) || obj[y * W + x]) continue;
+      const h = hash(x, y);
+      const inner = isW(x - 1, y) && isW(x + 1, y) && isW(x, y - 1) && isW(x, y + 1);
+      if (inner && h % 9 === 0) add("lotus", x + 0.5, y + 0.5, true);
+      else if (!inner && h % 11 === 0) {
+        const land = [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => { const xx = x + dx, yy = y + dy; return xx >= 0 && yy >= 0 && xx < W && yy < H && !isW(xx, yy) && t[yy][xx] !== 4 && t[yy][xx] !== 8; });
+        if (land) add("rocks", x + 0.5, y + 0.5, false);
+      }
+    }
+    out.sort((a, b) => a.key - b.key);
+    return out;
+  }
+
   // Periodic value noise (world-space, so chunk seams match).
   const NZ = 64, nzTab = new Float32Array(NZ * NZ);
   for (let i = 0; i < nzTab.length; i++) nzTab[i] = (hash(i % NZ, (i / NZ) | 0) & 0xffff) / 0xffff;
@@ -282,7 +389,7 @@
   const MR = 20;                         // mask texels per tile
   const CS = Math.round((CN + 2 * MT) * D);
   const MS = Math.round((CN + 2 * MT) * MR);
-  const MAX_CHUNKS = 26;
+  const MAX_CHUNKS = 36;
   const GM = 112;                 // ground cache margin (logical px)
   const PSCALE = ART ? (ART.world.scale || 2) : 2;
 
@@ -295,7 +402,18 @@
     const ground = { cv: null, c: null, ok: false, full: false, map: null, s: 0, ox: 0, oy: 0, v: -1 };
     const visCh = [];
     let lastZ = -1, chunkGen = 0;
-    const stats = { bakes: 0, bakeMs: 0, bakeMax: 0, chunks: 0 };
+    const stats = { bakes: 0, bakeMs: 0, bakeMax: 0, chunks: 0, q: 0, ema: 16.7 };
+    // Adaptive quality governor: a smoothed frame time above budget lowers particle/glint counts
+    // (level 1) and the ground bake resolution (level 2). Never raises mid-session (no thrash).
+    const BAKE_CAP0 = 2.4;                 // device px per world unit; ~3 MB/chunk instead of ~5+
+    let bakeCap = BAKE_CAP0, govLast = 0, govBad = 0;
+    function govern() {
+      const t = performance.now(), d = t - govLast; govLast = t;
+      if (d > 250 || d < 1) return;
+      stats.ema += (d - stats.ema) * 0.04;
+      if (stats.q < 2 && stats.ema > (stats.q ? 33 : 23)) { if (++govBad > 120) { stats.q++; govBad = 0; if (stats.q === 2) bakeCap = 1.8; } }
+      else govBad = Math.max(0, govBad - 1);
+    }
     let lightCanvas = null, lightCtx = null, vignette = null, skyGrad = null;
     const labels = new Map();
     // bake scratch
@@ -339,7 +457,7 @@
           const t = m.tiles;
           const horiz = (x > 0 && t[y][x - 1] === 11) || (x < m.w - 1 && t[y][x + 1] === 11);
           of = fr(horiz ? "fence_x" : "fence_y");
-        } else if (oname) of = fr(oname);
+        } else if (oname) of = oname.charCodeAt(0) === 64 ? hfr(oname.slice(1)) : fr(oname);
         obj[i] = of;
         const tt = m.tiles[y][x];
         if (OCCLUDE.has(tt) && !(tt === 6 && indoor)) occ[i] = tt === 7 || tt === 37 ? 2 : 1;
@@ -376,9 +494,12 @@
         const bw = maxx - minx + 1, bh = maxy - miny + 1;
         if (area >= 16 && area / (bw * bh) > 0.7) mandalas.push((minx + maxx + 1) / 2, (miny + maxy + 1) / 2, Math.min(bw, bh) / 2 - 0.35);
       }
-      const oobTree = indoor ? null : theme.trees.map(fr).filter(Boolean);
+      const oobTree = indoor ? null : (theme.hero && HF.cherry
+        ? ["cherry", "oak", "cherry", "oak", "rocks", "bush_purple", "bush_white", "oak"].map(hfr).filter(Boolean)
+        : theme.trees.map(fr).filter(Boolean));
+      const decor = theme.hero && HF.pavilion ? buildDecor(m, theme, obj, water) : null;
       const oobMat = theme.oob && MAT_ID[theme.oob] != null ? MAT_ID[theme.oob] : NONE;
-      p = { id, tiles: m.tiles, theme, indoor, mandalas, mat, obj, water, occ, nearW, lights, oobTree, oobMat, w: m.w, h: m.h };
+      p = { id, tiles: m.tiles, theme, indoor, decor, mandalas, mat, obj, water, occ, nearW, lights, oobTree, oobMat, w: m.w, h: m.h };
       prepCache.set(m, p);
       return p;
     }
@@ -514,7 +635,10 @@
       for (let i = 0; i < p.mandalas.length; i += 3) {
         const mx = p.mandalas[i] * D - ox, my = p.mandalas[i + 1] * D - oy, R = p.mandalas[i + 2] * D;
         if (mx + R < 0 || my + R < 0 || mx - R > CS || my - R > CS) continue;
-        drawMandala(c, mx, my, R);
+        if (images.medallion) {
+          const MR2 = Math.min(R, 4.3 * D), mm = images.medallion, hh = MR2 * 2 * mm.height / mm.width;
+          c.drawImage(mm, mx - MR2, my - hh / 2, MR2 * 2, hh);
+        } else drawMandala(c, mx, my, R);
       }
       // contact shadows / ambient occlusion around solid things, soft canopy shadows under trees, macro tone
       const ro = computeField(tx0, ty0, (x, y) => occAt(p, x, y) === 1, false, 0);
@@ -602,8 +726,9 @@
           const f = p.obj[i];
           const wx = (x + 0.5) * T - O.x, wy = (y + 0.5) * T - O.y;
           const sx = (wx - wy) / T * HW * s + E, sy = (wx + wy) / T * HH * s;
+          const kq = f[7] ? s * f[6] / 1 * 1 : ks, imq = f[7] ? images.hero : im;
           ic.save(); ic.translate(sx, sy + 8 * s); ic.scale(1, -0.7);
-          ic.drawImage(im, f[0], f[1], f[2], f[3], -f[4] * ks, -f[5] * ks, f[2] * ks, f[3] * ks);
+          ic.drawImage(imq, f[0], f[1], f[2], f[3], -f[4] * kq, -f[5] * kq, f[2] * kq, f[3] * kq);
           ic.restore();
         }
         ic.globalAlpha = 1;
@@ -667,13 +792,14 @@
     // Camera follows the leader in iso space with critically damped easing.
     function updateCamera(dt, m, px, py, snap) {
       iso(px, py, tp);
-      let tx = tp.x, ty = tp.y - 24;
       const p = prepare(m);
+      let tx = tp.x, ty = tp.y - 24 - (p.decor ? 105 : 0);   // hero themes: leader sits lower, like the style frame
       if (p.indoor) {
         const minX = -m.h * HW, maxX = m.w * HW, maxY = (m.w + m.h) * HH;
         const vw = W / view.z, vh = H / view.z;
         tx = maxX - minX < vw ? (minX + maxX) / 2 : Math.max(minX + vw / 2, Math.min(maxX - vw / 2, tx));
-        ty = maxY < vh ? maxY / 2 : Math.max(vh / 2 - 40, Math.min(maxY - vh / 2 + 60, ty));
+        const head = p.decor ? 330 : 0;   // hero themes: room above the map edge for the pavilion
+        ty = maxY < vh ? maxY / 2 : Math.max(vh / 2 - 40 - head, Math.min(maxY - vh / 2 + 60, ty));
       }
       if (snap) { view.camX = tx; view.camY = ty; syncBake = true; return; }
       const k = 1 - Math.exp(-dt / 140);
@@ -741,7 +867,8 @@
       const dt = Math.min(50, Math.max(0, anim - lastAnim)); lastAnim = anim;
       const dcx = (view.camX - lastCamX) * z, dcy = (view.camY - lastCamY) * z;
       lastCamX = view.camX; lastCamY = view.camY;
-      for (let i = 0; i < PN; i++) {
+      const PNe = stats.q >= 2 ? PN >> 2 : stats.q ? PN >> 1 : PN;
+      for (let i = 0; i < PNe; i++) {
         const q = parts[i];
         if (q.kind === 0 && !petals) continue;
         q.ph += dt * 0.002;
@@ -799,7 +926,8 @@
       // normal frame costs a single opaque blit for the whole ground.
       const tr = ctx.getTransform ? ctx.getTransform() : null;
       const dev = tr ? Math.abs(tr.a) : 2;                 // device px per logical px
-      const s = z * dev;
+      const s = z * dev, bs = Math.min(s, bakeCap);
+      govern();
       let budget = syncBake ? 999 : 1;
       syncBake = false;
       const span = CN + 2 * MT;
@@ -835,9 +963,9 @@
         G.full = true;
         let nVis = 0;
         eachChunk(-GM, -GM, W + GM, H + GM, (cx, cy, left, topY) => {
-          let ch = chunkFor(p, cx, cy, false, s, k);
-          if (!ch || Math.abs(s - ch.s) > 1e-4) {
-            if (budget > 0) { ch = chunkFor(p, cx, cy, true, s, k); budget--; }
+          let ch = chunkFor(p, cx, cy, false, bs, k);
+          if (!ch || Math.abs(bs - ch.s) > 1e-4) {
+            if (budget > 0) { ch = chunkFor(p, cx, cy, true, bs, k); budget--; }
             else G.full = false;
             if (!ch) return;
           }
@@ -848,14 +976,24 @@
         stats.chunks = nVis;
         G.ok = true; G.map = m; G.s = s; G.ox = ox; G.oy = oy; G.v = chunkGen;
       }
+      // Prefetch: when this frame did no bake and frame time is healthy, bake one chunk just beyond the
+      // cache margin so walking never waits on the painter (one bake per frame, ever).
+      if (steady && budget > 0 && stats.ema < 22) {
+        let done = false;
+        eachChunk(-GM * 3, -GM * 3, W + GM * 3, H + GM * 3, (cx, cy) => {
+          if (done) return;
+          const ch = chunks.get(cx * 4096 + cy);
+          if (!ch || Math.abs(bs - ch.s) > 1e-4) { chunkFor(p, cx, cy, true, bs, k); done = true; budget--; }
+        });
+      }
       if (G.ok && steady && G.map === m) {
         const dx = Math.round((ox - G.ox - GM) * dev) / dev, dy = Math.round((oy - G.oy - GM) * dev) / dev;
         ctx.drawImage(G.cv, dx, dy, G.cv.width / dev, G.cv.height / dev);
       } else {
         // zooming (vista) or first frame: draw chunks directly, scaled
         eachChunk(0, 0, W, H, (cx, cy, left, topY) => {
-          let ch = chunkFor(p, cx, cy, false, s, k);
-          if (!ch && budget > 0) { ch = chunkFor(p, cx, cy, true, s, k); budget--; }
+          let ch = chunkFor(p, cx, cy, false, bs, k);
+          if (!ch && budget > 0) { ch = chunkFor(p, cx, cy, true, bs, k); budget--; }
           if (ch) ctx.drawImage(ch.iso, left, topY, ch.iw * z / ch.s, ch.ih * z / ch.s);
         });
       }
@@ -866,11 +1004,11 @@
       });
       if (visCh.length) {
         const gl = F.glow_cool;
-        let nGl = 0;
+        let nGl = 0; const GL = stats.q ? 16 : 48;
         ctx.globalCompositeOperation = "lighter";
-        for (let v = 0; v < visCh.length && nGl < 48; v++) {
+        for (let v = 0; v < visCh.length && nGl < GL; v++) {
           const wt = visCh[v].wt;
-          for (let g = 0; g < wt.length && nGl < 48; g += 2) {
+          for (let g = 0; g < wt.length && nGl < GL; g += 2) {
             const hsh = hash(wt[g], wt[g + 1]);
             if (hsh % 3) continue;
             const ph = (anim / 1400 + (hsh & 255) / 255) % 1;
@@ -887,6 +1025,14 @@
       }
       // ground-level overlays: warp glows and the tap marker
       if (st.groundFx) st.groundFx(ctx, toScreen, z);
+      const himg = images.hero;
+      const drawDecor = (d) => {
+        const f = d.f, kk = z * f[6];
+        const sx = ox + (d.x - d.y) * HW * z, sy = oy + (d.x + d.y) * HH * z;
+        if (sx + f[2] * kk < 0 || sx - f[2] * kk > W || sy - f[5] * kk > H || sy + (f[3] - f[5]) * kk < 0) return;
+        ctx.drawImage(himg, f[0], f[1], f[2], f[3], sx - f[4] * kk, sy - f[5] * kk, f[2] * kk, f[3] * kk);
+      };
+      if (p.decor) for (const d of p.decor) if (d.g) drawDecor(d);
       // ---- objects + dynamic entities in depth order ----
       nDyn = 0;
       st.collect(dyn);
@@ -896,10 +1042,12 @@
         while (j >= 0 && order[j].key > e.key) { order[j + 1] = order[j]; j--; }
         order[j + 1] = e;
       }
-      let di = 0;
+      let di = 0, oi = 0;
+      const dcr = p.decor ? p.decor.filter((d) => !d.g) : null;
       const smin = x0 + y0, smax = x1 + y1;
       for (let s = smin; s <= smax; s++) {
         while (di < nDyn && order[di].key <= s + 1) st.drawDyn(ctx, order[di++], toScreen, z / 2);
+        if (dcr) while (oi < dcr.length && dcr[oi].key < s + 1) drawDecor(dcr[oi++]);
         const xa = Math.max(x0, s - y1), xb = Math.min(x1, s - y0);
         for (let x = xa; x <= xb; x++) {
           const y = s - x;
@@ -910,10 +1058,12 @@
           } else f = p.obj[y * mw + x];
           if (!f) continue;
           const cxp = ox + (x - y) * HW * z, cyp = oy + (x + y + 1) * HH * z;
-          if (cxp + f[2] * k < 0 || cxp - f[2] * k > W || cyp - f[5] * k > H || cyp + (f[3] - f[5]) * k < 0) continue;
-          ctx.drawImage(im, f[0], f[1], f[2], f[3], cxp - f[4] * k, cyp - f[5] * k, f[2] * k, f[3] * k);
+          const kk = f[7] ? z * f[6] : k;
+          if (cxp + f[2] * kk < 0 || cxp - f[2] * kk > W || cyp - f[5] * kk > H || cyp + (f[3] - f[5]) * kk < 0) continue;
+          ctx.drawImage(f[7] ? himg : im, f[0], f[1], f[2], f[3], cxp - f[4] * kk, cyp - f[5] * kk, f[2] * kk, f[3] * kk);
         }
       }
+      if (dcr) while (oi < dcr.length) drawDecor(dcr[oi++]);
       while (di < nDyn) st.drawDyn(ctx, order[di++], toScreen, z / 2);
       if (st.afterObjects) st.afterObjects(ctx, toScreen, z / 2);
       // ---- lighting: dusk / night veil with light pools punched out ----
@@ -973,5 +1123,5 @@
     return { stats, view, draw, toScreen, toWorld, iso, updateCamera, prepare, facing: (vx, vy) => facing(vx, vy, tmpFace), label };
   }
 
-  window.SothWorld = { Art, create, drawChar, drawNpc, drawFrame, findPath, facing, frame: fr, npcVariant, _img: (k) => images[k] };
+  window.SothWorld = { hero: hfr, drawHeroFrame, drawHeroChar, drawHeroNpc, drawHeroFx, Art, create, drawChar, drawNpc, drawFrame, findPath, facing, frame: fr, npcVariant, _img: (k) => images[k] };
 })();

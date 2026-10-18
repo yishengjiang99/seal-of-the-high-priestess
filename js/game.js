@@ -39,11 +39,28 @@
     return v;
   }
   let WORLD = null;
+  // Which maps use the 2.5D renderer when the flag is on: server FLAGS.visualMaps
+  // ("temple,village" or "all"), or the local dev override ?vmaps=...  Default: temple only.
+  let VMAPS = null;
+  function visualMapOn(id) {
+    if (!VMAPS) {
+      let v = null;
+      try {
+        const q = new URLSearchParams(location.search).get("vmaps");
+        if (q) { v = q; Platform.setItem("soth_dev_vmaps", q); }
+        if (v === null) v = Platform.getItem("soth_dev_vmaps");
+      } catch (e) {}
+      if (!v && window.FLAGS && typeof window.FLAGS.visualMaps === "string") v = window.FLAGS.visualMaps;
+      VMAPS = new Set(String(v || "temple").split(",").map((s) => s.trim()).filter(Boolean));
+    }
+    return VMAPS.has("all") || VMAPS.has(id);
+  }
   function USE_ISO() {
-    if (WORLD) return FEAT.visual === true;
-    if (!feature("visual") || !window.SothWorld || !window.SothWorld.Art.ready) return false;
-    WORLD = window.SothWorld.create({ ctx, W, H, T });
-    return true;
+    if (!WORLD) {
+      if (!feature("visual") || !window.SothWorld || !window.SothWorld.Art.ready) return false;
+      WORLD = window.SothWorld.create({ ctx, W, H, T });
+    }
+    return FEAT.visual === true && visualMapOn(S.mapId);
   }
   function TAP_MOVE() { return feature("tap"); }
   const $ = (id) => document.getElementById(id);
@@ -731,6 +748,13 @@
   // crisp on retina phones; drawing code keeps using 1280x720 coordinates.
   const DECK_H = 196;                   // portrait control deck under the game
   let fitKey = "";
+  // Backing-store cap (device px per logical px). The 2.5D map is fill-rate bound, so it caps lower,
+  // and drops further if the world's frame-time governor reports sustained slow frames.
+  function renderCap() {
+    if (!WORLD || !USE_ISO() || S.state === "battle") return 2.5;
+    const q = WORLD.stats.q;
+    return q >= 2 ? 1.5 : q >= 1 ? 1.8 : 2.25;
+  }
   function fit() {
     const frame = $("frame"), app = $("app"), touch = $("touch"), hint = $("rotate-hint");
     const cs = getComputedStyle(frame);
@@ -750,7 +774,7 @@
     app.style.transform = `translate(${gx}px, ${gy}px) scale(${scale})`;
 
     const dpr = window.devicePixelRatio || 1;
-    const k = clamp(scale * dpr, 0.5, 2.5);
+    const k = clamp(scale * dpr, 0.5, renderCap());
     const cw = Math.round(W * k), ch = Math.round(H * k);
     if (canvas.width !== cw || canvas.height !== ch) {
       canvas.width = cw; canvas.height = ch;
@@ -774,7 +798,7 @@
       }
       hint.classList.toggle("hidden", !deck);
     }
-    fitKey = `${vw}x${vh}@${dpr}`;
+    fitKey = `${vw}x${vh}@${dpr}|${renderCap()}`;
   }
   window.addEventListener("resize", fit);
   window.addEventListener("orientationchange", () => { fit(); setTimeout(fit, 250); setTimeout(fit, 700); });
@@ -782,7 +806,7 @@
   // iOS can settle the toolbar / safe areas without a resize event.
   setInterval(() => {
     const f = $("frame");
-    if (`${f.clientWidth}x${f.clientHeight}@${window.devicePixelRatio || 1}` !== fitKey) fit();
+    if (`${f.clientWidth}x${f.clientHeight}@${window.devicePixelRatio || 1}|${renderCap()}` !== fitKey) fit();
   }, 1000);
 
   // ---------------------------------------------------------------------------
@@ -1782,6 +1806,7 @@
         setFlag(ev.id, 1);
         grant(ev.item);
         sfx("ok");
+        castT = S.anim;
         return true;
       }
       if (ev.type === "sign") {
@@ -2590,6 +2615,22 @@
         const tr = e.ref;
         const yaw = tr ? tr.yaw : (S.yaw || 0), flip = tr ? tr.flip : !!S.flip;
         const frame = S.moving ? Math.floor(S.stride / 9 + e.a * 3) : Math.floor(S.anim / 220 + e.a * 2);
+        const hz = WORLD.view.z;
+        if (SW.hero("elara_sw_0") && SW.hero(id + "_sw_0")) {
+          SW.drawFrame(c, shadow, p.x, p.y, k * 1.15);
+          const ca = e.kind === 1 && castT >= 0 ? (S.anim - castT) : -1;
+          const cast = ca >= 0 && ca < 1500 && id === "elara" ? { i: ca < 450 ? 0 : ca < 900 ? 1 : 2 } : null;
+          if (cast) {
+            const fade = Math.min(1, ca / 250) * Math.min(1, (1500 - ca) / 350);
+            SW.drawHeroFx(c, "circle", p.x, p.y - 4 * hz, 150 * hz, 0.5 * fade);
+          }
+          SW.drawHeroChar(c, id, yaw, flip, S.moving, S.moving ? Math.floor(S.stride / 9 + e.a * 3) : S.anim, p.x, p.y, hz, undefined, cast);
+          if (cast) {
+            const fade = Math.min(1, ca / 250) * Math.min(1, (1500 - ca) / 350);
+            SW.drawHeroFx(c, "swirl", p.x, p.y - 62 * hz, 120 * hz, 0.45 * fade);
+          }
+          return;
+        }
         SW.drawFrame(c, shadow, p.x, p.y, k * 0.8);
         if (!SW.drawChar(c, id, S.moving ? "walk" : "idle", yaw, frame, p.x, p.y, ck, flip)) {
           drawChibi(p.x, p.y - 14, id, S.dir, S.moving, null, 1.6);
@@ -2606,6 +2647,10 @@
         }
         SW.drawFrame(c, shadow, p.x, p.y, k * 0.8);
         const fr = Math.floor(S.anim / 650 + ev.x * 0.37);
+        if (SW.drawHeroNpc(c, ev.id, yaw, flip, p.x, p.y, WORLD.view.z)) {
+          if (dx * dx + dy * dy < (T * 5) * (T * 5)) queueTag(WORLD.label(ev.name || "", ev.hue), p.x, p.y - 138 * WORLD.view.z);
+          return;
+        }
         if (!SW.drawNpc(c, ev.id, yaw, fr, p.x, p.y, ck, flip)) drawChibi(p.x, p.y - 14, "npc", "down", false, null, 1.6);
         if (dx * dx + dy * dy < (T * 5) * (T * 5)) queueTag(WORLD.label(ev.name || "", ev.hue), p.x, p.y - 150 * ck);
         return;
@@ -2621,6 +2666,14 @@
         c.drawImage(window.SothWorld._img("world"), gr[0], gr[1], gr[2], gr[3], p.x - r, p.y - r * 0.55 - 6 * z, r * 2, r * 1.1);
         c.globalAlpha = 1; c.globalCompositeOperation = "source-over";
         SW.drawFrame(c, shadow, p.x, p.y, k * 0.9 * s / z);
+        if (SW.hero("root_0")) {
+          const hs = boss ? 1.22 : 1;
+          const rf = SW.hero("root_" + (Math.floor(S.anim / 520 + ev.x) & 1));
+          const sp = WORLD.toScreen(S.px, S.py, isoQ);
+          SW.drawHeroFrame(c, rf, p.x, p.y + bob * 0.5, z * hs, sp.x > p.x + 1);
+          queueTag(WORLD.label(encounterName(ev), "#ff6a7a"), p.x, p.y - 156 * z * hs);
+          return;
+        }
         // a shadow wraith: tattered cloak, ember eyes
         const top = p.y - 64 * s + bob, cx = p.x;
         c.fillStyle = "rgba(14,8,22,0.94)";
@@ -2700,6 +2753,7 @@
           const p = toScreen(mk.x, mk.y, isoQ);
           const pop = Math.min(1, mk.t / 140);
           const s = (0.6 + 0.4 * pop + Math.sin(S.anim / 140) * 0.05) * z;
+          if (window.SothWorld.drawHeroFx(c, "circle", p.x, p.y, 118 * s, a * (mk.bad ? 0.5 : 0.95))) return;
           c.globalAlpha = a;
           c.strokeStyle = mk.bad ? "#ff6a6a" : mk.talk ? "#ffe08a" : "#c8f0ff";
           c.lineWidth = 3 * z;
@@ -4880,6 +4934,8 @@
   window.SOTH_TEST_RESET = () => { if (S.state === "map") snapCamera(); };
   window.SOTH_DEBUG_W2S = (wx, wy) => { const o = worldToScreen(wx, wy, { x: 0, y: 0 }); return [o.x, o.y]; };
   // 2.5D map HUD: leader portrait badge with HP / mana bars (throttled DOM writes).
+  let castT = -1;
+  window.SOTH_CAST = () => { castT = S.anim; };
   let hudNext = 0, hudKey = "";
   function updateHdHud(t) {
     if (t < hudNext) return;
