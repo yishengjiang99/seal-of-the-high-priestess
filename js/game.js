@@ -3207,6 +3207,73 @@
   // Battle — LinaHua's loop
   // ---------------------------------------------------------------------------
   const ELARA_START_MANA = 0.4;
+  // Battle pacing. Base waits are scaled by FLAGS.battlePace (server-tunable, default 0.65, clamped 0.4-1.2) and by the
+  // player's Battle Speed (1x / 2x toggle in battle, Options). Taps during a wait skip it (see updateBattle).
+  function battlePace() {
+    const v = window.FLAGS && window.FLAGS.battlePace;
+    return typeof v === "number" && isFinite(v) ? Math.max(0.4, Math.min(1.2, v)) : 0.65;
+  }
+  const bwait = (ms) => ms * battlePace() / Math.max(0.5, S.settings.battleSpeed || 1);
+  // Auto-battle is only for trivial fights: no boss, no tutorial, nobody with a special script.
+  function autoAllowed(b) {
+    return !!b && !b.boss && !b.def.tutorial && b.foes.every((f) => (f.ai || "basic") === "basic");
+  }
+  function setAuto(on) {
+    const b = S.battle;
+    if (!b) return false;
+    if (on && !autoAllowed(b)) { toast(I18N.t("toast.auto_trivial")); return false; }
+    b.auto = !!on;
+    if (b.auto && b.phase === "cmd" && b.actor && b.actor.side === "p" && !b.healingRainAim && autoAct(b.actor)) return true;
+    renderBattleHUD();
+    return b.auto;
+  }
+  // One auto-battle action for a hero: heal when someone is hurt, otherwise strike the weakest foe.
+  function autoAct(a) {
+    const b = S.battle;
+    const pals = aliveP(), foes = aliveE();
+    const total = b.pals.reduce((n, p) => n + Math.max(0, p.hp) / p.maxHp, 0) / b.pals.length;
+    if (b.pals.some((p) => !p.alive) || total < 0.4) { b.auto = false; toast(I18N.t("toast.auto_stopped")); renderBattleHUD(); return false; }
+    if (!foes.length) return false;
+    const hurt = pals.slice().sort((x, y) => x.hp / x.maxHp - y.hp / y.maxHp)[0];
+    if (hurt && hurt.hp / hurt.maxHp < 0.5) {
+      for (const sid of skillsOf(S.chars[a.id] || a)) {
+        const sk = canUseBattleSkill(a, sid);
+        if (!sk || !sk.heal || sk.charge) continue;
+        useSkill(a, sk, sk.target === "allies" ? null : hurt);
+        finishPlayer(); b.wait = bwait(520);
+        return true;
+      }
+      const idx = S.inventory.findIndex((id) => { const it = DATA.ITEMS[id]; return it && it.type === "consumable" && it.heal && (it._uses ?? it.uses) > 0; });
+      if (idx >= 0) { useItem(idx, hurt); finishPlayer(); b.wait = bwait(520); return true; }
+    }
+    const t = foes.slice().sort((x, y) => x.hp - y.hp)[0];
+    useSkill(a, DATA.SKILLS.attack, t);
+    finishPlayer(); b.wait = bwait(520);
+    return true;
+  }
+  // Tap on a combatant (js/battle-ux.js): picks it as the target, or quick-attacks it from the top menu.
+  function tapTarget(unit) {
+    const b = S.battle;
+    if (!b || b.phase !== "cmd" || b.healingRainAim || !b.actor || b.actor.side !== "p" || !unit || !unit.alive) return false;
+    if (b.menu === "cmd" && unit.side === "e") { pickTarget("enemy", { id: "attack" }); if (b.phase !== "cmd") return true; }
+    if (b.menu !== "target") return false;
+    const i = b.targetList.indexOf(unit);
+    if (i < 0) return false;
+    b.cmdIdx = i; renderBattleHUD(); confirmCmd();
+    return true;
+  }
+  // Upcoming actors: whoever is up now, the rest of this round, then the next round's order.
+  function turnOrder(n) {
+    const b = S.battle;
+    if (!b || !b.queue) return [];
+    const alive = (x) => x && x.alive;
+    const rest = b.queue.slice(b.qi).filter(alive);
+    const cur = b.actor && alive(b.actor) && b.phase !== "victory" ? b.actor : null;
+    const out = (cur ? [cur] : []).concat(rest.filter((x) => x !== cur));
+    const next = [...b.pals, ...b.foes].filter(alive).sort((x, y) => y.spd - x.spd || (x.side === "p" ? -1 : 1));
+    while (out.length < n && next.length) out.push(...next.slice(0, n - out.length));
+    return out.slice(0, n).map((x, i) => ({ id: x.id, name: x.name, side: x.side, tid: x.tid || x.id, now: i === 0 && !!cur, color: x.color || null }));
+  }
   function startBattle(id) {
     const def = DATA.BATTLES[id];
     if (!def) return;
@@ -3321,13 +3388,13 @@
           a.chargeSkill = null; a.chargeTarget = null;
           afterAct(a);
         } else blog(`${a.name} is charging… (${a.charging} turn${a.charging === 1 ? "" : "s"})`);
-        b.wait = 700 / S.settings.battleSpeed; b.phase = "wait"; b.actor = a;
+        b.wait = bwait(700); b.phase = "wait"; b.actor = a;
         renderBattleHUD(); return;
       }
       if (a.gassed > 0) {
         a.gassed--;
         blog(`${a.name} is Gassed and cannot act. (${a.gassed} remaining)`);
-        b.wait = 650 / S.settings.battleSpeed; b.phase = "wait"; b.actor = a;
+        b.wait = bwait(650); b.phase = "wait"; b.actor = a;
         renderBattleHUD(); return;
       }
       if (a.meditating) {
@@ -3337,11 +3404,13 @@
         blog(`${a.name} completes her meditation. Mana ${a.res}/${a.maxRes}.`);
         emit("petal", 280, 300, 18);
         sfx("heal");
-        b.wait = 700 / S.settings.battleSpeed; b.phase = "wait"; b.actor = a;
+        b.wait = bwait(700); b.phase = "wait"; b.actor = a;
         renderBattleHUD(); return;
       }
       b.actor = a;
       if (a.side === "p") {
+        S.just.ok = S.just.cancel = false;   // taps made while the last action played must not confirm this menu
+        if (b.auto && autoAct(a)) return;
         b.phase = "cmd"; b.menu = "cmd"; b.cmdIdx = 0;
         renderBattleHUD();
         return;
@@ -3655,11 +3724,12 @@
     b.targetList = (kind === "ally" ? aliveP() : aliveE()).map((t, i) => Object.assign(t, { _i: i }));
     if (!b.targetList.length) { toast(I18N.t("toast.no_target")); return; }
     renderBattleHUD();
+    if (b.targetList.length === 1) { b.cmdIdx = 0; confirmCmd(); }   // only one choice: no extra tap
   }
   function finishPlayer() {
     afterAct(S.battle.actor);
     S.battle.phase = "wait";
-    S.battle.wait = 700 / S.settings.battleSpeed;
+    S.battle.wait = bwait(700);
     renderBattleHUD();
   }
   function defend(a) {
@@ -4025,7 +4095,7 @@
 
   function enemyTurn(e) {
     S.battle.phase = "wait";
-    S.battle.wait = 850 / S.settings.battleSpeed;
+    S.battle.wait = bwait(850);
     e.turnN = (e.turnN || 0) + 1;
     const ai = e.ai;
     const pals = aliveP();
@@ -4098,22 +4168,23 @@
 
   function updateBattle(dt) {
     const b = S.battle;
+    const adt = dt * Math.max(1, S.settings.battleSpeed || 1);   // action animations speed up with Battle Speed
     for (const x of b.pals.concat(b.foes)) {
-      if (x.lunge > 0) x.lunge = Math.max(0, x.lunge - dt * 0.12);
-      if (x.flash > 0) x.flash -= dt;
+      if (x.lunge > 0) x.lunge = Math.max(0, x.lunge - adt * 0.12);
+      if (x.flash > 0) x.flash -= adt;
     }
-    for (const x of b.foes) if (x.dieT > 0) x.dieT -= dt;
+    for (const x of b.foes) if (x.dieT > 0) x.dieT -= adt;
     if (b.introT < b.introDur + 400) b.introT += dt; // lets the card fade out after the intro
     if (b.phase === "intro") {
-      if (b.introT < b.introDur) return;
+      if (b.introT < b.introDur) { if (b.introT > 900 && pressed("ok")) b.introT = b.introDur; return; }   // tap skips the title card
       $("battle-hud").classList.remove("cinematic");
       if (b.pendingTutorial) { const t = b.pendingTutorial; b.pendingTutorial = null; maybeTutorial(t); if (b.phase === "tutorial") return; }
-      b.phase = "wait"; b.wait = 250 / S.settings.battleSpeed;
+      b.phase = "wait"; b.wait = bwait(250);
       return;
     }
     if (b.phase === "victory") {
       b.vT += dt;
-      if (b.vT > 3000 || (b.vT > 1000 && pressed("ok"))) winBattle();
+      if (b.vT > 2200 || (b.vT > 600 && pressed("ok"))) winBattle();
       return;
     }
     if (b.phase === "tutorial") {
@@ -4135,6 +4206,7 @@
       return;
     }
     if (b.phase === "wait") {
+      if (pressed("ok") && !S.cine) b.wait = 0;   // a tap / Z while an action plays moves on at once (and is not kept for the next menu)
       b.wait -= dt;
       if (b.wait <= 0) nextActor();
     }
@@ -5011,12 +5083,14 @@
     if (fa > 0) { ctx.fillStyle = `rgba(4,3,8,${fa.toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
     S.mouse.click = false;
     if (window.Quest) Quest.frame(t);   // quest guidance overlays (js/quest.js)
+    if (window.BattleUX) BattleUX.frame(t);   // battle overlays (js/battle-ux.js)
     requestAnimationFrame(frame);
   }
 
   // Boot
   async function boot() {
     fit();
+    if (window.BattleUX) BattleUX.attach({ S, posOf, tapTarget, setAuto, autoAllowed, turnOrder, persistSettings });
     if (window.Quest) Quest.attach({ S, fastTravel, worldToScreen, zoom: () => (USE_ISO() ? WORLD.view.z : flatView.z), openMenu, closeMenu });
     try {
       const st = JSON.parse(Platform.getItem("soth_settings") || "null");

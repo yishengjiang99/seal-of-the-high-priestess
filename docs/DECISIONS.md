@@ -132,3 +132,21 @@ Newest last. Each entry gives the decision, why, and what it affects. Scope: doc
 - **Speed:** base walk x1.25 (`FLAGS.walkSpeedMult`, server-tunable, client clamps 0.75-1.75, validator drops values outside 0.5-2), tap-to-move auto-run threshold 14 -> 10 tiles, and holding a direction ramps up to a 30% sprint after 0.6-1.2 s (keyboard/stick; touch paths use run speed).
 - **Fast travel** (`FLAGS.fastTravel`, default true): world-map node panel has a big "Travel here" button for visited maps; the tracker has a "Travel" button when the objective is on a visited map (or >16 tiles away on this one). Fade 220/380 ms, lands on a standable tile >= 2 tiles from the target (never on warps, scene triggers or blockers), honours the paywall gate, and only works from the plain map state (not battles, scenes, fades). Tapping a node selects it first (no accidental teleports).
 - **Shortcut warps:** none added. After the door fix every main hop is <= 12 s at shipped speeds and the remaining long ones (temple -> village road, 65 tiles through the village) are one-time; every revisit is a fast travel. `tests/travel.test.mjs` fails if a hop exceeds 15 s (22 s without auto-run), if the chain exceeds 100 s, or if any objective/warp is walled off.
+
+## 2026-10-18: Combat feel (build 4 feedback: "fight mechanics feel clunky")
+Measured with `scripts/bench-battle.mjs` (headless Chromium, real time, seeded RNG so before/after fight the same fights; forest_vines, forest_revenants, meridia_knights; party at 9999 HP so only pacing is measured):
+| | before | after |
+|---|---|---|
+| patient player (one Z per menu step), 1x | 19.3 s, 18.7 inputs | 12.8 s, 13.3 inputs |
+| patient, Battle Speed 2x | n/a | 9.3 s |
+| tapping/mashing player | 15.9 s, 102 inputs | 5.9 s |
+| Auto-battle | n/a | 10.5 s, 0 inputs |
+What was clunky (from reading the battle loop): fixed waits (700/650/850 ms) after every action that input could not skip; a 3 s victory card; a title card that could not be skipped; `S.just` key presses persisted across turns so a tap during an enemy action confirmed the next hero menu by itself; Attack always needed two inputs even with one foe; no visible turn order; command rows were 28 px tall; Battle Speed only scaled waits, not animations, and had no fast option.
+Changes (no stat, damage, hit-chance or skill numbers touched; pacing only):
+- Waits go through `bwait(ms) = ms * FLAGS.battlePace / battleSpeed`. `FLAGS.battlePace` defaults to 0.65 (server tunable, validated 0.4-1.2). Battle Speed gains a 2x "Fast" option and action animations (lunge / flash / death fade) also scale with it. Hit-stop, screen shake, flash and floating damage numbers already existed and are unchanged.
+- Any Z / tap during an action wait skips the remaining wait; a tap skips the intro card after 0.9 s; the victory card ends after 2.2 s (0.6 s on tap) instead of 3 s / 1 s.
+- Stale presses are cleared when a hero's turn starts, so a late tap can no longer confirm a menu the player has not seen. Taps during waits are consumed by the skip, not queued into the next menu.
+- A target menu with a single valid target auto-confirms. Tapping a foe in the top-level menu = Attack on that foe (one input). Tapping in the target menu selects and confirms.
+- New `js/battle-ux.js` + `css/battle-ux.css` (DOM overlays only; battle canvas, sprites and the skill-orb bar are untouched): turn-order strip (current actor, rest of the round, next round), tap zones over combatants, pulsing target ring with name/HP chip, 1x/2x speed button (persisted), and an Auto button. Command rows are now 44 px minimum. Keyboard and controller flow is unchanged (the ring follows the cursor).
+- Auto-battle is offered only in ordinary fights (no boss, no tutorial, every foe AI "basic"). It attacks the weakest foe, heals when someone is under 50% HP, and hands control back (with a toast) as soon as a hero falls or party HP averages under 40%. Bosses and scripted fights stay manual.
+- Tests: `tests/headless/battle-suite.mjs` (turn order, tap zones sizes, speed toggle, tap-to-attack, keyboard path, auto finishes a fight, Auto refused on a boss, overlays hidden outside battle); `tests/travel.test.mjs` also covers the `battlePace` tunable.
