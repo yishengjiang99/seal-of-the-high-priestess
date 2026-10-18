@@ -16,7 +16,7 @@ struct SaveEntry: Codable, Equatable {
 final class SaveStore {
     static let slotIDs = ["0", "1", "2", "auto"]
     /// "Slot 1" … / "Suspend save" (localized).
-    static func slotLabel(_ slot: String) -> String {
+    nonisolated static func slotLabel(_ slot: String) -> String {
         slot == "auto" ? String(localized: "Suspend save") : String(localized: "Slot \((Int(slot) ?? 0) + 1)")
     }
     static let settingsKey = "soth_settings"
