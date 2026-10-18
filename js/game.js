@@ -847,7 +847,7 @@
       S.inventory.push(itemId);
       if (it.type === "consumable") it._uses = it.uses;
     }
-    if (!silent) toast(`Obtained: ${it.name}`);
+    if (!silent) toast(I18N.t("toast.obtained", { name: it.name }));
   }
   function setFlag(k, v) {
     if (v === undefined) v = 1;
@@ -1156,7 +1156,7 @@
       }
     });
     S.idle.timing.lastClaimAt = Date.now();
-    if (gained > 0) toast("The attendants lay your offerings at the Seal.");
+    if (gained > 0) toast(I18N.t("toast.offerings"));
   }
 
   function idleApplyAccessibility() {
@@ -1180,28 +1180,28 @@
     const inst = S.idle.structures[id];
     if (!st || !inst) return;
     const rank = idleStoryRank();
-    if (rank < st.unlockRank) { toast("Your rank is not yet sufficient for this sanctum."); return; }
+    if (rank < st.unlockRank) { toast(I18N.t("toast.rank_low")); return; }
     if (!inst.unlocked) inst.unlocked = true;
     const nextTier = inst.tier + 1;
     const scale = Math.pow(1.35, Math.max(0, nextTier - 1));
     const cost = {};
     Object.entries(st.upgradeCost || {}).forEach(([k, v]) => { cost[k] = Math.ceil(v * scale); });
-    if (!idleSpend(cost)) { toast("Insufficient offerings for that upgrade."); return; }
+    if (!idleSpend(cost)) { toast(I18N.t("toast.no_offerings")); return; }
     inst.tier = nextTier;
-    toast(`${st.name} rises to tier ${nextTier}.`);
+    toast(I18N.t("toast.tier_up", { name: st.name, tier: nextTier }));
   }
 
   function idleAssignAttendant(structureId, attendantId) {
     ensureIdleState();
     if (!S.idle.attendants[attendantId]?.unlocked) return;
     S.idle.assignments[structureId] = attendantId;
-    toast(`${DATA.IDLE.attendants[attendantId].name} now tends the ${DATA.IDLE.structures[structureId].name}.`);
+    toast(I18N.t("toast.attendant_assigned", { attendant: DATA.IDLE.attendants[attendantId].name, structure: DATA.IDLE.structures[structureId].name }));
   }
 
   function idleAscend() {
     ensureIdleState();
     const need = DATA.IDLE.ascension.threshold;
-    if (!idleCanAfford(need)) { toast("The Renewal ritual demands more fragments and favor."); return; }
+    if (!idleCanAfford(need)) { toast(I18N.t("toast.renewal_cost")); return; }
     idleSpend(need);
     const level = (S.idle.ascension.level || 0) + 1;
     S.idle.ascension.level = level;
@@ -1219,14 +1219,14 @@
     const lore = DATA.IDLE.ascension.loreUnlocks[(level - 1) % DATA.IDLE.ascension.loreUnlocks.length];
     if (lore && !S.idle.ascension.loreUnlocked.includes(lore)) S.idle.ascension.loreUnlocked.push(lore);
     S.idle.premium.chronos_crystals += 4;
-    toast("Renewal complete. The Seal remembers more than before.");
+    toast(I18N.t("toast.renewal_done"));
   }
 
   function idleCycleFocus() {
     const keys = Object.keys(DATA.IDLE.focusModes);
     const idx = Math.max(0, keys.indexOf(S.idle.focusMode));
     S.idle.focusMode = keys[(idx + 1) % keys.length];
-    toast(`Focus set: ${DATA.IDLE.focusModes[S.idle.focusMode].name}.`);
+    toast(I18N.t("toast.focus_set", { name: DATA.IDLE.focusModes[S.idle.focusMode].name }));
   }
 
   function idleTickRuntime(dt) {
@@ -1244,7 +1244,7 @@
       const i = Math.max(0, ids.indexOf(S.idle.event.activeId));
       S.idle.event.activeId = ids[(i + 1) % ids.length];
       S.idle.event.startedAt = now;
-      toast(`Season shifts: ${DATA.IDLE.events[S.idle.event.activeId].name}.`);
+      toast(I18N.t("toast.season", { name: DATA.IDLE.events[S.idle.event.activeId].name }));
     }
     S.idle.timing.lastTickAt = now;
   }
@@ -1308,8 +1308,8 @@
     idleApplyOffline(elapsed, "load");
   }
   function saveSlot(n) {
-    try { Platform.setItem("soth_slot_" + n, JSON.stringify(serialize())); sfx("save"); toast("Saved to slot " + (n + 1)); }
-    catch (e) { toast("Save failed"); }
+    try { Platform.setItem("soth_slot_" + n, JSON.stringify(serialize())); sfx("save"); toast(I18N.t("toast.saved", { n: n + 1 })); }
+    catch (e) { toast(I18N.t("toast.save_failed")); }
   }
   function loadSlot(n) {
     try {
@@ -1332,7 +1332,7 @@
   }
   Platform.on("suspend", suspendSave);
   Platform.on("entitlements", (e) => {
-    if (e && e.full && S.state === "map") toast((window.PAYWALL && PAYWALL.copy && PAYWALL.copy.unlockedToast) || "The full journey is open.");
+    if (e && e.full && S.state === "map") toast((window.PAYWALL && PAYWALL.copy && PAYWALL.copy.unlockedToast) || I18N.t("toast.full_open"));
   });
   Platform.on("savesChanged", () => { if (S.state === "title") $("btn-continue").disabled = !hasAnySave(); });
   document.addEventListener("visibilitychange", () => { if (document.hidden && !Platform.native) suspendSave(); });
@@ -1696,11 +1696,11 @@
   }
   function tryWarp(ev) {
     if (ev.needFlag && !flagOn(ev.needFlag)) {
-      toast(ev.needText || "The way is closed.");
+      toast(ev.needText || I18N.t("toast.way_closed"));
       return;
     }
     if (!Platform.gate(ev.map, "warp")) {
-      toast((window.PAYWALL && PAYWALL.copy && PAYWALL.copy.lockedToast) || "The road ahead is part of the Full Game.");
+      toast((window.PAYWALL && PAYWALL.copy && PAYWALL.copy.lockedToast) || I18N.t("toast.full_game_locked"));
       return;
     }
     const m = MAPS[ev.map];
@@ -1727,7 +1727,7 @@
   }
   function startCampChat(c) {
     setFlag(c.done, 1);
-    toast("Camp: " + c.title);
+    toast(I18N.t("toast.camp", { title: c.title }));
     startScene(c.scene);
   }
   function altarHere() {
@@ -1743,11 +1743,11 @@
     });
     S.time = (S.time + 8) % 24;
     sfx("heal");
-    toast("The lotus altar takes the night. The party is whole.");
+    toast(I18N.t("toast.altar_rest"));
   }
   function interact() {
     if (S.idle?.options?.sleepMode) {
-      toast("Deep Meditation is active. Disable it from Temple settings to resume rites and dialogue.");
+      toast(I18N.t("toast.meditation"));
       return;
     }
     const f = facingTile(), here = footTile();
@@ -1774,11 +1774,11 @@
       if (ev.type === "save") {
         restAtAltar(); openMenu();
         const chat = campChatAvailable();
-        if (chat) toast(`Camp chat waiting: "${chat.title}". ${IS_TOUCH ? "Tap ⛺" : "Press C"} at the altar.`);
+        if (chat) toast(I18N.t("toast.camp_chat", { title: chat.title, action: IS_TOUCH ? "Tap ⛺" : "Press C" }));
         return true;
       }
       if (ev.type === "chest") {
-        if (flagOn("chest_" + ev.id) || flagOn(ev.id)) { toast("Empty."); return true; }
+        if (flagOn("chest_" + ev.id) || flagOn(ev.id)) { toast(I18N.t("toast.empty")); return true; }
         setFlag(ev.id, 1);
         grant(ev.item);
         sfx("ok");
@@ -1842,7 +1842,7 @@
         restAtAltar();
         if (chat) startCampChat(chat); else openMenu();
       }
-      else toast("Rest at a glowing lotus altar.");
+      else toast(I18N.t("toast.rest_hint"));
     }
     stepTriggers();
     const m = map();
@@ -3426,7 +3426,7 @@
     if (!b || b.phase !== "cmd" || b.healingRainAim) return;
     const pal = b.pals.find((p) => p.id === id);
     if (!pal || pal === b.actor) return;
-    if (!swappableHero(pal)) { sfx("cancel"); toast(`${pal.name} cannot act right now.`); return; }
+    if (!swappableHero(pal)) { sfx("cancel"); toast(I18N.t("toast.cannot_act", { name: pal.name })); return; }
     const cur = b.qi - 1, j = b.queue.indexOf(pal);
     if (cur >= 0 && b.queue[cur] === b.actor) {
       b.queue[cur] = pal; b.queue[j] = b.actor;
@@ -3544,7 +3544,7 @@
     const b = S.battle;
     b.menu = "target"; b.cmdIdx = 0; b._skill = sk;
     b.targetList = (kind === "ally" ? aliveP() : aliveE()).map((t, i) => Object.assign(t, { _i: i }));
-    if (!b.targetList.length) { toast("No target."); return; }
+    if (!b.targetList.length) { toast(I18N.t("toast.no_target")); return; }
     renderBattleHUD();
   }
   function finishPlayer() {
@@ -3572,7 +3572,7 @@
       t.gassed = Math.max(0, t.gassed - 1);
       blog(`${t.name}'s Gassed shortens.`);
     }
-    if (it._uses <= 0) toast(`${it.name} is spent.`);
+    if (it._uses <= 0) toast(I18N.t("toast.item_spent", { name: it.name }));
   }
   function useSkill(user, sk, target) {
     if (!sk) return;
@@ -4476,15 +4476,15 @@
           if ((S.idle.premium.chronos_crystals || 0) >= 3) {
             S.idle.premium.chronos_crystals -= 3;
             S.idle.premium.speedBoostMins = (S.idle.premium.speedBoostMins || 0) + 30;
-            toast("Time bends around the spire.");
-          } else toast("Not enough Chronos Crystals.");
+            toast(I18N.t("toast.time_bends"));
+          } else toast(I18N.t("toast.no_crystals"));
         }
         if (act === "cap") {
           if ((S.idle.premium.chronos_crystals || 0) >= 5) {
             S.idle.premium.chronos_crystals -= 5;
             S.idle.premium.offlineCapBonusHours = Math.min(24, (S.idle.premium.offlineCapBonusHours || 0) + 1);
-            toast("The seal's offline span grows by one hour.");
-          } else toast("Not enough Chronos Crystals.");
+            toast(I18N.t("toast.offline_span"));
+          } else toast(I18N.t("toast.no_crystals"));
         }
         renderMenu();
       }));
@@ -4492,7 +4492,7 @@
       body.querySelectorAll("[data-idle-assign]").forEach((btn) => btn.addEventListener("click", () => {
         const sid = btn.dataset.idleAssign;
         const unlocked = idleAvailableAttendants().map((a) => a.id);
-        if (!unlocked.length) { toast("No attendants are yet awake."); return; }
+        if (!unlocked.length) { toast(I18N.t("toast.no_attendants")); return; }
         const cur = S.idle.assignments[sid];
         const i = Math.max(-1, unlocked.indexOf(cur));
         const next = unlocked[(i + 1) % unlocked.length];
@@ -4704,6 +4704,7 @@
   function updateFx(dt) {
     S.tileFx += dt;
     S.anim += dt;
+    if (Platform.a11y.reduceMotion) { S.shake = 0; S.flash = 0; }  // Accessibility: no shake / full-screen flashes
     if (S.shake > 0) S.shake *= 0.86;
     if (S.flash > 0) S.flash -= dt;
     updateAmbient(dt);
