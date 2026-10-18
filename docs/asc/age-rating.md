@@ -4,7 +4,7 @@ Set through the API by `scripts/asc/app_review_setup.py` from `docs/asc/age-rati
 
 | Question | Answer | Why |
 |---|---|---|
-| Cartoon or Fantasy Violence | **Frequent/Intense** | Turn-based battles against demons, wisps and a corrupted oak are the core loop. They're stylized anime art with hit flashes and HP bars, with no gore. |
+| Cartoon or Fantasy Violence | **Infrequent/Mild** | Turn-based battles against demons, wisps and a corrupted oak are stylized and mild: anime art with hit flashes and HP bars, no blood, no gore, no injury shown, and enemies simply fade out. Yisheng chose this level on 2026-10-18. |
 | Realistic Violence | **Infrequent/Mild** | Some story text describes blood and injury (for example, a flashback of a boy "kneeling in his own blood", the "Blood Price" skill). It's text only, nothing is depicted. |
 | Prolonged Graphic or Sadistic Realistic Violence | None | |
 | Guns or Other Weapons | **Infrequent/Mild** | Fantasy swords, staves and chains appear in art and as equipment. There are no guns. |
@@ -24,4 +24,4 @@ Set through the API by `scripts/asc/app_review_setup.py` from `docs/asc/age-rati
 | Parental Controls / Age Assurance | No | The game has neither. Purchases follow Apple's Ask to Buy. |
 | Health or Wellness Topics | No | |
 
-After the API update, App Store Connect computed **12+** (`appStoreAgeRating: TWELVE_PLUS`; Brazil self-rated 12). The main driver is frequent fantasy violence. Made for Kids: no.
+After the API update to Infrequent/Mild fantasy violence, App Store Connect recomputes the rating. The recomputed value is recorded in the listing-upload run output. Made for Kids: no.

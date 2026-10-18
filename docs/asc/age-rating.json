@@ -1,6 +1,6 @@
 {
   "_comment": "App Store Connect age rating declaration for Temple of the High Priestess. Source of truth for scripts/asc/app_review_setup.py. Rationale: docs/asc/age-rating.md",
-  "violenceCartoonOrFantasy": "FREQUENT_OR_INTENSE",
+  "violenceCartoonOrFantasy": "INFREQUENT_OR_MILD",
   "violenceRealistic": "INFREQUENT_OR_MILD",
   "violenceRealisticProlongedGraphicOrSadistic": "NONE",
   "gunsOrOtherWeapons": "INFREQUENT_OR_MILD",

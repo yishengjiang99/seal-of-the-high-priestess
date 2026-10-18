@@ -114,10 +114,9 @@ https://grepawk.com/high-priestess/privacy
 Gambling: none (no simulated gambling, no real-money gambling, no loot boxes). User-generated content: none. Messaging /
 chat: none. Unrestricted web access: none.
 
-**Fantasy violence is declared Frequent/Intense, not mild/infrequent.** The turn-based battles against demons and a corrupted
-oak are the core loop (stylized, no gore), and the earlier declaration (computed rating 12+) already says so, so the script
-applies `age-rating.json` as-is instead of lowering it. Changing it to Infrequent/Mild is Yisheng's call (edit
-`violenceCartoonOrFantasy` in `age-rating.json`); it would understate the game's main activity.
+**Fantasy violence is declared Infrequent/Mild** (Yisheng's decision, 2026-10-18). Battles against demons and a corrupted
+oak are stylized turn-based combat: anime art, hit flashes and HP bars, no gore, and no blood or injury is depicted.
+Realistic violence stays Infrequent/Mild because some story text mentions blood. The script applies `age-rating.json` as-is.
 
 **TODO for Yisheng: `socialMediaAgeRestricted`.** The API schema has this age-rating field and it is still null. The script
 does not set it (the game has no social features and `socialMedia` is false). The verify step prints it as a `[TODO]` and a
