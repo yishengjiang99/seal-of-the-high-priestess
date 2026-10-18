@@ -1,0 +1,29 @@
+name: ASC app availability and price
+
+# Sets the app free (USD 0, base territory USA) and available in all territories + new territories
+# (appAvailabilityV2). Idempotent. Never submits for review. IAP prices are untouched.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Only report current state / what would change
+        type: boolean
+        default: false
+
+jobs:
+  availability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: App availability + price schedule
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          ASC_APP_ID: "6819973123"
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: |
+          set -euo pipefail
+          pip install -q PyJWT cryptography
+          python3 scripts/asc/app_availability.py
