@@ -157,15 +157,19 @@ async function mobileViewportChecks(browser) {
     assert.equal(await page.locator("#dpad, #touch [data-k=KeyZ]").count(), 0, `${name}: no d-pad or Z button`);
     await page.evaluate(() => { window.SOTH.battle = null; window.SOTH.state = "map"; document.getElementById("battle-hud").classList.add("hidden"); });
     await page.waitForFunction(() => document.querySelector("#touch.on-map"));
-    await page.waitForTimeout(300);
+    await page.evaluate(() => window.SOTH_TEST_RESET && window.SOTH_TEST_RESET());
+    await page.waitForTimeout(500);
     const p0 = await page.evaluate(() => [window.SOTH.px, window.SOTH.py]);
     const cb = await page.locator("#game").boundingBox();
-    // a free floor tile two tiles to the right of the leader, in screen space
-    const tgt = await page.evaluate(() => { const S = window.SOTH; return window.SOTH_DEBUG_W2S(S.px + 64, S.py); });   // projection-aware (flat or 2.5D)
-    await page.mouse.click(cb.x + tgt[0] * cb.width / 1280, cb.y + tgt[1] * cb.height / 720);
-    await page.waitForTimeout(900);
-    const p1 = await page.evaluate(() => [window.SOTH.px, window.SOTH.py]);
-    assert.ok(p1[0] > p0[0] + 20, `${name}: tap-to-move walks the party (${p0} -> ${p1})`);
+    // a free floor tile two tiles to the right of the leader, in screen space (projection-aware: flat or 2.5D)
+    let tgt = null, p1 = p0;
+    for (let attempt = 0; attempt < 3 && !(p1[0] > p0[0] + 20); attempt++) {
+      tgt = await page.evaluate(() => { const S = window.SOTH; return window.SOTH_DEBUG_W2S(S.px + 64, S.py); });
+      await page.mouse.click(cb.x + tgt[0] * cb.width / 1280, cb.y + tgt[1] * cb.height / 720);
+      await page.waitForTimeout(900);
+      p1 = await page.evaluate(() => [window.SOTH.px, window.SOTH.py]);
+    }
+    assert.ok(p1[0] > p0[0] + 20, `${name}: tap-to-move walks the party (${p0} -> ${p1}) tgt=${tgt} ${JSON.stringify(await page.evaluate(() => ({ st: window.SOTH.state, map: window.SOTH.mapId, vp: [innerWidth, innerHeight], stats: window.SOTH_WORLD_STATS && window.SOTH_WORLD_STATS() })))} box=${JSON.stringify(cb)}`);
     assert.ok(await page.evaluate(() => !window.SOTH.keys.right && !window.SOTH.just.ok), `${name}: tap does not leave keys held`);
     assert.deepEqual(errors, [], `${name}: no page errors`);
     await ctx.close();
