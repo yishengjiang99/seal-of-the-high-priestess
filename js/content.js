@@ -610,6 +610,69 @@ window.DATA = (() => {
     { scene: "elara_doubt", title: "Before the gates", need: ["quest_tablet"], done: "elara_doubt_done" }
   ];
 
+  // ---- Quest guidance (js/quest.js): where to go next, tracker line, world map. Data only. ----
+  // objectives: main chain in story order + optional side objectives.
+  //   id, track ("main" | "side"), title, hint (short, plain), map + x/y (tile) of the target,
+  //   npc (optional event id at x/y), done (condition), after (side objectives: when it appears).
+  // Conditions: { flag: "name" } | { all: [...] } | { any: [...] } over story flags; "region_<map>" flags are
+  // set on first entry to a region. The current main objective is the first one not done; an objective also
+  // counts as done once any later main objective is done (players can skip ahead).
+  C.GUIDE = {
+    version: 1,
+    finale: { title: "The road ends here, for now", hint: "The Seal holds. Revisit the lotus altars for camp talks, finish side quests, or begin again." },
+    regions: [
+      { id: "lotus", name: "The Lotus Road", maps: ["temple", "village", "inn", "house_mira", "house_wen", "forest"] },
+      { id: "wilds", name: "The Western Wilds", maps: ["wilderness"] },
+      { id: "meridia", name: "Meridia", maps: ["meridia", "tavern", "blacksmith", "keeper_house", "korin_home"] },
+      { id: "ash", name: "The Ashen Reach", maps: ["ashen", "ruins", "throne"] }
+    ],
+    // Node positions on the world map (0-100 x 0-62) + a one-line note on what the place is for.
+    nodes: {
+      temple: { x: 78, y: 8, label: "Temple", note: "Where the rite begins. A lotus altar rests the party." },
+      village: { x: 78, y: 26, label: "Village", note: "Lotus-Step Village: shops, neighbours and the road south." },
+      inn: { x: 90, y: 31, label: "Inn", note: "Hana's Inn." },
+      house_mira: { x: 66, y: 19, label: "Mira's Cottage", note: "The acolyte's cottage." },
+      house_wen: { x: 66, y: 33, label: "Wen's Shed", note: "Wen's shed." },
+      forest: { x: 68, y: 47, label: "Forest", note: "The Whispering Forest, ending at the Heartwood." },
+      wilderness: { x: 40, y: 53, label: "Wilderness", note: "Open country between the forest, Meridia and the ash road." },
+      meridia: { x: 41, y: 24, label: "Meridia", note: "The canal kingdom: plaza, tavern, forge and the lantern keep." },
+      tavern: { x: 30, y: 12, label: "Tavern", note: "The Poisoned Word tavern." },
+      blacksmith: { x: 52, y: 12, label: "Forge", note: "Korin's Forge." },
+      keeper_house: { x: 30, y: 36, label: "Lantern Keep", note: "The Lantern Keep." },
+      korin_home: { x: 52, y: 36, label: "Korin's Rooms", note: "Korin's rooms." },
+      ashen: { x: 14, y: 50, label: "Ashen Pass", note: "A long climb with a gate at the end." },
+      ruins: { x: 11, y: 32, label: "Court Ruins", note: "The Betrayed Court, Kael's old palace." },
+      throne: { x: 11, y: 14, label: "Throne Gates", note: "The outer gates of the Throne of Ash." }
+    },
+    objectives: [
+      { id: "leave_temple", track: "main", region: "lotus", title: "Leave the temple", hint: "The rite is given. Walk south through the cloister and out of the temple gates.", map: "temple", x: 36, y: 48, done: { flag: "left_temple" } },
+      { id: "village_road", track: "main", region: "lotus", title: "Follow the village road south", hint: "Pass through Lotus-Step Village to the road at its southern edge. Night will catch you there.", map: "village", x: 46, y: 72, done: { flag: "camp1_done" } },
+      { id: "forest_trail", track: "main", region: "lotus", title: "Walk the forest trail", hint: "The road enters the Whispering Forest. Follow the trail south-west. Something hollow drifts near the path.", map: "forest", x: 36, y: 22, done: { flag: "tut_wisp" } },
+      { id: "heartwood", track: "main", region: "lotus", title: "Find the Heartwood", hint: "The trail runs south to an old tree that still wants worship. Rest at a lotus altar first. This fight is long.", map: "forest", x: 52, y: 74, done: { flag: "hollow_oak_dead" } },
+      { id: "to_meridia", track: "main", region: "wilds", title: "Cross the wilds to Meridia", hint: "The forest road is open. Leave by the south edge and follow the path to Meridia's north gate.", map: "meridia", x: 54, y: 8, done: { flag: "region_meridia" } },
+      { id: "find_lyra", track: "main", region: "meridia", title: "Find Lyra in the plaza", hint: "Meridia's scouts hold the roads. Lyra is in the plaza at the heart of the city.", map: "meridia", x: 54, y: 30, npc: "lyra_npc", done: { flag: "lyra_joined" } },
+      { id: "ash_road", track: "main", region: "ash", title: "Take the ash road west", hint: "With Lyra's word the west gate opens. Leave Meridia by the west gate and cross the wilds to Ashen Pass.", map: "ashen", x: 20, y: 4, done: { flag: "region_ashen" } },
+      { id: "ashen_camp", track: "main", region: "ash", title: "Climb Ashen Pass", hint: "Follow the pass south. Lotus altars on the way restore the party.", map: "ashen", x: 19, y: 50, done: { flag: "ashen_camp_done" } },
+      { id: "gate_warden", track: "main", region: "ash", title: "Face the Gate Warden", hint: "A guardian bars the gate at the foot of the pass. Go in rested.", map: "ashen", x: 20, y: 104, done: { flag: "warden_dead" } },
+      { id: "court_gate", track: "main", region: "ash", title: "Enter the Betrayed Court", hint: "Beyond the gate lie the ruins of Kael's court. Walk south through the broken hall.", map: "ruins", x: 44, y: 56, done: { flag: "court_vn_done" } },
+      { id: "court_trial", track: "main", region: "ash", title: "Survive the court", hint: "The court's reckoning waits at the south end of the hall.", map: "ruins", x: 44, y: 62, done: { flag: "court_survived" } },
+      { id: "throne_gate", track: "main", region: "ash", title: "Stand at the Throne of Ash", hint: "The way to the outer gates is open. Walk to the gates.", map: "throne", x: 28, y: 18, done: { flag: "slice_ending_seen" } },
+
+      { id: "side_mira", track: "side", region: "lotus", title: "Find Acolyte Mira", hint: "Acolyte Ren fears for Mira. Her cottage is on the east side of the village. Read what she left on the table.", map: "house_mira", x: 4, y: 4, done: { flag: "quest_acolyte_found" }, after: { flag: "left_temple" } },
+      { id: "side_shen", track: "side", region: "lotus", title: "Rescue Master Shen", hint: "A wandering master is arguing with a tree, west of the forest trail.", map: "forest", x: 29, y: 41, npc: "shen", done: { flag: "quest_shen" }, after: { flag: "tut_wisp" } },
+      { id: "side_vines", track: "side", region: "lotus", title: "Clear the brambles", hint: "Spite-vines choke the south-west of the forest. A herbalist in Meridia will want to hear of it.", map: "forest", x: 20, y: 64, done: { flag: "forest_skirmish" }, after: { flag: "tut_wisp" } },
+      { id: "side_herbalist", track: "side", region: "meridia", title: "Help the herbalist", hint: "The herbalist is by the south canals of Meridia.", map: "meridia", x: 40, y: 55, npc: "herbalist", done: { flag: "quest_herbalist" }, after: { all: [{ flag: "forest_skirmish" }, { flag: "region_meridia" }] } },
+      { id: "side_jori", track: "side", region: "meridia", title: "Hear Jori out", hint: "Jori followed you from the village and waits by the canal side of the plaza.", map: "meridia", x: 36, y: 36, npc: "jori2", done: { flag: "canal_ready" }, after: { all: [{ flag: "camp1_done" }, { flag: "region_meridia" }] } },
+      { id: "side_canal", track: "side", region: "meridia", title: "Face the canal's mouth", hint: "Whatever took the shoe lives in the water at the southern canal.", map: "meridia", x: 54, y: 72, done: { flag: "quest_canal" }, after: { flag: "canal_ready" } },
+      { id: "side_sera", track: "side", region: "meridia", title: "Find Sera", hint: "Sera is in the Poisoned Word tavern, in the west of Meridia.", map: "tavern", x: 3, y: 8, npc: "sera", done: { flag: "sera_found" }, after: { flag: "region_meridia" } },
+      { id: "side_korin", track: "side", region: "meridia", title: "Take Sera to Korin", hint: "Korin the smith is at the forge on Meridia's east side.", map: "blacksmith", x: 4, y: 3, npc: "korin", done: { flag: "quest_blacksmith" }, after: { flag: "sera_found" } },
+      { id: "side_letter", track: "side", region: "meridia", title: "Hear the bard's letter", hint: "The bard in the Poisoned Word is selling a sealed letter.", map: "tavern", x: 8, y: 5, npc: "bard", done: { flag: "quest_letter" }, after: { flag: "region_meridia" } },
+      { id: "side_lantern", track: "side", region: "meridia", title: "Witness for the keeper", hint: "The lantern keeper is in the Lantern Keep, south-west of the plaza.", map: "keeper_house", x: 6, y: 4, npc: "keeper", done: { flag: "quest_lantern" }, after: { flag: "region_meridia" } },
+      { id: "side_hound", track: "side", region: "ash", title: "Free the Bound Hound", hint: "Something large is chained near the south end of the pass.", map: "ashen", x: 12, y: 92, done: { flag: "quest_hound" }, after: { flag: "region_ashen" } },
+      { id: "side_tablet", track: "side", region: "ash", title: "Read the courtyard tablet", hint: "A tablet in the court waits for someone who is not a demon.", map: "ruins", x: 34, y: 38, npc: "tablet", done: { flag: "quest_tablet" }, after: { flag: "region_ruins" } }
+    ]
+  };
+
   // Region title cards, shown the first time the party enters each area.
   C.REGIONS = {
     temple: { name: "Silver Lotus Temple", sub: "The lotus opens west" },

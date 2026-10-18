@@ -1,0 +1,135 @@
+/* Quest guidance overlays (js/quest.js). Everything lives inside #app (1280x720 logical px). */
+
+/* Objective tracker: top right, one tap opens the world map. */
+#quest-tracker {
+  position: absolute; right: 16px; top: 14px; z-index: 6;
+  display: flex; flex-direction: column; gap: 2px; align-items: flex-start;
+  max-width: 400px; min-height: 48px; padding: 8px 14px 9px 38px; text-align: left;
+  color: var(--cream); font-family: var(--ui); cursor: pointer;
+  background: linear-gradient(180deg, rgba(30,22,52,0.86), rgba(12,10,22,0.86));
+  border: 1px solid var(--gold-dim); border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+}
+#quest-tracker::before {
+  content: ""; position: absolute; left: 14px; top: 17px; width: 10px; height: 10px;
+  background: var(--gold); transform: rotate(45deg); box-shadow: 0 0 10px rgba(212,180,106,0.8);
+}
+#quest-tracker.side::before { background: var(--lotus); box-shadow: 0 0 10px rgba(126,184,212,0.8); }
+#quest-tracker .q-title { font-family: var(--serif); font-size: calc(17px * var(--subtitle-scale, 1)); font-weight: 700; color: #fff4d6; line-height: 1.2; }
+#quest-tracker .q-hint { font-size: calc(13px * var(--subtitle-scale, 1)); color: var(--silver); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+#quest-tracker:active { transform: scale(0.98); }
+#quest-tracker.pulse { animation: qPulse 1.4s ease-out 1; }
+@keyframes qPulse { 0% { box-shadow: 0 0 0 0 rgba(212,180,106,0.9), 0 6px 18px rgba(0,0,0,0.45); } 100% { box-shadow: 0 0 0 22px rgba(212,180,106,0), 0 6px 18px rgba(0,0,0,0.45); } }
+body.hd #quest-tracker { top: 14px; }
+
+/* In-map pointer: ring + chevron at the target, or an edge arrow when it is off screen. */
+#quest-pointer { position: absolute; left: 0; top: 0; z-index: 4; pointer-events: none; will-change: transform; }
+#quest-pointer .q-ring {
+  position: absolute; left: 0; top: 0; width: var(--ring, 0px); height: var(--ring, 0px);
+  transform: translate(-50%, -50%); border-radius: 50%; display: none;
+  border: 3px dotted rgba(255,226,150,0.95);
+  box-shadow: 0 0 18px rgba(255,214,120,0.8), inset 0 0 14px rgba(255,214,120,0.45);
+  animation: qSpin 8s linear infinite;
+}
+#quest-pointer.inside .q-ring { display: block; }
+#quest-pointer.exit .q-ring { border-color: rgba(150,226,255,0.95); box-shadow: 0 0 18px rgba(126,200,255,0.85), inset 0 0 14px rgba(126,200,255,0.5); }
+#quest-pointer .q-arrow {
+  position: absolute; left: 0; top: 0; width: 0; height: 0;
+  border-top: 14px solid transparent; border-bottom: 14px solid transparent; border-left: 24px solid #ffe29a;
+  filter: drop-shadow(0 0 6px rgba(255,214,120,0.9)) drop-shadow(0 2px 3px #000);
+}
+#quest-pointer.exit .q-arrow { border-left-color: #a8e6ff; filter: drop-shadow(0 0 6px rgba(126,200,255,0.9)) drop-shadow(0 2px 3px #000); }
+#quest-pointer.inside .q-arrow { animation: qBob 1s ease-in-out infinite; }
+#quest-pointer .q-plabel {
+  position: absolute; left: 0; top: 0; max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  padding: 3px 10px; border-radius: 999px; font-size: 13px; color: #fff4d6; background: rgba(12,10,22,0.82); border: 1px solid var(--gold-dim);
+}
+#quest-pointer .q-plabel:empty { display: none; }
+#quest-pointer.calm .q-ring, #quest-pointer.calm .q-arrow { animation: none; }
+@keyframes qSpin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+@keyframes qBob { 50% { margin-top: 8px; } }
+
+/* "Where do I go?" card */
+#quest-card {
+  position: absolute; left: 50%; top: 50%; z-index: 32; width: min(560px, 86%); transform: translate(-50%, -50%);
+  padding: 22px 26px; border-radius: 16px; background: rgba(14,11,26,0.97); border: 1px solid var(--gold);
+  box-shadow: 0 0 0 4px rgba(0,0,0,0.5), 0 18px 50px rgba(0,0,0,0.7);
+}
+#quest-card .q-kicker { color: var(--gold); letter-spacing: 0.14em; text-transform: uppercase; font-size: 12px; }
+#quest-card h3 { font-family: var(--serif); font-size: calc(26px * var(--subtitle-scale, 1)); margin: 4px 0 8px; color: #fff4d6; }
+#quest-card p { font-size: calc(18px * var(--subtitle-scale, 1)); line-height: 1.45; color: var(--cream); }
+#quest-card p.q-where { margin-top: 10px; color: var(--lotus); font-size: calc(16px * var(--subtitle-scale, 1)); }
+.q-row { display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+.q-btn {
+  min-height: 46px; min-width: 120px; padding: 10px 18px; border-radius: 10px; cursor: pointer;
+  font-size: 16px; font-weight: 600; color: #1b1226; background: linear-gradient(180deg, #f0d48a, #c9a24e); border: 1px solid #8a6d3a;
+}
+.q-btn.ghost { color: var(--cream); background: rgba(255,255,255,0.08); border-color: var(--gold-dim); }
+.q-btn.small { min-height: 44px; margin-top: 8px; font-size: 14px; }
+.q-btn:focus-visible, .q-close:focus-visible, .q-node:focus-visible { outline: 3px solid var(--lotus); outline-offset: 2px; }
+#quest-menu-row { display: flex; gap: 10px; margin: 0 0 10px; flex-wrap: wrap; }
+#quest-menu-row .q-btn, .panel #quest-menu-row .q-btn { flex: 1 1 160px; padding: 10px 18px; font-size: 16px; letter-spacing: 0; color: #1b1226; background: linear-gradient(180deg, #f0d48a, #c9a24e); border: 1px solid #8a6d3a; text-shadow: none; }
+#quest-menu-row .q-btn.ghost, .panel #quest-menu-row .q-btn.ghost { color: var(--cream); background: rgba(255,255,255,0.08); border-color: var(--gold-dim); }
+#quest-menu-row .q-btn::before, #quest-card .q-btn::before, .panel #quest-menu-row .q-btn::before { display: none; }
+#quest-menu-row .q-btn:hover, #quest-menu-row .q-btn:focus { text-shadow: none; filter: brightness(1.1); }
+
+/* World map screen */
+#quest-map {
+  position: absolute; inset: 0; z-index: 30; display: flex; flex-direction: column;
+  background: radial-gradient(ellipse at 50% 30%, #1d1634 0%, #0a0814 80%);
+}
+#quest-map header { display: flex; align-items: center; gap: 14px; padding: 14px 20px 6px; }
+#quest-map h2 { font-family: var(--serif); font-size: 28px; color: #fff4d6; letter-spacing: 0.06em; }
+#quest-map .q-meta { color: var(--muted); font-size: 14px; flex: 1; }
+#quest-map .q-close { width: 48px; height: 48px; border-radius: 50%; font-size: 22px; color: var(--cream); background: rgba(255,255,255,0.1); border: 1px solid var(--gold-dim); cursor: pointer; }
+#quest-map .qm-body { flex: 1; min-height: 0; display: flex; gap: 14px; padding: 0 20px; }
+#quest-map .qm-svg { flex: 1 1 66%; min-width: 0; display: flex; align-items: center; }
+#quest-map svg { width: 100%; max-height: 100%; touch-action: manipulation; }
+#quest-map .qm-info { flex: 0 0 320px; overflow-y: auto; padding: 12px 14px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid rgba(212,180,106,0.35); -webkit-overflow-scrolling: touch; touch-action: pan-y; }
+#quest-map .qm-info h3 { font-family: var(--serif); font-size: 22px; color: #fff4d6; margin-bottom: 6px; }
+#quest-map .qm-info p { font-size: 14px; line-height: 1.4; margin: 6px 0; color: var(--cream); }
+#quest-map .qm-info .q-note { color: var(--silver); }
+#quest-map .qm-info .q-lockwhy { color: var(--blush); }
+#quest-map footer { display: flex; gap: 18px; flex-wrap: wrap; padding: 8px 20px 14px; color: var(--muted); font-size: 13px; }
+.q-chip { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 12px; border: 1px solid var(--gold-dim); color: var(--gold); }
+.q-chip.current { color: #bff0bf; border-color: #5aa05a; }
+.q-chip.locked { color: var(--blush); border-color: #8a4a58; }
+.q-chip.open { color: var(--lotus); border-color: #4a7a90; }
+.q-obj { margin: 10px 0; padding: 8px 10px; border-radius: 10px; background: rgba(212,180,106,0.1); border-left: 3px solid var(--gold-dim); }
+.q-obj.on { border-left-color: var(--gold); background: rgba(212,180,106,0.2); }
+.q-obj b { display: block; color: #fff4d6; font-size: 15px; }
+.q-obj span { display: block; font-size: 13px; color: var(--silver); }
+.q-obj .q-btn { display: block; }
+#quest-map .lg { display: inline-flex; align-items: center; gap: 6px; }
+#quest-map .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; background: #8a6d3a; border: 2px solid #8a6d3a; }
+#quest-map .dot.current { box-shadow: 0 0 0 3px #7bc47b; background: #d4b46a; }
+#quest-map .dot.visited { background: #d4b46a; border-color: #d4b46a; }
+#quest-map .dot.open { background: transparent; border-color: #7eb8d4; }
+#quest-map .dot.locked { background: #3a3446; border-color: #5a5468; }
+#quest-map .dot.target { background: #ffe29a; border-color: #fff; box-shadow: 0 0 8px #ffd070; }
+
+.q-region { fill: rgba(126,184,212,0.05); stroke: rgba(212,180,106,0.25); stroke-width: 0.25; stroke-dasharray: 1 0.8; }
+.q-regionname { fill: rgba(212,180,106,0.6); font-size: 2.2px; font-family: var(--serif); letter-spacing: 0.1px; }
+.q-edge { stroke: #8a6d3a; stroke-width: 0.5; }
+.q-edge.oneway { opacity: 0.45; }
+.q-edge.locked { stroke: #4a4458; stroke-dasharray: 1.2 1; }
+.q-edge.route { stroke: #ffe29a; stroke-width: 0.9; stroke-dasharray: 0.1 1.6; stroke-linecap: round; animation: qDash 1.2s linear infinite; }
+@keyframes qDash { to { stroke-dashoffset: -3.4; } }
+.q-node { cursor: pointer; }
+.q-node .q-hit { fill: transparent; }
+.q-node .q-dot { stroke-width: 0.6; }
+.q-node.visited .q-dot, .q-node.current .q-dot { fill: #d4b46a; stroke: #fff4d6; }
+.q-node.open .q-dot { fill: #0c0914; stroke: #7eb8d4; }
+.q-node.locked .q-dot { fill: #2a2536; stroke: #5a5468; }
+.q-node .q-you { fill: none; stroke: #7bc47b; stroke-width: 0.7; }
+.q-node .q-glow { fill: rgba(255,226,150,0.25); stroke: #ffe29a; stroke-width: 0.5; animation: qGlow 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes qGlow { 50% { transform: scale(1.35); opacity: 0.35; } }
+.q-node .q-label { fill: var(--cream); font-size: 2.3px; font-family: var(--ui); paint-order: stroke; stroke: #0a0814; stroke-width: 0.5px; }
+.q-node.interior .q-label { font-size: 2px; fill: var(--silver); }
+.q-node.locked .q-label { fill: var(--muted); }
+.q-node .q-lock { font-size: 2.4px; }
+.q-node:focus { outline: none; }
+.q-node:focus .q-dot { stroke: var(--lotus); stroke-width: 1; }
+
+/* Phones in portrait / narrow: stack the panel under the map. */
+@media (max-aspect-ratio: 1/1) { #quest-map .qm-body { flex-direction: column; } #quest-map .qm-info { flex: 0 0 38%; } }
