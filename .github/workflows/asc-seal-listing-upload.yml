@@ -1,0 +1,63 @@
+name: ASC Seal upload listing
+
+# Listing prep for Temple of the High Priestess (com.ragnus.weather): metadata, URLs, categories, copyright,
+# App Review contact + notes, age rating (docs/asc/age-rating.json), export compliance, attach build, screenshots from
+# docs/asc/screenshots/en-US, then a read-only verification that exits 1 on any gap.
+# NEVER submits for review (that is asc-submit-review.yml, run by hand by the owner). Run with verify_only=true first.
+# Does not touch Game Center, in-app purchases, pricing or the Paid Apps Agreement.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_string:
+        description: App Store version to sync (created as PREPARE_FOR_SUBMISSION if missing; ignored writes when verify_only)
+        required: true
+        type: string
+        default: "1.0"
+      build_number:
+        description: CFBundleVersion to attach to the version (export compliance cleared too)
+        required: true
+        type: string
+        default: "5"
+      screenshots:
+        description: Replace screenshots from docs/asc/screenshots/en-US
+        type: boolean
+        default: true
+      verify_only:
+        description: Read-only verification, no writes
+        type: boolean
+        default: true
+
+concurrency:
+  group: asc-seal-listing-upload
+  cancel-in-progress: false
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check listing copy + screenshot set
+        run: |
+          set -euo pipefail
+          python3 docs/asc/check_copy.py
+
+      - name: Upload listing to App Store Connect and verify
+        env:
+          APP_STORE_CONNECT_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+          BUNDLE_ID: com.ragnus.weather
+          VERSION_STRING: ${{ inputs.version_string }}
+          BUILD_NUMBER: ${{ inputs.build_number }}
+          UPLOAD_SCREENSHOTS: ${{ inputs.screenshots }}
+          VERIFY_ONLY: ${{ inputs.verify_only }}
+          # The target is iPhone-only (TARGETED_DEVICE_FAMILY=1): iPad screenshots are not uploaded or verified.
+          # Flip to "true" only if iPad support ships (the ipad-13-*.png frames are already in the repo).
+          INCLUDE_IPAD: "false"
+        run: |
+          set -euo pipefail
+          pip install -q PyJWT cryptography requests
+          python3 scripts/asc/upload_seal_listing.py

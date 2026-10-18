@@ -1,7 +1,7 @@
 name: ASC review prerequisites
 
 # Age rating declaration (docs/asc/age-rating.json), content rights, App Review contact + notes
-# (docs/asc/review-notes.txt). Idempotent. Never submits.
+# (docs/asc/metadata/review_information/notes.txt). Idempotent. Never submits.
 on:
   workflow_dispatch:
 

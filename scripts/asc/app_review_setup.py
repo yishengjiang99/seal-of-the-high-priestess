@@ -3,7 +3,7 @@
 
   1. age rating declaration      <- docs/asc/age-rating.json
   2. content rights declaration  <- DOES_NOT_USE_THIRD_PARTY_CONTENT (owns all rights)
-  3. App Review contact + notes  <- REVIEW_* env + docs/asc/review-notes.txt, on the editable version
+  3. App Review contact + notes  <- REVIEW_* env + docs/asc/metadata/review_information/notes.txt, on the editable version
 Env: APP_STORE_CONNECT_*; REVIEW_FIRST, REVIEW_LAST, REVIEW_EMAIL, REVIEW_PHONE
 """
 import json, os, sys
@@ -48,7 +48,7 @@ v = editable_version()
 if not v:
     problems.append("no editable App Store version for the review detail")
 else:
-    notes = open(os.path.join(ROOT, "docs/asc/review-notes.txt")).read().strip()
+    notes = open(os.path.join(ROOT, "docs/asc/metadata/review_information/notes.txt")).read().strip()
     attrs = {"contactFirstName": os.environ["REVIEW_FIRST"], "contactLastName": os.environ["REVIEW_LAST"],
              "contactEmail": os.environ["REVIEW_EMAIL"], "contactPhone": os.environ["REVIEW_PHONE"],
              "demoAccountRequired": False, "notes": notes}
