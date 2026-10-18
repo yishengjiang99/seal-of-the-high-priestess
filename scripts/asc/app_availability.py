@@ -12,6 +12,15 @@ from asc_common import APP, api, must, get_all, ASCError
 DRY = os.environ.get("DRY_RUN") == "1"
 
 
+def tid_of(t):
+    r = ((t.get("relationships") or {}).get("territory") or {}).get("data")
+    if r:
+        return r["id"]
+    import base64
+    raw = t["id"] + "=" * (-len(t["id"]) % 4)
+    return json.loads(base64.urlsafe_b64decode(raw)).get("t", "?")
+
+
 def current_availability():
     st, d = api("GET", f"/v1/apps/{APP}/appAvailabilityV2")
     if st == 404 or (st == 200 and not d.get("data")):
@@ -20,22 +29,24 @@ def current_availability():
         print(f"::warning::GET appAvailabilityV2 -> {st}: {str(d.get('error'))[:1500]}")
         return None, None
     av = d["data"]
-    tas = get_all(f"/v2/appAvailabilities/{av['id']}/territoryAvailabilities?limit=200")
+    tas = get_all(f"/v2/appAvailabilities/{av['id']}/territoryAvailabilities?include=territory&limit=200")
+    for t in tas:
+        t["tid"] = tid_of(t)
     return av, tas
 
 
 def show_avail(av, tas, label):
     if not av:
         print(f"[{label}] no appAvailabilityV2 exists"); return
-    on = sorted(t["relationships"]["territory"]["data"]["id"] for t in tas if t["attributes"].get("available"))
-    off = sorted(t["relationships"]["territory"]["data"]["id"] for t in tas if not t["attributes"].get("available"))
+    on = sorted(t["tid"] for t in tas if t["attributes"].get("available"))
+    off = sorted(t["tid"] for t in tas if not t["attributes"].get("available"))
     print(f"[{label}] id={av['id']} availableInNewTerritories={av['attributes'].get('availableInNewTerritories')} "
           f"territoryAvailabilities={len(tas)} available={len(on)} unavailable={len(off)}")
     if off:
         print("  unavailable:", ",".join(off))
         for t in tas:
             if not t["attributes"].get("available"):
-                print("   ", t["relationships"]["territory"]["data"]["id"], json.dumps(t["attributes"]))
+                print("   ", t["tid"], json.dumps(t["attributes"]))
 
 
 def price_state():
@@ -102,7 +113,7 @@ def main():
     show_avail(av, tas, "availability before")
     have_all = (av and av["attributes"].get("availableInNewTerritories") is True and tas
                 and all(t["attributes"].get("available") for t in tas)
-                and set(territories) <= {t["relationships"]["territory"]["data"]["id"] for t in tas})
+                and set(territories) <= {t["tid"] for t in tas})
     if have_all:
         print("availability: already all territories + new territories, nothing to do")
     elif DRY:
@@ -123,7 +134,7 @@ def main():
             ok = False
     av, tas = current_availability()
     show_avail(av, tas, "availability after")
-    on = {t["relationships"]["territory"]["data"]["id"] for t in (tas or []) if t["attributes"].get("available")}
+    on = {t["tid"] for t in (tas or []) if t["attributes"].get("available")}
     missing = sorted(set(territories) - on)
     print(f"RESULT availableTerritories={len(on)}/{len(territories)} missing={missing} "
           f"availableInNewTerritories={av and av['attributes'].get('availableInNewTerritories')}")
