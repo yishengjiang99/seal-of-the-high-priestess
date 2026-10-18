@@ -59,5 +59,8 @@ window.FLAGS = {
   visualOverhaul: true,
   visualMaps: "temple",
   // first-party frame-time samples (event perf_sample); false stops them
-  perfTelemetry: true
+  perfTelemetry: true,
+  // Travel tuning (no build needed): walk-speed multiplier (0.75-1.75) and the world-map / tracker fast travel switch.
+  walkSpeedMult: 1.25,
+  fastTravel: true
 };

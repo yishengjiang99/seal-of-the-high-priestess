@@ -1,23 +1,33 @@
 /* Quest guidance overlays (js/quest.js). Everything lives inside #app (1280x720 logical px). */
 
-/* Objective tracker: top right, one tap opens the world map. */
+/* Objective tracker: top right. The text opens the world map; the Travel button (fast travel) sits beside it. */
 #quest-tracker {
   position: absolute; right: 16px; top: 14px; z-index: 6;
-  display: flex; flex-direction: column; gap: 2px; align-items: flex-start;
-  max-width: 400px; min-height: 48px; padding: 8px 14px 9px 38px; text-align: left;
-  color: var(--cream); font-family: var(--ui); cursor: pointer;
+  display: flex; align-items: stretch; max-width: 460px; min-height: 48px;
+  color: var(--cream); font-family: var(--ui);
   background: linear-gradient(180deg, rgba(30,22,52,0.86), rgba(12,10,22,0.86));
-  border: 1px solid var(--gold-dim); border-radius: 12px;
+  border: 1px solid var(--gold-dim); border-radius: 12px; overflow: hidden;
   box-shadow: 0 6px 18px rgba(0,0,0,0.45);
 }
-#quest-tracker::before {
+#quest-tracker .q-main {
+  position: relative; flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; align-items: flex-start;
+  padding: 8px 14px 9px 38px; text-align: left; color: inherit; font: inherit; background: transparent; border: 0; cursor: pointer;
+}
+#quest-tracker .q-main::before {
   content: ""; position: absolute; left: 14px; top: 17px; width: 10px; height: 10px;
   background: var(--gold); transform: rotate(45deg); box-shadow: 0 0 10px rgba(212,180,106,0.8);
 }
-#quest-tracker.side::before { background: var(--lotus); box-shadow: 0 0 10px rgba(126,184,212,0.8); }
+#quest-tracker.side .q-main::before { background: var(--lotus); box-shadow: 0 0 10px rgba(126,184,212,0.8); }
 #quest-tracker .q-title { font-family: var(--serif); font-size: calc(17px * var(--subtitle-scale, 1)); font-weight: 700; color: #fff4d6; line-height: 1.2; }
 #quest-tracker .q-hint { font-size: calc(13px * var(--subtitle-scale, 1)); color: var(--silver); line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-#quest-tracker:active { transform: scale(0.98); }
+#quest-tracker .q-main:active { background: rgba(255,255,255,0.06); }
+#quest-tracker .q-go {
+  flex: none; min-width: 64px; min-height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+  padding: 4px 10px; color: #1b1226; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+  background: linear-gradient(180deg, #f0d48a, #c9a24e); border: 0; border-left: 1px solid #8a6d3a;
+}
+#quest-tracker .q-go .q-go-ico { font-size: 18px; line-height: 1; }
+#quest-tracker .q-go:active { filter: brightness(0.9); }
 #quest-tracker.pulse { animation: qPulse 1.4s ease-out 1; }
 @keyframes qPulse { 0% { box-shadow: 0 0 0 0 rgba(212,180,106,0.9), 0 6px 18px rgba(0,0,0,0.45); } 100% { box-shadow: 0 0 0 22px rgba(212,180,106,0), 0 6px 18px rgba(0,0,0,0.45); } }
 body.hd #quest-tracker { top: 14px; }
@@ -66,7 +76,8 @@ body.hd #quest-tracker { top: 14px; }
 }
 .q-btn.ghost { color: var(--cream); background: rgba(255,255,255,0.08); border-color: var(--gold-dim); }
 .q-btn.small { min-height: 44px; margin-top: 8px; font-size: 14px; }
-.q-btn:focus-visible, .q-close:focus-visible, .q-node:focus-visible { outline: 3px solid var(--lotus); outline-offset: 2px; }
+.q-travel { display: block; width: 100%; margin: 10px 0 4px; min-height: 52px; font-size: 18px; }
+.q-btn:focus-visible, #quest-tracker button:focus-visible, .q-close:focus-visible, .q-node:focus-visible { outline: 3px solid var(--lotus); outline-offset: 2px; }
 #quest-menu-row { display: flex; gap: 10px; margin: 0 0 10px; flex-wrap: wrap; }
 #quest-menu-row .q-btn, .panel #quest-menu-row .q-btn { flex: 1 1 160px; padding: 10px 18px; font-size: 16px; letter-spacing: 0; color: #1b1226; background: linear-gradient(180deg, #f0d48a, #c9a24e); border: 1px solid #8a6d3a; text-shadow: none; }
 #quest-menu-row .q-btn.ghost, .panel #quest-menu-row .q-btn.ghost { color: var(--cream); background: rgba(255,255,255,0.08); border-color: var(--gold-dim); }

@@ -1745,6 +1745,52 @@
       maybeRegionCard(ev.map);
     });
   }
+  // Fast travel (js/quest.js world map / tracker): fade to a map the player has already visited and land near (x, y),
+  // or at the map's spawn. Only from the plain map state (not battles, scenes or fades).
+  function openTileNear(tx, ty, minD) {
+    const m = MAPS[S.mapId];
+    const bad = (x, y) => {
+      if (x < 0 || y < 0 || x >= m.w || y >= m.h) return true;
+      const cx = (x + 0.5) * T, cy = (y + 0.5) * T;
+      if (solidAt(cx, cy) || !canStand(cx, cy)) return true;
+      return m.events.some((e) => (e.type === "warp" && Math.abs(e.x - x) <= 1 && Math.abs(e.y - y) <= 1) ||
+        (e.type === "trigger" && x >= e.x - 1 && x <= e.x + (e.w || 1) && y >= e.y - 1 && y <= e.y + (e.h || 1)) ||
+        (e.type === "block" && Math.abs(e.x - x) <= 1 && Math.abs(e.y - y) <= 1));
+    };
+    let best = null, bd = 1e9;
+    for (let r = minD; r <= minD + 8 && !best; r++) {
+      for (let y = ty - r; y <= ty + r; y++) for (let x = tx - r; x <= tx + r; x++) {
+        if (Math.max(Math.abs(x - tx), Math.abs(y - ty)) !== r || bad(x, y)) continue;
+        const d = Math.hypot(x - tx, y - ty);
+        if (d < bd) { bd = d; best = { x, y }; }
+      }
+    }
+    return best || (m.spawn && !bad(m.spawn.x, m.spawn.y) ? m.spawn : { x: tx, y: ty });
+  }
+  function fastTravel(id, x, y) {
+    const m = MAPS[id];
+    if (!m || S.state !== "map" || S.fade || S.vista) return false;
+    if (!Platform.gate(id, "warp")) {
+      toast((window.PAYWALL && PAYWALL.copy && PAYWALL.copy.lockedToast) || I18N.t("toast.full_game_locked"));
+      return false;
+    }
+    S.warpLock = 700;
+    sfx("ok");
+    fadeSwap(() => {
+      S.mapId = id;
+      const goal = x == null ? m.spawn : { x, y };
+      const t = openTileNear(goal.x, goal.y, x == null ? 0 : 2);
+      S.px = (t.x + 0.5) * T; S.py = (t.y + 0.5) * T;
+      S.dir = "down"; S.trail = []; S.runT = 0;
+      S.warpLock = 500;
+      S.camX = S.px - W / 2; S.camY = S.py - H / 2;
+      snapCamera();
+      showLocation(m.name, true);
+      playMusic(m.music || "temple");
+      maybeRegionCard(id);
+    }, 220, 380);
+    return true;
+  }
   // Next optional camp chat the story has unlocked, if any.
   function campChatAvailable() {
     return (DATA.CAMP_CHATS || []).find((c) => c.need.every(flagOn) && !flagOn(c.done) && SCENES[c.scene]) || null;
@@ -1885,7 +1931,13 @@
   // ---------------------------------------------------------------------------
   // Movement, tap-to-move and A* paths (iso view)
   // ---------------------------------------------------------------------------
-  const WALK_SPEED = 0.105, RUN_SPEED = 0.17;      // world px per ms
+  const WALK_SPEED = 0.105, RUN_SPEED = 0.17;      // world px per ms (base; scaled by FLAGS.walkSpeedMult)
+  const RUN_PATH_TILES = 10;                       // tap-to-move paths longer than this auto-run
+  // Server-driven walk-speed multiplier (content bundle FLAGS.walkSpeedMult, default 1.25, clamped 0.75..1.75).
+  function speedMult() {
+    const v = window.FLAGS && window.FLAGS.walkSpeedMult;
+    return typeof v === "number" && isFinite(v) ? Math.max(0.75, Math.min(1.75, v)) : 1.25;
+  }
   const BODY_R = 9;
   const tap = { path: null, idx: 0, target: null, marker: null, stuck: 0, hold: null, holdT: 0, lastRetarget: 0 };
   const steerVec = { x: 0, y: 0 };
@@ -1893,9 +1945,12 @@
     return !solidAt(x + BODY_R, y) && !solidAt(x - BODY_R, y) && !solidAt(x, y + BODY_R) && !solidAt(x, y - BODY_R);
   }
   function walkStep(dx, dy, dt) {
-    if (!dx && !dy) { S.moving = false; return; }
+    if (!dx && !dy) { S.moving = false; S.runT = 0; return; }
     const len = Math.hypot(dx, dy) || 1;
-    const sp = (S.keys.cancel || (tap.path && tap.run) ? RUN_SPEED : WALK_SPEED) * dt;
+    // holding a direction for a while builds up to a 30% sprint (keyboard / stick); tap paths use RUN_SPEED
+    S.runT = Math.min(1200, (S.runT || 0) + dt);
+    const ramp = 1 + 0.3 * Math.max(0, Math.min(1, (S.runT - 600) / 600));
+    const sp = (S.keys.cancel || (tap.path && tap.run) ? RUN_SPEED : WALK_SPEED * ramp) * speedMult() * dt;
     const vx = dx / len * sp, vy = dy / len * sp;
     const bx = S.px, by = S.py;
     if (canStand(S.px + vx, S.py)) S.px += vx;
@@ -2059,7 +2114,7 @@
       const last = tap.path[tap.path.length - 1];
       mk.x = hit ? (hit.x + 0.5) * T : (last[0] + 0.5) * T;
       mk.y = hit ? (hit.y + 0.5) * T : (last[1] + 0.5) * T;
-      tap.run = tap.path.length > 14;
+      tap.run = tap.path.length > RUN_PATH_TILES;
     } else { mk.x = (gx + 0.5) * T; mk.y = (gy + 0.5) * T; }
     if (!quiet) sfx(ok ? "ui" : "cancel");
     return ok;
@@ -4962,7 +5017,7 @@
   // Boot
   async function boot() {
     fit();
-    if (window.Quest) Quest.attach({ S, worldToScreen, zoom: () => (USE_ISO() ? WORLD.view.z : flatView.z), openMenu, closeMenu });
+    if (window.Quest) Quest.attach({ S, fastTravel, worldToScreen, zoom: () => (USE_ISO() ? WORLD.view.z : flatView.z), openMenu, closeMenu });
     try {
       const st = JSON.parse(Platform.getItem("soth_settings") || "null");
       if (st) Object.assign(S.settings, st);
