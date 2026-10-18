@@ -102,6 +102,37 @@
     return null;
   }
 
+  // Pick, for each hop of a route, the door that makes the whole trip shortest (several gates can lead to the same
+  // map: e.g. Meridia's north gate and west gate both open on the wilderness, but only one is near the ash road).
+  // cost(mapId, a, b) estimates the walk between two tiles; straight-line distance by default.
+  const euclid = (mapId, a, b) => Math.hypot(a.x - b.x, a.y - b.y);
+  function planHops(maps, flags, path, start, target, cost) {
+    cost = cost || euclid;
+    const adj = adjacency(maps);
+    let layer = [{ pos: start, total: 0, chain: [] }];
+    for (let i = 0; i + 1 < path.length; i++) {
+      const all = adj[path[i]][path[i + 1]];
+      const open = openWarps(all, flags);
+      const cands = open.length ? open : all;
+      const next = [];
+      for (const w of cands) {
+        let best = null;
+        for (const st of layer) {
+          const total = st.total + cost(path[i], st.pos, w);
+          if (!best || total < best.total) best = { pos: { x: w.tx, y: w.ty }, total, chain: st.chain.concat([w]) };
+        }
+        next.push(best);
+      }
+      layer = next;
+    }
+    let best = null;
+    for (const st of layer) {
+      const total = st.total + (target ? cost(path[path.length - 1], st.pos, target) : 0);
+      if (!best || total < best.total) best = { total, chain: st.chain };
+    }
+    return best.chain;
+  }
+
   // What to point at right now, given the objective, the map the player is on and their tile.
   function nextStep(maps, flags, obj, mapId, tile) {
     if (!obj || !maps[mapId]) return null;
@@ -113,10 +144,9 @@
     const all = adjacency(maps)[mapId][path[1]];
     const open = openWarps(all, flags);
     const use = open.length ? open : all;
-    const tx = tile ? tile.x : use[0].x, ty = tile ? tile.y : use[0].y;
-    const d = (w) => Math.abs(w.x - tx) + Math.abs(w.y - ty);
-    const best = use.slice().sort((a, b) => d(a) - d(b))[0];
-    // doorway = the run of warp tiles around the nearest one
+    const start = tile || { x: use[0].x, y: use[0].y };
+    const best = planHops(maps, flags, path, start, obj)[0];
+    // doorway = the run of warp tiles around the chosen one
     const grp = use.filter((w) => Math.abs(w.x - best.x) <= 3 && Math.abs(w.y - best.y) <= 3);
     const x = grp.reduce((s, w) => s + w.x, 0) / grp.length, y = grp.reduce((s, w) => s + w.y, 0) / grp.length;
     return { kind: "exit", x, y, map: mapId, toMap: path[1], path, lock, obj };
@@ -171,7 +201,7 @@
     return { id, name: m.name || id, npcs: Array.from(new Set(npcs)), foes: Array.from(new Set(foes)), altars, exits, objectives };
   }
 
-  const logic = { evalCond, condFlags, status, adjacency, route, reachable, nextStep, worldModel, placeInfo, visited, lockText, openWarps };
+  const logic = { evalCond, condFlags, status, adjacency, route, reachable, planHops, nextStep, worldModel, placeInfo, visited, lockText, openWarps };
 
   // ------------------------------------------------------------------ UI
   if (typeof document === "undefined") return Object.assign({ T }, logic);
@@ -201,11 +231,19 @@
 
   function build() {
     root$ = document.getElementById("app");
-    els.tracker = el("button", "", null, root$);
-    els.tracker.id = "quest-tracker"; els.tracker.type = "button"; els.tracker.classList.add("hidden");
-    els.trkTitle = el("span", "q-title", "", els.tracker);
-    els.trkHint = el("span", "q-hint", "", els.tracker);
-    els.tracker.addEventListener("click", () => openMap(true));
+    els.tracker = el("div", "", null, root$);
+    els.tracker.id = "quest-tracker"; els.tracker.classList.add("hidden");
+    els.trkMain = el("button", "q-main", null, els.tracker);
+    els.trkMain.type = "button";
+    els.trkTitle = el("span", "q-title", "", els.trkMain);
+    els.trkHint = el("span", "q-hint", "", els.trkMain);
+    els.trkMain.addEventListener("click", () => openMap(true));
+    els.trkGo = el("button", "q-go hidden", null, els.tracker);
+    els.trkGo.type = "button";
+    el("span", "q-go-ico", "➤", els.trkGo);
+    el("span", "q-go-txt", t("quest.travel_short"), els.trkGo);
+    els.trkGo.setAttribute("aria-label", t("quest.travel_objective"));
+    els.trkGo.addEventListener("click", (e) => { e.stopPropagation(); travelToObjective(); });
 
     els.pointer = el("div", "", null, root$);
     els.pointer.id = "quest-pointer"; els.pointer.classList.add("hidden"); els.pointer.setAttribute("aria-hidden", "true");
@@ -289,7 +327,7 @@
     const hint = o ? o.hint : (g.finale && g.finale.hint) || "";
     els.trkTitle.textContent = title;
     els.trkHint.textContent = hint;
-    els.tracker.setAttribute("aria-label", t("quest.tracker_label", { title, hint }));
+    els.trkMain.setAttribute("aria-label", t("quest.tracker_label", { title, hint }));
     els.tracker.classList.toggle("side", !!o && o.track === "side");
     return st;
   }
@@ -309,6 +347,38 @@
     els.cardOk.focus && els.cardOk.focus({ preventScroll: true });
   }
   function closeCard() { els.card.classList.add("hidden"); }
+
+  // ---- fast travel (visited maps only; plain map state only; server switch FLAGS.fastTravel)
+  const travelOn = () => !(root.FLAGS && root.FLAGS.fastTravel === false);
+  function canTravelTo(id) {
+    if (!A || !travelOn() || !maps()[id]) return false;
+    const S = A.S;
+    if (S.fade || S.vista || !(S.state === "map" || (S.state === "menu" && (S._return === "map" || fromTracker)))) return false;
+    return visited(flags(), id, null) && id !== S.mapId;
+  }
+  function objectiveTravelTarget() {
+    const g = guide(); if (!g || !A) return null;
+    const o = status(g, flags()).tracked;
+    if (!o) return null;
+    const S = A.S;
+    if (o.map === S.mapId) {
+      const tile = playerTile();
+      return Math.abs(tile.x - o.x) + Math.abs(tile.y - o.y) > 16 && travelOn() && S.state === "map" && !S.fade ? o : null;
+    }
+    return canTravelTo(o.map) ? o : null;
+  }
+  function travel(id, x, y) {
+    if (!A) return false;
+    const sameMapOk = id === A.S.mapId && x != null;
+    if (!sameMapOk && !canTravelTo(id)) return false;
+    els.map.classList.add("hidden"); closeCard();
+    if (A.S.state === "menu") { fromTracker = false; A.closeMenu(); }
+    return A.fastTravel(id, x, y);
+  }
+  function travelToObjective() {
+    const o = objectiveTravelTarget();
+    if (o) travel(o.map, o.x, o.y);
+  }
 
   // ---- world map screen
   function openMap(pause) {
@@ -375,6 +445,14 @@
     const chip = el("span", "q-chip " + node.state, stateLabel(node.state), box);
     if (node.target) chip.textContent += " · " + t("quest.legend_next");
     if (node.note) el("p", "q-note", node.note, box);
+    if (canTravelTo(id)) {
+      const tgt = wm.status.tracked && wm.status.tracked.map === id ? wm.status.tracked : null;
+      const b = el("button", "q-btn q-travel", t("quest.travel_here"), box);
+      b.type = "button";
+      b.addEventListener("click", () => travel(id, tgt ? tgt.x : null, tgt ? tgt.y : null));
+    } else if (node.visited && id !== A.S.mapId && travelOn()) {
+      el("p", "q-note", t("quest.travel_not_now"), box);
+    }
     const list = (label, items) => { if (!items.length) return; const p = el("p", "q-line", null, box); el("b", "", label + " ", p); p.appendChild(document.createTextNode(items.join(", "))); };
     for (const o of info.objectives) {
       const d = el("div", "q-obj" + (wm.status.tracked && wm.status.tracked.id === o.id ? " on" : ""), null, box);
@@ -472,6 +550,7 @@
       const st = status(guide(), S.flags);
       const key = (st.tracked ? st.tracked.id : "-") + "|" + st.mainDone;
       if (key !== lastKey) { lastKey = key; refreshText(); announce(st); }
+      els.trkGo.classList.toggle("hidden", !objectiveTravelTarget());
     }
     updatePointer();
   }
@@ -493,5 +572,5 @@
     A = api;
     build();
   }
-  return Object.assign({ T, attach, frame, showCard, openMap, closeMap }, logic);
+  return Object.assign({ T, attach, frame, showCard, openMap, closeMap, travel }, logic);
 });

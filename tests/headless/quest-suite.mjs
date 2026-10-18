@@ -36,7 +36,7 @@ try {
   assert.match(await page.locator("#quest-pointer .q-plabel").innerText(), /Whispering Forest/);
 
   // 2. tapping the tracker pauses on the world map; close resumes
-  await page.click("#quest-tracker");
+  await page.click("#quest-tracker .q-main");
   await page.waitForSelector("#quest-map:not(.hidden)");
   assert.equal(await S(() => window.SOTH.state), "menu");
   assert.ok(await page.locator("#quest-map .q-node").count() >= 12);
@@ -68,6 +68,30 @@ try {
   await S(() => { window.SOTH.state = "credits"; });
   await sleep(100);
   assert.equal(await page.locator("#quest-tracker").evaluate((e) => e.classList.contains("hidden")), true);
+  // 5. fast travel: only to visited maps, with a fade, landing on a walkable tile near the objective
+  await put("village", 46, 30, { left_temple: 1, intro_done: 1, camp1_done: 1, seen_village: 1, seen_forest: 1, seen_temple: 1 });
+  await S(() => { window.SOTH.flags.tut_wisp = 0; });
+  await sleep(700);
+  assert.equal(await page.locator("#quest-tracker .q-go").evaluate((e) => !e.classList.contains("hidden")), true, "Travel button when the objective is on a visited map");
+  await page.click("#quest-tracker .q-go");
+  await page.waitForFunction(() => window.SOTH.mapId === "forest" && window.SOTH.state === "map" && !window.SOTH.fade, null, { timeout: 4000 });
+  const land = await S(() => ({ x: Math.floor(window.SOTH.px / 32), y: Math.floor(window.SOTH.py / 32) }));
+  assert.ok(Math.abs(land.x - 36) <= 6 && Math.abs(land.y - 22) <= 6, "landed near the wisp: " + JSON.stringify(land));
+  // world map: unvisited places have no Travel button, visited ones do
+  await page.click("#quest-tracker .q-main");
+  await page.waitForSelector("#quest-map:not(.hidden)");
+  await page.locator("#quest-map .q-node >> text=Meridia").first().click();
+  assert.equal(await page.locator("#quest-map .q-travel").count(), 0, "no travel to a place you have not been");
+  await page.locator("#quest-map .q-node >> text=Village").first().click();
+  assert.equal(await page.locator("#quest-map .q-travel").count(), 1);
+  await page.click("#quest-map .q-travel");
+  await page.waitForFunction(() => window.SOTH.mapId === "village" && window.SOTH.state === "map" && !window.SOTH.fade, null, { timeout: 4000 });
+  // server switch off: no buttons
+  await S(() => { window.FLAGS.fastTravel = false; });
+  await sleep(600);
+  assert.equal(await page.locator("#quest-tracker .q-go").evaluate((e) => e.classList.contains("hidden")), true);
+  await S(() => { window.FLAGS.fastTravel = true; });
+
   assert.deepEqual(errs, []);
   await browser.close();
   console.log("quest suite ok");

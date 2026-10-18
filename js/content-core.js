@@ -79,6 +79,7 @@
    * Errors reject the whole content (caller falls back); warnings are auto-repaired.
    */
   const OPTIONAL_DATA = ["GUIDE"];
+  const RANGES = { walkSpeedMult: [0.5, 2], battleSpeedDefault: [1, 2] };   // numeric tunables: out-of-range values are dropped
   function validate(input, opts) {
     const errors = [], warnings = [];
     const ref = opts && opts.ref ? opts.ref : null;
@@ -160,6 +161,11 @@
     if (isObj(c.FLAGS)) {
       for (const k of Object.keys(c.FLAGS)) {
         const v = c.FLAGS[k];
+        if (RANGES[k] && !(typeof v === "number" && v >= RANGES[k][0] && v <= RANGES[k][1])) {
+          delete c.FLAGS[k];
+          warnings.push("flag " + k + " out of range -> removed (bundled default applies)");
+          continue;
+        }
         if (!/^[A-Za-z][A-Za-z0-9_]{0,40}$/.test(k) || !(typeof v === "boolean" || typeof v === "number" || typeof v === "string")) {
           delete c.FLAGS[k];
           warnings.push("flag " + k + " invalid -> removed");

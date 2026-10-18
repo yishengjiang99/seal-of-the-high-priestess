@@ -773,6 +773,7 @@ window.MAPS = (() => {
     rect(m, 40, 52, 8, 10, t.CARPET);
     set(m, 43, 54, t.ALTAR); set(m, 44, 54, t.ALTAR);
     set(m, 44, 65, t.DOOR);
+    set(m, 43, 50, t.DOOR); set(m, 44, 50, t.DOOR); set(m, 45, 50, t.DOOR);   // north doors: the hall used to be sealed (soft-lock before the court scene)
     set(m, 36, 54, t.COL); set(m, 51, 54, t.COL);
     scatter(m, 6, 50, 20, 14, t.CRATE, 8, (c) => c === t.ASH || c === t.RUBBLE, rnd);
 

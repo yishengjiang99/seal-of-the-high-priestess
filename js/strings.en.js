@@ -3,6 +3,10 @@
    Story dialogue lives in the content bundle (js/dialogue.js), not here. */
 I18N.register("en", {
   "quest.where": "Where do I go?",
+  "quest.travel_short": "Travel",
+  "quest.travel_objective": "Travel to the objective",
+  "quest.travel_here": "Travel here",
+  "quest.travel_not_now": "You can fast-travel here from the field, outside battles and scenes.",
   "quest.world_map": "World Map",
   "quest.show_map": "Show on map",
   "quest.close": "Close",
