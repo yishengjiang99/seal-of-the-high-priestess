@@ -1,0 +1,20 @@
+Free download. No account or login is needed: the game starts immediately (tap New Game on the title screen).
+
+IN-APP PURCHASE
+- The prologue and region 1 (the temple, the village, the Whispering Forest) are free. "Full Game" is a one-time non-consumable in-app purchase that unlocks the remaining regions.
+- Sandbox and App Review builds always offer com.ragnus.weather.fullgame at $4.99. (A second Full Game product, com.ragnus.weather.fullgame.b at $6.99, exists for a production price test; only one is ever offered to a player, and both unlock exactly the same content.)
+- Fastest way to the paywall: tap the gear icon (top-left) > Purchases > "Unlock the Full Game...". It is also in the in-game Menu > System tab. In the story it appears when the player tries to leave the Whispering Forest after defeating the Hollow Oak.
+- Restore Purchases: gear icon > Purchases > Restore Purchases, and on the paywall.
+- Supporter Pack (com.ragnus.weather.supporter, $2.99) is optional and cosmetic only (Voice Gallery, alternate app icon, supporter badge; no gameplay effect).
+- Prices shown in the app always come from the App Store. Purchases are verified on our server (App Store Server Notifications v2) and are shared through Family Sharing.
+
+CONTENT AND CODE
+- Server-driven content is data only: signed JSON for text, balance and paywall copy. There is no downloaded executable code; all game code, art and voices ship in the app bundle (guideline 2.5.2). The game is fully playable offline.
+
+ACCOUNT AND DATA
+- There is no sign-in. The account is anonymous and device-bound (a random player ID stored in the iCloud Keychain). In-app data deletion: gear icon (Settings) > Cloud Save > Delete cloud data.
+
+CONTROLS
+- Tap to move, the menu button, and the camp button. A game controller or hardware keyboard also works (Z = confirm/talk, X = cancel).
+
+Contact: Yisheng Jiang, yisheng.jiang@gmail.com, +1 669 251 7789.
