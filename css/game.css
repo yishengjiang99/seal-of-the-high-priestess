@@ -876,3 +876,29 @@ body.touch .title-hint, body.touch #map-hint { display: none; }
 #battle-hud.cinematic > * { opacity: 0 !important; pointer-events: none !important; }
 #map-hud { transition: opacity 400ms ease; }
 #map-hud.cinematic { opacity: 0; }
+
+/* 2.5D map HUD: portrait badge + HP/MP bars, top-left (target style frame). */
+#hd-hud { display: none; }
+body.hd #hd-hud { display: flex; position: absolute; left: 14px; top: 12px; align-items: center; pointer-events: none; text-align: left; }
+body.hd .hd-badge {
+  width: 84px; height: 84px; border-radius: 50%; overflow: hidden; z-index: 2; flex: none;
+  box-shadow: 0 0 0 3px #e8c77c, 0 0 0 6px #4a3214, 0 6px 14px rgba(0,0,0,0.55), inset 0 0 12px rgba(0,0,0,0.5);
+  background: #2a2040;
+}
+body.hd .hd-badge img { width: 100%; height: 100%; object-fit: cover; display: block; }
+body.hd .hd-bars { margin-left: -16px; padding-left: 22px; display: flex; flex-direction: column; gap: 5px; }
+body.hd .hd-bar {
+  position: relative; width: 250px; height: 26px; border-radius: 4px 13px 13px 4px; overflow: hidden;
+  background: rgba(14,10,24,0.8);
+  box-shadow: 0 0 0 2px #e8c77c, 0 0 0 3px #4a3214, 0 3px 8px rgba(0,0,0,0.5);
+}
+body.hd .hd-bar i { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; transition: width 300ms ease; }
+body.hd .hd-bar.hp i { background: linear-gradient(180deg, #ff7a82, #d4303c 45%, #8c1522); }
+body.hd .hd-bar.mp i { background: linear-gradient(180deg, #6fc8ff, #2a7ee0 45%, #15409a); }
+body.hd .hd-bar::after { content: ""; position: absolute; inset: 0 0 55% 0; background: linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0)); }
+body.hd .hd-bar span {
+  position: absolute; inset: 0; z-index: 1; display: flex; align-items: center; padding-left: 36px;
+  font-size: 14px; font-weight: 700; color: #fff; letter-spacing: 0.04em; text-shadow: 0 1px 2px #000, 0 0 4px #000;
+}
+body.hd #map-hud { left: 0; right: 0; top: 0; }
+body.hd #map-hint { display: none; }

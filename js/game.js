@@ -4803,6 +4803,7 @@
     } else if (S.state === "map") {
       if (document.body.classList.contains("hd") !== USE_ISO()) document.body.classList.toggle("hd", USE_ISO());
       updateHold(t);
+      if (USE_ISO()) updateHdHud(t);
       if (!USE_ISO() && tap.marker) tap.marker.t += dt;
       updateMap(dt); drawMap();
     } else if (S.state === "vn") {
@@ -4875,6 +4876,21 @@
   window.SOTH_TAP = (sx, sy) => mapTap(sx, sy, false);
   window.SOTH_TEST_RESET = () => { if (S.state === "map") snapCamera(); };
   window.SOTH_DEBUG_W2S = (wx, wy) => { const o = worldToScreen(wx, wy, { x: 0, y: 0 }); return [o.x, o.y]; };
+  // 2.5D map HUD: leader portrait badge with HP / mana bars (throttled DOM writes).
+  let hudNext = 0, hudKey = "";
+  function updateHdHud(t) {
+    if (t < hudNext) return;
+    hudNext = t + 200;
+    const c = S.chars && S.party && S.chars[S.party[0]];
+    if (!c || !c.maxHp) return;
+    const key = c.hp + "/" + c.maxHp + "/" + c.res + "/" + c.maxRes;
+    if (key === hudKey) return;
+    hudKey = key;
+    $("hd-hp-fill").style.width = Math.max(0, Math.min(100, (c.hp / c.maxHp) * 100)) + "%";
+    $("hd-mp-fill").style.width = Math.max(0, Math.min(100, (c.res / Math.max(1, c.maxRes)) * 100)) + "%";
+    $("hd-hp-txt").textContent = "HP " + c.hp + " / " + c.maxHp;
+    $("hd-mp-txt").textContent = (c.resName === "Mana" ? "MP " : (c.resName || "MP") + " ") + c.res + " / " + c.maxRes;
+  }
   window.SOTH_WORLD_STATS = () => (WORLD ? WORLD.stats : null);
 
   boot();
