@@ -324,10 +324,10 @@ window.MAPS = (() => {
         { type: "chest", x: 91, y: 62, id: "chest_village_petal", item: "lotus_petal" },
         { type: "sign", x: 46, y: 12, text: "Lotus-Step Village — last kind light before the trees begin to speak." },
         { type: "trigger", x: 42, y: 72, w: 10, h: 1, flagNeed: "intro_done", flagNeedOff: "camp1_done", scene: "first_camp" },
-        { type: "warp", x: 44, y: 76, map: "wilderness", tx: 200, ty: 91, dir: "down" },
-        { type: "warp", x: 45, y: 76, map: "wilderness", tx: 200, ty: 91, dir: "down" },
-        { type: "warp", x: 46, y: 76, map: "wilderness", tx: 200, ty: 91, dir: "down" },
-        { type: "warp", x: 47, y: 76, map: "wilderness", tx: 200, ty: 91, dir: "down" }
+        { type: "warp", x: 44, y: 76, map: "forest", tx: 50, ty: 4, dir: "down" },
+        { type: "warp", x: 45, y: 76, map: "forest", tx: 50, ty: 4, dir: "down" },
+        { type: "warp", x: 46, y: 76, map: "forest", tx: 50, ty: 4, dir: "down" },
+        { type: "warp", x: 47, y: 76, map: "forest", tx: 50, ty: 4, dir: "down" }
       ]
     });
   })();

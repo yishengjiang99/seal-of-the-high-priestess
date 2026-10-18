@@ -15,7 +15,7 @@ function load(locale) {
 
 test("keys used by the game and the options UI all exist in the English table", () => {
   const I = load();
-  const src = read("js/game.js") + read("js/a11y-ui.js") + read("index.html");
+  const src = read("js/game.js") + read("js/a11y-ui.js") + read("index.html") + read("js/quest.js").replace(/\bt\("/g, 'I18N.t("');
   const used = new Set([...src.matchAll(/I18N\.t\("([\w.]+)"/g)].map((m) => m[1]));
   [...src.matchAll(/data-i18n="([\w.]+)"/g)].forEach((m) => used.add(m[1]));
   assert.ok(used.size >= 25, "expected the migrated toasts");

@@ -78,6 +78,7 @@
    *           outside it are reverted to the ref value at the same path, else removed.
    * Errors reject the whole content (caller falls back); warnings are auto-repaired.
    */
+  const OPTIONAL_DATA = ["GUIDE"];
   function validate(input, opts) {
     const errors = [], warnings = [];
     const ref = opts && opts.ref ? opts.ref : null;
@@ -88,7 +89,8 @@
     if (errors.length) return { ok: false, errors, warnings, content: null };
     if (ref) {
       for (const t of Object.keys(ref.DATA)) {
-        if (!(t in c.DATA)) errors.push("DATA." + t + " missing");
+        if (!(t in c.DATA) && OPTIONAL_DATA.indexOf(t) >= 0) c.DATA[t] = clone(ref.DATA[t]);   // older bundles lack newer tables
+        else if (!(t in c.DATA)) errors.push("DATA." + t + " missing");
         else if (typeof c.DATA[t] !== typeof ref.DATA[t] || Array.isArray(c.DATA[t]) !== Array.isArray(ref.DATA[t]))
           errors.push("DATA." + t + " has the wrong type");
       }
@@ -137,6 +139,14 @@
         for (const id of Object.keys(ref.DATA[t])) if (!isObj(c.DATA[t][id])) { c.DATA[t][id] = clone(ref.DATA[t][id]); warnings.push(t + "." + id + " missing -> restored"); }
       }
     }
+    // Quest guide: structure checked; an invalid guide reverts to the bundled one (never blocks the bundle).
+    if (isObj(c.DATA.GUIDE)) {
+      const gErr = guideProblems(c.DATA.GUIDE, c.MAPS);
+      if (gErr.length) {
+        warnings.push("GUIDE invalid (" + gErr.slice(0, 3).join("; ") + ") -> reverted to bundled");
+        if (ref && isObj(ref.DATA.GUIDE)) c.DATA.GUIDE = clone(ref.DATA.GUIDE); else delete c.DATA.GUIDE;
+      }
+    }
     // Paywall + flags: config only. Invalid pieces revert to the bundled config.
     if (ref && isObj(ref.PAYWALL) && !isObj(c.PAYWALL)) c.PAYWALL = clone(ref.PAYWALL);
     if (ref && isObj(ref.FLAGS) && !isObj(c.FLAGS)) c.FLAGS = clone(ref.FLAGS);
@@ -169,6 +179,49 @@
       }
     }
     return { ok: true, errors, warnings, content: c };
+  }
+
+  function condProblems(cond, where, depth) {
+    if (!isObj(cond)) return [where + " must be an object"];
+    if (depth > 4) return [where + " too deep"];
+    const keys = Object.keys(cond);
+    if (keys.length !== 1) return [where + " needs exactly one of flag/all/any"];
+    const k = keys[0];
+    if (k === "flag") return typeof cond.flag === "string" && /^[A-Za-z0-9_]{1,64}$/.test(cond.flag) ? [] : [where + ".flag invalid"];
+    if (k === "all" || k === "any") {
+      if (!Array.isArray(cond[k]) || !cond[k].length || cond[k].length > 12) return [where + "." + k + " must be a short array"];
+      return cond[k].reduce((a, c, i) => a.concat(condProblems(c, where + "." + k + "[" + i + "]", depth + 1)), []);
+    }
+    return [where + " unknown key " + k];
+  }
+  function guideProblems(g, maps) {
+    const out = [];
+    const str = (v, n) => typeof v === "string" && v.length > 0 && v.length <= n;
+    if (!Array.isArray(g.objectives) || !g.objectives.length || g.objectives.length > 200) return ["objectives must be a list"];
+    const ids = {};
+    g.objectives.forEach((o, i) => {
+      const w = "objectives[" + i + "]";
+      if (!isObj(o)) { out.push(w + " not an object"); return; }
+      if (!str(o.id, 40) || ids[o.id]) out.push(w + " bad or duplicate id");
+      ids[o.id] = 1;
+      if (o.track !== "main" && o.track !== "side") out.push(w + " bad track");
+      if (!str(o.title, 80)) out.push(w + " bad title");
+      if (!str(o.hint, 240)) out.push(w + " bad hint");
+      const m = maps && maps[o.map];
+      if (!m) out.push(w + " unknown map");
+      else if (!(Number.isInteger(o.x) && Number.isInteger(o.y) && o.x >= 0 && o.y >= 0 && o.x < m.w && o.y < m.h)) out.push(w + " target outside map");
+      out.push.apply(out, condProblems(o.done, w + ".done", 0));
+      if (o.after !== undefined) out.push.apply(out, condProblems(o.after, w + ".after", 0));
+    });
+    if (!g.objectives.some((o) => o && o.track === "main")) out.push("no main objectives");
+    if (g.nodes !== undefined) {
+      if (!isObj(g.nodes)) out.push("nodes must be an object");
+      else for (const id of Object.keys(g.nodes)) {
+        const n = g.nodes[id];
+        if (!maps[id] || !isObj(n) || !(n.x >= 0 && n.x <= 100 && n.y >= 0 && n.y <= 100) || (n.label !== undefined && !str(n.label, 28))) out.push("nodes." + id + " invalid");
+      }
+    }
+    return out;
   }
 
   function paywallProblems(pw, maps) {

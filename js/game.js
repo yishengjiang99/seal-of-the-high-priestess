@@ -4837,12 +4837,14 @@
     const fa = fadeAlpha();
     if (fa > 0) { ctx.fillStyle = `rgba(4,3,8,${fa.toFixed(3)})`; ctx.fillRect(0, 0, W, H); }
     S.mouse.click = false;
+    if (window.Quest) Quest.frame(t);   // quest guidance overlays (js/quest.js)
     requestAnimationFrame(frame);
   }
 
   // Boot
   async function boot() {
     fit();
+    if (window.Quest) Quest.attach({ S, worldToScreen, zoom: () => (USE_ISO() ? WORLD.view.z : flatView.z), openMenu, closeMenu });
     try {
       const st = JSON.parse(Platform.getItem("soth_settings") || "null");
       if (st) Object.assign(S.settings, st);
