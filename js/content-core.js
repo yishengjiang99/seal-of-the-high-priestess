@@ -79,7 +79,7 @@
    * Errors reject the whole content (caller falls back); warnings are auto-repaired.
    */
   const OPTIONAL_DATA = ["GUIDE"];
-  const RANGES = { walkSpeedMult: [0.5, 2], battleSpeedDefault: [1, 2] };   // numeric tunables: out-of-range values are dropped
+  const RANGES = { walkSpeedMult: [0.5, 2], battlePace: [0.4, 1.2] };   // numeric tunables: out-of-range values are dropped
   function validate(input, opts) {
     const errors = [], warnings = [];
     const ref = opts && opts.ref ? opts.ref : null;

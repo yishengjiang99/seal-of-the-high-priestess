@@ -62,5 +62,7 @@ window.FLAGS = {
   perfTelemetry: true,
   // Travel tuning (no build needed): walk-speed multiplier (0.75-1.75) and the world-map / tracker fast travel switch.
   walkSpeedMult: 1.25,
-  fastTravel: true
+  fastTravel: true,
+  // Battle pacing multiplier on the base waits between actions (0.4-1.2; lower is faster).
+  battlePace: 0.65
 };

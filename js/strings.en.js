@@ -2,6 +2,14 @@
    To localize: add js/strings.<lang>.js calling I18N.register("<lang>", {...}); missing keys fall back to English.
    Story dialogue lives in the content bundle (js/dialogue.js), not here. */
 I18N.register("en", {
+  "toast.auto_trivial": "Auto-battle is only for ordinary fights.",
+  "toast.auto_stopped": "Auto-battle stopped: the party needs you.",
+  "battle.speed": "Battle speed {n}x",
+  "battle.auto": "Auto",
+  "battle.auto_on": "Auto-battle on. Tap to take over.",
+  "battle.auto_label": "Auto-battle",
+  "battle.order": "Turn order",
+  "battle.tap_hint": "Tap a foe to attack it",
   "quest.where": "Where do I go?",
   "quest.travel_short": "Travel",
   "quest.travel_objective": "Travel to the objective",

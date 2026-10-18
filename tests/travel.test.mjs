@@ -87,4 +87,9 @@ test("travel tunables are server-driven with sane bundled defaults", () => {
   assert.ok(bad.warnings.some((w) => /walkSpeedMult/.test(w)));
   const fine = C.validate(C.mergePatch(content, { FLAGS: { walkSpeedMult: 1.4, fastTravel: false } }), { ref: content });
   assert.equal(fine.content.FLAGS.walkSpeedMult, 1.4); assert.equal(fine.content.FLAGS.fastTravel, false);
+  // combat pacing is a server tunable too, with a faster-than-original bundled default
+  assert.ok(ctx.FLAGS.battlePace > 0.4 && ctx.FLAGS.battlePace < 1, "bundled battle pace is faster than the original waits");
+  const slow = C.validate(C.mergePatch(content, { FLAGS: { battlePace: 5 } }), { ref: content });
+  assert.equal(slow.content.FLAGS.battlePace, undefined);
+  assert.equal(C.validate(C.mergePatch(content, { FLAGS: { battlePace: 0.8 } }), { ref: content }).content.FLAGS.battlePace, 0.8);
 });
