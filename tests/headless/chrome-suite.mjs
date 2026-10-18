@@ -161,7 +161,7 @@ async function mobileViewportChecks(browser) {
     const p0 = await page.evaluate(() => [window.SOTH.px, window.SOTH.py]);
     const cb = await page.locator("#game").boundingBox();
     // a free floor tile two tiles to the right of the leader, in screen space
-    const tgt = await page.evaluate(() => { const S = window.SOTH; return [S.px + 64 - S.camX, S.py - S.camY]; });
+    const tgt = await page.evaluate(() => { const S = window.SOTH; return window.SOTH_DEBUG_W2S(S.px + 64, S.py); });   // projection-aware (flat or 2.5D)
     await page.mouse.click(cb.x + tgt[0] * cb.width / 1280, cb.y + tgt[1] * cb.height / 720);
     await page.waitForTimeout(900);
     const p1 = await page.evaluate(() => [window.SOTH.px, window.SOTH.py]);
