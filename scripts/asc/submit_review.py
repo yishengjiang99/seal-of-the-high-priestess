@@ -44,15 +44,35 @@ for pid in IAP_IDS:
     if x["attributes"].get("state") not in ("READY_TO_SUBMIT", "WAITING_FOR_REVIEW", "IN_REVIEW", "APPROVED", "DEVELOPER_ACTION_NEEDED", "REJECTED"):
         sys.exit(f"::error::IAP {pid} is {x['attributes'].get('state')} (fix metadata first)")
 
+allsubs = get_all(f"/v1/reviewSubmissions?filter[app]={APP}&filter[platform]=IOS&limit=50")
+for x in allsubs:
+    print("existing reviewSubmission", x["id"], x["attributes"].get("state"), x["attributes"].get("submittedDate"))
+busy = [x for x in allsubs if x["attributes"].get("state") in ("WAITING_FOR_REVIEW", "IN_REVIEW")]
+if busy:
+    sys.exit(f"::error::a review submission is already submitted: {[(x['id'], x['attributes'].get('state')) for x in busy]}; not submitting again")
+
 if DRY:
-    print("\nDRY RUN: would attach the build, re-apply review prerequisites, queue the 3 IAPs with version", VERSION,
-          "and submit the version for App Review. Nothing changed.")
+    print("\nDRY RUN: would attach the build, re-apply review prerequisites, add version", VERSION,
+          "to a review submission, queue the 3 IAPs with it and submit. Nothing changed.")
     sys.exit(0)
 
 must("PATCH", f"/v1/appStoreVersions/{v['id']}/relationships/build", {"data": {"type": "builds", "id": b["id"]}}, what="attach build")
 print("build attached")
 subprocess.run([sys.executable, os.path.join(os.path.dirname(__file__), "app_review_setup.py")], check=True)
 
+# 1. find or create the review submission
+subs = [x for x in allsubs if x["attributes"].get("state") == "READY_FOR_REVIEW"]
+sub = subs[0] if subs else must("POST", "/v1/reviewSubmissions", {"data": {"type": "reviewSubmissions", "attributes": {"platform": "IOS"},
+                                "relationships": {"app": {"data": {"type": "apps", "id": APP}}}}}, what="create review submission")["data"]
+print("review submission", sub["id"])
+# 2. add the version
+st, d = api("POST", "/v1/reviewSubmissionItems", {"data": {"type": "reviewSubmissionItems",
+            "relationships": {"reviewSubmission": {"data": {"type": "reviewSubmissions", "id": sub["id"]}},
+                              "appStoreVersion": {"data": {"type": "appStoreVersions", "id": v["id"]}}}}})
+if st not in (200, 201, 409):
+    sys.exit(f"::error::add version to submission -> {st}: {d.get('error', '')[:1500]}")
+print("version item ->", st)
+# 3. queue the IAPs with the version
 for pid in IAP_IDS:
     x = iaps[pid]
     if x["attributes"].get("state") != "READY_TO_SUBMIT":
@@ -60,17 +80,13 @@ for pid in IAP_IDS:
     st, d = api("POST", "/v1/inAppPurchaseSubmissions", {"data": {"type": "inAppPurchaseSubmissions",
                 "relationships": {"inAppPurchaseV2": {"data": {"type": "inAppPurchases", "id": x["id"]}}}}})
     if st not in (200, 201):
-        sys.exit(f"::error::IAP submission {pid} -> {st}: {d.get('error', '')[:1500]}")
+        sys.exit(f"::error::IAP submission {pid} -> {st}: {str(d)[:1500]} (review submission {sub['id']} left unsubmitted)")
     print("IAP queued with the version:", pid)
-
-subs = get_all(f"/v1/reviewSubmissions?filter[app]={APP}&filter[platform]=IOS&filter[state]=READY_FOR_REVIEW&limit=10")
-sub = subs[0] if subs else must("POST", "/v1/reviewSubmissions", {"data": {"type": "reviewSubmissions", "attributes": {"platform": "IOS"},
-                                "relationships": {"app": {"data": {"type": "apps", "id": APP}}}}}, what="create review submission")["data"]
-print("review submission", sub["id"])
-st, d = api("POST", "/v1/reviewSubmissionItems", {"data": {"type": "reviewSubmissionItems",
-            "relationships": {"reviewSubmission": {"data": {"type": "reviewSubmissions", "id": sub["id"]}},
-                              "appStoreVersion": {"data": {"type": "appStoreVersions", "id": v["id"]}}}}})
-if st not in (200, 201, 409):
-    sys.exit(f"::error::add version to submission -> {st}: {d.get('error', '')[:1500]}")
+# 4. submit
 must("PATCH", f"/v1/reviewSubmissions/{sub['id']}", {"data": {"type": "reviewSubmissions", "id": sub["id"], "attributes": {"submitted": True}}}, what="submit")
 print("SUBMITTED version", VERSION, "build", b["attributes"]["version"], "with IAPs", IAP_IDS)
+r = must("GET", f"/v1/reviewSubmissions/{sub['id']}")["data"]["attributes"]
+print("FINAL reviewSubmission", sub["id"], r.get("state"), r.get("submittedDate"))
+print("FINAL version", must("GET", f"/v1/appStoreVersions/{v['id']}")["data"]["attributes"].get("appStoreState"))
+for pid in IAP_IDS:
+    print("FINAL IAP", pid, must("GET", f"/v2/inAppPurchases/{iaps[pid]['id']}")["data"]["attributes"].get("state"))
