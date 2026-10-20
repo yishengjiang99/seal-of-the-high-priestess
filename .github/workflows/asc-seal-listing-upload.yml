@@ -56,7 +56,7 @@ jobs:
           VERIFY_ONLY: ${{ inputs.verify_only }}
           # The target is iPhone-only (TARGETED_DEVICE_FAMILY=1): iPad screenshots are not uploaded or verified.
           # Flip to "true" only if iPad support ships (the ipad-13-*.png frames are already in the repo).
-          INCLUDE_IPAD: "false"
+          INCLUDE_IPAD: "true"
         run: |
           set -euo pipefail
           pip install -q PyJWT cryptography requests
