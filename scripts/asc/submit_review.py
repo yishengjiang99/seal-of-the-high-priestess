@@ -111,11 +111,14 @@ sub = draft or must("POST", "/v1/reviewSubmissions", {"data": {"type": "reviewSu
 rs = sub["id"]; print("review submission", rs)
 ok = add_item(rs, "appStoreVersion", "appStoreVersions", v["id"])
 for pid, iv in iap_vs:
+    if iv["attributes"].get("state") == "READY_FOR_REVIEW":
+        print("IAP version already in a draft submission:", pid, iv["id"]); continue
     ok = add_item(rs, "inAppPurchaseVersion", "inAppPurchaseVersions", iv["id"]) and ok
 its = items_of(rs)
-kinds = [k for it in its for k in (it.get("relationships") or {}) if (it["relationships"][k] or {}).get("data")]
-if not ok or "appStoreVersion" not in kinds or kinds.count("inAppPurchaseVersion") < len(iap_vs):
-    sys.exit(f"::error::reviewSubmission {rs} is missing items (have {kinds}); NOT submitted")
+iv_states = {pid: (must("GET", f"/v2/inAppPurchases/{iaps[pid]['id']}/versions?limit=50").get("data") or [{}])[-1].get("attributes", {}).get("state") for pid, _ in iap_vs}
+print("items in submission:", len(its), "IAP version states:", iv_states)
+if not ok or len(its) < 1 + len(iap_vs) or any(x != "READY_FOR_REVIEW" for x in iv_states.values()):
+    sys.exit(f"::error::reviewSubmission {rs} is missing items ({len(its)} items, {iv_states}); NOT submitted")
 j = must("PATCH", f"/v1/reviewSubmissions/{rs}", {"data": {"type": "reviewSubmissions", "id": rs, "attributes": {"submitted": True}}}, what="submit")
 a = j["data"]["attributes"]
 print("SUBMIT_OK submission_id=", rs, "state=", a.get("state"), "submittedDate=", a.get("submittedDate"))
