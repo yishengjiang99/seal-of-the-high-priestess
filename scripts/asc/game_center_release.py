@@ -21,7 +21,7 @@ st, d = api("GET", f"/v1/appStoreVersions/{v['id']}/gameCenterAppVersion")
 gav = d.get("data") if st == 200 else None
 print("gameCenterAppVersion on version ->", st, gav and (gav["id"], gav["attributes"]))
 if not gav and not DRY:
-    st, d = api("POST", "/v1/gameCenterAppVersions", {"data": {"type": "gameCenterAppVersions", "attributes": {"enabled": True},
+    st, d = api("POST", "/v1/gameCenterAppVersions", {"data": {"type": "gameCenterAppVersions",
                 "relationships": {"appStoreVersion": {"data": {"type": "appStoreVersions", "id": v["id"]}}}}})
     print("create gameCenterAppVersion ->", st, d.get("data", {}).get("id") if st < 300 else str(d)[:1500])
     if st >= 300: fail.append("gameCenterAppVersion")
