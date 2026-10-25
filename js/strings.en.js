@@ -56,6 +56,7 @@ I18N.register("en", {
   "toast.season": "Season shifts: {name}.",
   "toast.saved": "Saved to slot {n}",
   "toast.save_failed": "Save failed",
+  "toast.save_incompatible": "Incompatible save: this save can't be loaded by this version",
   "toast.camp": "Camp: {title}",
   "toast.altar_rest": "The lotus altar takes the night. The party is whole.",
   "toast.meditation": "Deep Meditation is active. Disable it from Temple settings to resume rites and dialogue.",

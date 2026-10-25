@@ -126,3 +126,12 @@ test("story gates: Meridia needs the Heartwood, the pass needs Lyra, the court n
   const toRuins = MAPS.ashen.events.filter((e) => e.type === "warp" && e.map === "ruins");
   assert.ok(toRuins.every((e) => e.needFlag === "warden_dead"));
 });
+
+test("save migration: v0/v1 load, future or malformed saves are incompatible", () => {
+  const src = /(const SAVE_VERSION = [\s\S]*?\n  function migrateSave\(d\) \{[\s\S]*?\n  \})/.exec(GAME)[1];
+  const c = {}; vm.createContext(c); vm.runInContext(src + "\nthis.migrateSave = migrateSave; this.V = SAVE_VERSION;", c);
+  assert.equal(c.migrateSave({ mapId: "temple" }).version, c.V);
+  assert.equal(c.migrateSave({ version: c.V, mapId: "x" }).mapId, "x");
+  for (const bad of [null, 5, [], { version: c.V + 1 }, { version: "1" }, { version: -1 }]) assert.equal(c.migrateSave(bad), null);
+  assert.match(GAME, /toast\(I18N\.t\("toast\.save_incompatible"\)\)/);
+});
