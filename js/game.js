@@ -939,7 +939,7 @@
       automation[r.id] = { enabled: r.id === "incense_to_ash", threshold: r.when.pctAbove };
     });
     return {
-      version: 1,
+      version: SAVE_VERSION,
       resources,
       unclaimed,
       structures,
@@ -1310,6 +1310,24 @@
       lastActiveAt: Date.now()
     };
   }
+  // Save format version. Bump it when serialize() changes shape and add a step to SAVE_MIGRATIONS
+  // (from version k to k+1). Saves newer than this build, or that are not objects, are incompatible.
+  const SAVE_VERSION = 1;
+  const SAVE_MIGRATIONS = {
+    // v0 (pre-versioned saves): same fields, defaults are filled in by deserialize().
+    0: (d) => ({ ...d, version: 1 }),
+  };
+  function migrateSave(d) {
+    if (!d || typeof d !== "object" || Array.isArray(d)) return null;
+    let v = d.version === undefined ? 0 : d.version;
+    if (!Number.isInteger(v) || v < 0 || v > SAVE_VERSION) return null;
+    while (v < SAVE_VERSION) {
+      const step = SAVE_MIGRATIONS[v];
+      if (!step) return null;
+      d = step(d); v = d.version;
+    }
+    return d;
+  }
   function deserialize(d) {
     S.flags = d.flags || {};
     S.inventory = d.inventory || [];
@@ -1337,10 +1355,13 @@
   }
   function loadSlot(n) {
     try {
-      const d = JSON.parse(Platform.getItem("soth_slot_" + n) || "null");
-      if (!d) return false;
+      const raw = Platform.getItem("soth_slot_" + n);
+      if (!raw) return false;
+      let d;
+      try { d = migrateSave(JSON.parse(raw)); } catch (e) { d = null; }
+      if (!d) { toast(I18N.t("toast.save_incompatible")); return false; }
       if (!Platform.gate(d.mapId, "load")) return false;
-      deserialize(d);
+      try { deserialize(d); } catch (e) { toast(I18N.t("toast.save_incompatible")); return false; }
       hideAllScreens();
       enterMap();
       Platform.event("progress", { flags: Object.keys(S.flags).filter((k) => S.flags[k]) });
