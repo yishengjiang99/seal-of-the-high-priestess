@@ -241,7 +241,7 @@
   function setVol(v) {
     S.settings.vol = v;
     if (master) master.gain.value = v;
-    try { Platform.setItem("soth_settings", JSON.stringify(S.settings)); } catch (e) {}
+    try { Platform.setItem("soth_settings", JSON.stringify(S.settings)); } catch (e) { Platform.event("error", { kind: "storage", message: "settings save failed" }); }
   }
   let noiseBuf = null;
   function noiseBurst(dur, gain, hp, at) {
@@ -1351,7 +1351,7 @@
   }
   function saveSlot(n) {
     try { Platform.setItem("soth_slot_" + n, JSON.stringify(serialize())); sfx("save"); toast(I18N.t("toast.saved", { n: n + 1 })); }
-    catch (e) { toast(I18N.t("toast.save_failed")); }
+    catch (e) { Platform.event("error", { kind: "save", message: "slot save failed" }); toast(I18N.t("toast.save_failed")); }
   }
   function loadSlot(n) {
     try {
@@ -1373,7 +1373,7 @@
   function suspendSave() {
     if (S.state !== "map" && !(S.state === "menu" && S._return === "map")) return null;
     try { const json = JSON.stringify(serialize()); Platform.setItem("soth_slot_auto", json); return json; }
-    catch (e) { return null; }
+    catch (e) { Platform.event("error", { kind: "save", message: "auto save failed" }); return null; }
   }
   Platform.on("suspend", suspendSave);
   Platform.on("entitlements", (e) => {
@@ -1424,11 +1424,11 @@
   }
   function titleAct(act) {
     sfx("ok");
-    if (act === "new") { ensureAudio(); newGame(); }
+    if (act === "new") { ensureAudio(); newGame(); Platform.event("game_started", { mode: "new" }); }
     if (act === "continue") {
       ensureAudio();
       const n = latestSave();
-      if (n !== -1) loadSlot(n);
+      if (n !== -1 && loadSlot(n)) Platform.event("game_started", { mode: "continue" });
     }
     if (act === "options") showOptions(true);
     if (act === "credits") {
@@ -1490,7 +1490,7 @@
   // Battle tutorial cards close on tap.
   $("battle-tutorial").addEventListener("click", () => { if (S.battle?.phase === "tutorial") S.just.ok = true; });
   function persistSettings() {
-    try { Platform.setItem("soth_settings", JSON.stringify(S.settings)); } catch (e) {}
+    try { Platform.setItem("soth_settings", JSON.stringify(S.settings)); } catch (e) { Platform.event("error", { kind: "storage", message: "settings save failed" }); }
   }
   document.body.addEventListener("click", (e) => {
     const b = e.target.closest("button");
@@ -1726,6 +1726,7 @@
     maybeRegionCard(S.mapId);
     S.camX = S.px - W / 2; S.camY = S.py - H / 2;
     snapCamera();
+    Platform.event("map_entered", { map: S.mapId, renderer: USE_ISO() ? "iso" : "flat" });
   }
   function snapCamera() {
     cancelPath();
@@ -1764,6 +1765,7 @@
       showLocation(m.name, true);
       playMusic(m.music || "temple");
       maybeRegionCard(ev.map);
+      Platform.event("map_entered", { map: ev.map, renderer: USE_ISO() ? "iso" : "flat" });
     });
   }
   // Fast travel (js/quest.js world map / tracker): fade to a map the player has already visited and land near (x, y),
@@ -1809,6 +1811,7 @@
       showLocation(m.name, true);
       playMusic(m.music || "temple");
       maybeRegionCard(id);
+      Platform.event("map_entered", { map: id, renderer: USE_ISO() ? "iso" : "flat" });
     }, 220, 380);
     return true;
   }
