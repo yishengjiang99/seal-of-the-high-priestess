@@ -2,8 +2,8 @@
 
 This matches `ios/HighPriestess/Resources/PrivacyInfo.xcprivacy` and https://grepawk.com/high-priestess/privacy as of build 2 and later. Apple has no API for these answers, so they have to be entered in the website. It takes about 5 minutes.
 
-**The final result has 4 data types, all "Data Linked to You", none used for tracking:**
-Identifiers (User ID), Purchases (Purchase History), User Content (Gameplay Content), Usage Data (Product Interaction).
+**The final result has 5 data types, all "Data Linked to You", none used for tracking:**
+Identifiers (User ID), Purchases (Purchase History), User Content (Gameplay Content), Usage Data (Product Interaction), Diagnostics (Crash Data).
 
 ---
 
@@ -37,13 +37,13 @@ Identifiers (User ID), Purchases (Purchase History), User Content (Gameplay Cont
 | Identifiers | ☑ **User ID**. Do **not** check Device ID: we never read the IDFA or IDFV. |
 | Purchases | ☑ **Purchase History** |
 | Usage Data | ☑ **Product Interaction**. Do not check Advertising Data or Other Usage Data. |
-| Diagnostics | (nothing). There's no crash/performance SDK yet. Revisit if MetricKit telemetry ships. |
+| Diagnostics | ☑ **Crash Data**. MetricKit crash/hang counts only — no stack traces, no paths. |
 | Surroundings / Body / Other Data | (nothing) |
 
 Then click **Save**.
 
 ## 4. Set up each data type
-Each of the 4 types now shows a **Set Up** button. For each one, click it and answer the three screens as follows.
+Each of the 5 types now shows a **Set Up** button. For each one, click it and answer the three screens as follows.
 
 ### 4a. User ID
 1. Purposes: ☑ **App Functionality** only. Click **Next**.
@@ -65,11 +65,16 @@ Each of the 4 types now shows a **Set Up** button. For each one, click it and an
 2. Linked to identity: **Yes**. Click **Next**.
 3. Tracking: **No**. Click **Save**.
 
+### 4e. Crash Data
+1. Purposes: ☑ **App Functionality** only (finding and fixing crashes). Click **Next**.
+2. Linked to identity: **Yes** (counts arrive with the random player ID, like the other events). Click **Next**.
+3. Tracking: **No**. Click **Save**.
+
 ## 5. Publish
 1. Click **Publish** (top right), then confirm.
 2. Check the **Product Page Preview** on the right. It should show:
    - **Data Used to Track You**: *(none / section absent)*
-   - **Data Linked to You**: Purchases, User Content, Identifiers, Usage Data
+   - **Data Linked to You**: Purchases, User Content, Identifiers, Usage Data, Diagnostics
    - **Data Not Linked to You**: *(none)*
 
 ---
@@ -78,6 +83,7 @@ Each of the 4 types now shows a **Set Up** button. For each one, click it and an
 - **User ID**: a random install/player ID that the app generates (Keychain). It's not the Apple ID, IDFA or IDFV.
 - **Gameplay Content**: cloud save slots and game settings (sync and backup).
 - **Purchase History**: the App Store's signed transactions plus refund notices, so purchases unlock and restore and refunds re-lock.
-- **Product Interaction**: four first-party events (`paywall_shown`, `purchase`, `restore`, `region_complete`, with placement, product, price-test arm, price, app version). They're stored on our server only, used as aggregates, and kept 13 months.
+- **Product Interaction**: first-party events (sessions, paywall shown/dismissed, purchase started/completed/cancelled/failed/pending, restores, regions completed, maps entered, games started, battles won, content loaded, frame-time samples, non-fatal errors), with placement, product, price-test arm, price, map and app version. They're stored on our server only, used as aggregates, and kept 13 months.
+- **Crash Data**: MetricKit crash/hang counts by kind (crash, hang, CPU exception, disk-write exception), sent as a `diagnostic` event with the random player ID and app version. No stack traces, no file paths, no device identifiers. Daily metric aggregates (launch time, CPU, memory) are not sent.
 - Not declared: **Game Center** data (Apple processes it, and our server never receives any Game Center identifiers) and IP addresses in short-lived web server logs (not collected as data). There are no third-party SDKs.
 - Deletion: Settings, then Delete cloud data, removes all of the above from our server.

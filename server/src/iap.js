@@ -13,7 +13,13 @@ export const PRODUCTS = {
   'com.ragnus.weather.supporter': 'supporter',
 }
 export const FULL_GAME_IDS = ['com.ragnus.weather.fullgame', 'com.ragnus.weather.fullgame.b']
-export const EVENT_NAMES = new Set(['paywall_shown', 'purchase', 'restore', 'region_complete', 'perf_sample'])
+export const EVENT_NAMES = new Set([
+  // Sessions + paywall/purchase funnel.
+  'session_start', 'paywall_shown', 'paywall_dismissed', 'purchase_started', 'purchase',
+  'purchase_pending', 'purchase_cancelled', 'purchase_failed', 'restore', 'region_complete',
+  // Gameplay + perf + reliability.
+  'map_entered', 'game_started', 'battle_won', 'content_loaded', 'perf_sample', 'diagnostic', 'error',
+])
 
 const ms = (v) => (Number.isFinite(Number(v)) && Number(v) > 0 ? new Date(Number(v)) : null)
 
@@ -181,12 +187,15 @@ export function mountIap(api, { db, auth, admin, env = process.env, verifier, se
   }
 
   async function funnel({ days, allEnv }) {
-    const envSql = allEnv ? '' : ` AND (props IS NULL OR JSON_EXTRACT(props, '$.env') IS NULL OR JSON_UNQUOTE(JSON_EXTRACT(props, '$.env')) = 'production')`
+    // Production only, by default: the install's receipt-based env AND the verified
+    // transaction env when the event carries one (an App Store install signed into a
+    // sandbox tester still buys in Sandbox — see the Nov 8 2026 sandbox purchase).
+    const envSql = allEnv ? '' : ` AND (props IS NULL OR JSON_EXTRACT(props, '$.env') IS NULL OR JSON_UNQUOTE(JSON_EXTRACT(props, '$.env')) = 'production') AND (JSON_EXTRACT(props, '$.txEnv') IS NULL OR JSON_UNQUOTE(JSON_EXTRACT(props, '$.txEnv')) = 'production')`
     const [rows] = await db.query(
       `SELECT name, COUNT(*) AS n, COUNT(DISTINCT player_id) AS players FROM events
        WHERE created_at >= NOW() - INTERVAL ? DAY${envSql} GROUP BY name`, [days])
     const get = (n) => rows.find((r) => r.name === n) || { n: 0, players: 0 }
-    const steps = ['region_complete', 'paywall_shown', 'purchase', 'restore'].map((name) => ({ name, events: Number(get(name).n), players: Number(get(name).players) }))
+    const steps = ['session_start', 'region_complete', 'paywall_shown', 'purchase_started', 'purchase', 'purchase_cancelled', 'purchase_failed', 'paywall_dismissed', 'restore'].map((name) => ({ name, events: Number(get(name).n), players: Number(get(name).players) }))
     const [placements] = await db.query(
       `SELECT JSON_UNQUOTE(JSON_EXTRACT(props, '$.placement')) AS placement, name, COUNT(*) AS n FROM events
        WHERE name IN ('paywall_shown', 'purchase') AND created_at >= NOW() - INTERVAL ? DAY${envSql} GROUP BY placement, name`, [days])

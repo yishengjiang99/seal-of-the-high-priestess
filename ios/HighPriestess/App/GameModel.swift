@@ -19,7 +19,18 @@ final class GameModel: NSObject, ObservableObject {
     @Published private(set) var syncStatus = ""
     @Published private(set) var contentStatus = ""
     @Published var paywall: PaywallRequest? {
-        didSet { if paywall != nil { controllers?.releaseAll() } }
+        didSet {
+            if paywall != nil { controllers?.releaseAll() }
+            if oldValue != nil && paywall == nil, let shown = paywallShown {
+                paywallShown = nil
+                // A purchase or restore dismisses the paywall too; only a close with the
+                // Full Game still locked counts as a dismiss.
+                if !paywallDemo && !storeKit.entitlements.full {
+                    analytics.track("paywall_dismissed", ["placement": shown.placement, "product": shown.product,
+                                                          "variant": shown.variant, "env": StoreManager.environment])
+                }
+            }
+        }
     }
     /// Shown in Settings > Controls.
     @Published private(set) var inputMode = ControllerInput.Mode.touch
@@ -32,12 +43,17 @@ final class GameModel: NSObject, ObservableObject {
     let sync: SyncClient
     let storeKit: StoreManager
     let analytics: Analytics
+    let diagnostics: DiagnosticsReporter
     /// -paywallDemo: show the paywall on launch (App Review screenshot of the IAP).
     let paywallDemo = ProcessInfo.processInfo.arguments.contains("-paywallDemo")
     let haptics = Haptics()
     let gameCenter = GameCenterManager()
     private(set) var controllers: ControllerInput?
     private var pendingConflicts: [SaveConflict] = []
+    /// Offer shown by the current paywall presentation (for the dismiss event).
+    private var paywallShown: (placement: String, product: String, variant: String)?
+    /// When the app last went to the background (for session_start on foreground).
+    private var lastBackgroundedAt: Date?
 
     override init() {
         store = SaveStore()
@@ -45,6 +61,7 @@ final class GameModel: NSObject, ObservableObject {
         sync = SyncClient(store: store, api: api)
         storeKit = StoreManager(api: api)
         analytics = Analytics(api: api)
+        diagnostics = DiagnosticsReporter(analytics: analytics)
         let config = WebBundle.makeConfiguration()
         webView = WKWebView(frame: .zero, configuration: config)
         super.init()
@@ -82,6 +99,7 @@ final class GameModel: NSObject, ObservableObject {
         Task { await sync.sync() }
         storeKit.start()
         analytics.scheduleFlush(after: 8)
+        trackSessionStart()
     }
 
     /// Runs before any page script: host info for js/platform.js + the native saves seeded into localStorage.
@@ -133,6 +151,7 @@ final class GameModel: NSObject, ObservableObject {
             let data = msg["data"] as? [String: Any]
             switch msg["name"] as? String {
             case "battle_won":
+                analytics.track("battle_won", data ?? [:])
                 sync.scheduleSync(after: 1)
                 if let r = GameCenterManager.BattleResult(data) { gameCenter.battle(r) }
             case "progress":
@@ -147,6 +166,11 @@ final class GameModel: NSObject, ObservableObject {
                 analytics.enabled = paywallConfig.flag("funnelEvents")
                 if let names = data?["mapNames"] as? [String: String] { SaveSummary.mapNames = names }
                 if paywallDemo { showPaywall("region1_end") }
+                var contentProps: [String: Any] = ["source": data?["source"] as? String ?? ""]
+                if let v = data?["version"] { contentProps["version"] = "\(v)" }
+                analytics.track("content_loaded", contentProps)
+            case "map_entered", "game_started", "error":
+                analytics.track(msg["name"] as? String ?? "", data ?? [:])
             case "perf_sample":
                 var props = data ?? [:]
                 props["device"] = Analytics.deviceModel
@@ -267,6 +291,7 @@ final class GameModel: NSObject, ObservableObject {
         guard paywallDemo || (paywallConfig.flag("paywall") && !storeKit.entitlements.full) else { return }
         guard paywall == nil else { return }
         let offer = priceArm
+        paywallShown = (placement: placement, product: offer.product, variant: offer.variant)
         if !paywallDemo {
             analytics.track("paywall_shown", ["placement": placement, "product": offer.product, "variant": offer.variant,
                                               "env": StoreManager.environment])
@@ -309,9 +334,17 @@ final class GameModel: NSObject, ObservableObject {
         webView.evaluateJavaScript(js, completionHandler: nil)
     }
 
+    /// First launch, and any foreground after 30+ min in the background, counts as a new session.
+    private func trackSessionStart() {
+        let returning = UserDefaults.standard.bool(forKey: "analytics.hasLaunched")
+        analytics.track("session_start", ["returning": returning])
+        UserDefaults.standard.set(true, forKey: "analytics.hasLaunched")
+    }
+
     func scenePhaseChanged(_ phase: ScenePhase) {
         switch phase {
         case .inactive, .background:
+            lastBackgroundedAt = Date()
             controllers?.releaseAll()
             // Suspend save while exploring, so iOS killing the app never loses progress.
             webView.evaluateJavaScript("window.Platform ? Platform.call('suspend') : null") { [weak self] result, _ in
@@ -320,6 +353,8 @@ final class GameModel: NSObject, ObservableObject {
                 if phase == .background { self.syncInBackground(); Task { await self.analytics.flush() } }
             }
         case .active:
+            if let at = lastBackgroundedAt, Date().timeIntervalSince(at) > 1800 { trackSessionStart() }
+            lastBackgroundedAt = nil
             AudioSessionManager.apply()
             Task { await gameCenter.flush() }
             focusGame()

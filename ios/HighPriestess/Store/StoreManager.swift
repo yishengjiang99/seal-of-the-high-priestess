@@ -100,10 +100,17 @@ final class StoreManager: ObservableObject {
     @discardableResult
     func purchase(_ productID: String, placement: String, context: [String: Any] = [:]) async -> Bool {
         await loadProducts()
+        var base = context
+        base["placement"] = placement
+        base["product"] = productID
         guard let product = products[productID] else {
+            var failed = base
+            failed["reason"] = "product_unavailable"
+            analytics?.track("purchase_failed", failed)
             message = String(localized: "The App Store is unavailable right now. Please try again later.")
             return false
         }
+        analytics?.track("purchase_started", base)
         busy = true
         defer { busy = false }
         var options: Set<Product.PurchaseOption> = []
@@ -122,14 +129,23 @@ final class StoreManager: ObservableObject {
                 if !ok { message = String(localized: "The purchase couldn't be verified.") }
                 return ok
             case .pending:
+                analytics?.track("purchase_pending", base)
                 message = String(localized: "Your purchase is pending approval. It will unlock automatically.")
                 return false
             case .userCancelled:
+                analytics?.track("purchase_cancelled", base)
                 return false
             @unknown default:
+                var failed = base
+                failed["reason"] = "unknown_result"
+                analytics?.track("purchase_failed", failed)
                 return false
             }
         } catch {
+            var failed = base
+            failed["reason"] = "error"
+            failed["message"] = String(error.localizedDescription.prefix(200))
+            analytics?.track("purchase_failed", failed)
             message = String(localized: "Purchase failed: \(error.localizedDescription)")
             return false
         }
@@ -151,7 +167,12 @@ final class StoreManager: ObservableObject {
 
     @discardableResult
     private func handle(_ result: VerificationResult<Transaction>, placement: String?, props: [String: Any] = [:]) async -> Bool {
-        guard case .verified(let t) = result else { return false }
+        guard case .verified(let t) = result else {
+            if let placement {
+                analytics?.track("purchase_failed", ["placement": placement, "reason": "verification_failed"])
+            }
+            return false
+        }
         if t.revocationDate == nil { owned.insert(t.productID) } else { owned.remove(t.productID) }
         await upload(result)
         await t.finish()
@@ -160,6 +181,9 @@ final class StoreManager: ObservableObject {
             p["product"] = t.productID
             p["placement"] = placement
             p["env"] = Self.environment
+            // The verified transaction environment, not the receipt-based flag above:
+            // an App Store install signed into a sandbox tester still buys in Sandbox.
+            p["txEnv"] = t.environment == .production ? "production" : "sandbox"
             analytics?.track("purchase", p)
         }
         publish()

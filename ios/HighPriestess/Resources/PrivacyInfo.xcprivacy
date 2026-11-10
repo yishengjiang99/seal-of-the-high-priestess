@@ -6,9 +6,10 @@
   Our own server (grepawk.com/high-priestess/api), all linked to a random player ID:
   - cloud save sync: game progress (App Functionality)
   - purchases: signed App Store transactions for Full Game / Supporter Pack (App Functionality)
-  - first-party funnel events paywall_shown / purchase / restore / region_complete
-    (Product Interaction, Analytics). No third-party analytics, no ads, no tracking. Keep in sync with docs/asc/app-privacy.md
-  and https://grepawk.com/high-priestess/privacy.
+  - first-party events: sessions, paywall funnel, purchases, regions, gameplay, perf samples,
+    errors (Product Interaction, Analytics). No third-party analytics, no ads, no tracking.
+  - crash/hang diagnostics via MetricKit: counts by kind only, no stack traces (Diagnostics).
+  Keep in sync with docs/asc/app-privacy.md and https://grepawk.com/high-priestess/privacy.
 -->
 <dict>
 	<key>NSPrivacyTracking</key>
@@ -63,6 +64,18 @@
 			<key>NSPrivacyCollectedDataTypePurposes</key>
 			<array>
 				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeCrashData</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAppFunctionality</string>
 			</array>
 		</dict>
 	</array>

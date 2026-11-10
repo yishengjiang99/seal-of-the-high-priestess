@@ -167,7 +167,9 @@ export function createApp({ db, env = process.env, iap = {} }) {
   // ---- settings (last write wins) ----
   api.get('/v1/settings', auth, async (req, res) => {
     const [rows] = await db.query('SELECT data, updated_at FROM settings WHERE player_id=?', [req.player.id])
-    if (!rows.length) return void res.status(404).json({ error: 'no settings' })
+    // 200 with nulls (not 404): most players have never saved settings, and the client
+    // treats any non-200 as "no settings" — the 404 just polluted the access logs.
+    if (!rows.length) return void res.json({ data: null, updatedAt: null })
     res.json({ data: rows[0].data, updatedAt: new Date(rows[0].updated_at).getTime() })
   })
   api.put('/v1/settings', auth, async (req, res) => {

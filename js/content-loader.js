@@ -128,6 +128,7 @@
       const mapNames = {};
       for (const id in (window.MAPS || {})) if (MAPS[id] && typeof MAPS[id].name === "string") mapNames[id] = MAPS[id].name;
       Platform.event("content", { source: status.source, version: status.version, have, PAYWALL: window.PAYWALL || null, FLAGS: window.FLAGS || {}, mapNames });
+      if (status.errors.length) Platform.event("error", { kind: "content", message: status.errors.join("; ").slice(0, 500) });
     }
     const s = document.createElement("script");
     s.src = "js/game.js";
